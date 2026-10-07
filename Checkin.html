@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base target="_top">
+<script src="/gas-shim.js"></script>
+<meta charset="UTF-8">
+<title>Mark Attendance</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --ink: #16233f;
+    --ink-2: #0b1220;
+    --gold: #c98a1f;
+    --gold-bg: #fdf1d9;
+    --teal: #178f6c;
+    --coral: #d64545;
+    --paper: #f5f7fb;
+    --muted: #64748b;
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0; min-height: 100%; display: flex; align-items: flex-start; justify-content: center;
+    background: var(--paper); color: #1e293b; font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    padding: 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .card { width: 100%; max-width: 380px; margin: 20px auto; padding-bottom: 40vh; }
+  .brand-row { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .medallion {
+    width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+    background: radial-gradient(circle at 35% 30%, #223257, var(--ink));
+    border: 2px solid var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-weight: 700; font-size: 16px; color: var(--gold-bg);
+  }
+  h1 { font-family: 'Fraunces', serif; font-size: 21px; font-weight: 700; margin: 0 0 2px; color: var(--ink); }
+  .sub { font-size: 13px; color: var(--muted); margin-bottom: 22px; }
+  label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  input, select {
+    width: 100%; margin-top: 6px; margin-bottom: 16px; padding: 14px; font-size: 18px;
+    border: 1px solid #cbd5e1; border-radius: 12px; text-align: center; letter-spacing: .02em;
+    font-family: inherit; background: #fff;
+    scroll-margin-top: 90px; scroll-margin-bottom: 90px;
+  }
+  select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2364748b'><path d='M5.5 7.5l4.5 4.5 4.5-4.5z'/></svg>"); background-repeat: no-repeat; background-position: right 14px center; background-size: 16px; }
+  input:focus, select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,138,31,.16); }
+  .row2 { display: flex; gap: 10px; }
+  .row2 > div { flex: 1; }
+  .row2 input, .row2 select { margin-bottom: 0; }
+  .row2-gap { margin-bottom: 16px; }
+  button {
+    width: 100%; padding: 14px; font-size: 16px; font-weight: 700; color: var(--ink-2);
+    background: linear-gradient(90deg, var(--gold), #e0ab3f); border: none; border-radius: 12px; cursor: pointer;
+    letter-spacing: .01em;
+    scroll-margin-bottom: 90px;
+  }
+  button:disabled { opacity: .55; }
+  .err { color: var(--coral); font-size: 13px; margin: -6px 0 14px; }
+  .result { text-align: center; padding: 30px 10px; }
+  .result .icon {
+    width: 68px; height: 68px; border-radius: 50%; margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700;
+  }
+  .result.ok .icon { background: #e5f6ef; color: var(--teal); }
+  .result.warn .icon { background: var(--gold-bg); color: var(--gold); }
+  .result.bad .icon { background: #fbe7e7; color: var(--coral); }
+  .result h2 { font-family: 'Fraunces', serif; margin: 0 0 6px; font-size: 21px; color: var(--ink); }
+  .result p { margin: 0; color: var(--muted); font-size: 14px; }
+  .again { margin-top: 22px; background: none; color: var(--ink); font-weight: 600; font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
+  .hidden { display: none; }
+  .spot-badge {
+    display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    color: #8a5a10; background: var(--gold-bg); border-radius: 999px; padding: 3px 10px; margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+
+    <div id="formView">
+      <div class="brand-row">
+        <div class="medallion">CP</div>
+        <div>
+          <h1 id="companyHeading">Loading…</h1>
+          <div class="sub" id="sessionSub" style="margin:0;">&nbsp;</div>
+        </div>
+      </div>
+
+      <form id="checkinForm">
+
+        <!-- Prior-registration mode: enrollment number + last 4 digits of mobile -->
+        <div id="priorFields">
+          <label for="enrollment">Enrollment Number</label>
+          <input id="enrollment" name="enrollment" type="text" inputmode="text" autocomplete="off"
+                 autocapitalize="characters" placeholder="e.g. 21CS1234">
+
+          <label for="mobileLast4">Last 4 Digits of Mobile Number</label>
+          <input id="mobileLast4" name="mobileLast4" type="text" inputmode="numeric" autocomplete="off"
+                 maxlength="4" pattern="[0-9]*" placeholder="e.g. 4521">
+        </div>
+
+        <!-- Spot-registration mode: full details, no prior list exists yet -->
+        <div id="spotFields" class="hidden">
+          <span class="spot-badge">On-the-spot registration</span>
+
+          <label for="spotName">Name</label>
+          <input id="spotName" type="text" autocomplete="off" placeholder="Full name">
+
+          <label for="spotEnrollment">Enrollment Number</label>
+          <input id="spotEnrollment" type="text" autocomplete="off" autocapitalize="characters" placeholder="e.g. 21CS1234">
+
+          <div class="row2 row2-gap">
+            <div>
+              <label for="spotBranch">Branch</label>
+              <select id="spotBranch"><option value="">Select branch</option></select>
+            </div>
+            <div>
+              <label for="spotCollege">College</label>
+              <select id="spotCollege">
+                <option value="">Select college</option>
+                <option value="GGITS">GGITS</option>
+                <option value="GGCT">GGCT</option>
+                <option value="GGCE">GGCE</option>
+              </select>
+            </div>
+          </div>
+
+          <label for="spotMobile">Mobile Number</label>
+          <input id="spotMobile" type="tel" inputmode="numeric" autocomplete="off" placeholder="10-digit mobile number">
+
+          <label for="spotEmail">Email ID</label>
+          <input id="spotEmail" type="email" autocomplete="off" placeholder="you@example.com">
+        </div>
+
+        <div class="err hidden" id="formErr"></div>
+        <button type="submit" id="submitBtn">Mark My Attendance</button>
+      </form>
+    </div>
+
+    <div id="resultView" class="result hidden">
+      <div class="icon" id="resultIcon">✓</div>
+      <h2 id="resultTitle"></h2>
+      <p id="resultText"></p>
+      <button class="again hidden" id="tryAgainBtn">Try again</button>
+    </div>
+
+  </div>
+
+<script>
+  const sessionId = PARAMS.session || '';
+  const token = PARAMS.t || '';
+  const mode = PARAMS.mode || 'prior'; // 'prior' or 'spot'
+  let eligibleBranches = []; // loaded from the server below (was injected by the Apps Script template)
+  const isSpot = mode === 'spot';
+
+  const formView = document.getElementById('formView');
+  const resultView = document.getElementById('resultView');
+  const form = document.getElementById('checkinForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const formErr = document.getElementById('formErr');
+
+  const priorFields = document.getElementById('priorFields');
+  const spotFields = document.getElementById('spotFields');
+  const enrollmentInput = document.getElementById('enrollment');
+  const mobileLast4Input = document.getElementById('mobileLast4');
+  const spotName = document.getElementById('spotName');
+  const spotEnrollment = document.getElementById('spotEnrollment');
+  const spotBranch = document.getElementById('spotBranch');
+  const spotCollege = document.getElementById('spotCollege');
+  const spotMobile = document.getElementById('spotMobile');
+  const spotEmail = document.getElementById('spotEmail');
+
+  // Enrollment numbers are matched case-insensitively on the server, but
+  // showing them consistently in caps as the student types avoids any
+  // confusion either way.
+  [enrollmentInput, spotEnrollment].forEach(el => {
+    if (!el) return;
+    el.addEventListener('input', () => {
+      const pos = el.selectionStart;
+      el.value = el.value.toUpperCase();
+      if (pos !== null) el.setSelectionRange(pos, pos);
+    });
+  });
+
+  // Remember what was typed in the (much more common) prior-registration
+  // fields across an accidental refresh — scoped to this session so a new
+  // drive never shows another drive's leftover values. Cleared explicitly
+  // when the student picks "Try again" for a different enrollment number,
+  // or once this device gets a fresh sessionId (new QR/drive).
+  const STORAGE_KEY = 'checkinDraft:' + sessionId;
+  function saveDraft() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        enrollment: enrollmentInput.value, mobileLast4: mobileLast4Input.value
+      }));
+    } catch (e) {}
+  }
+  function restoreDraft() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      enrollmentInput.value = draft.enrollment || '';
+      mobileLast4Input.value = draft.mobileLast4 || '';
+    } catch (e) {}
+  }
+  function clearDraft() {
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  }
+
+  // Populate the Branch dropdown for spot registration from the branches
+  // the admin declared eligible for this drive.
+  function populateBranches() {
+    spotBranch.innerHTML = spotBranch.querySelector('option[value=""]') ? spotBranch.querySelector('option[value=""]').outerHTML : '';
+    eligibleBranches.forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = b; opt.textContent = b;
+      spotBranch.appendChild(opt);
+    });
+  }
+  if (sessionId) {
+    google.script.run
+      .withSuccessHandler(r => { eligibleBranches = (r && r.eligibleBranches) || []; populateBranches(); })
+      .withFailureHandler(() => {})
+      .getCheckinPageContext(sessionId);
+  }
+
+  // On mobile, the on-screen keyboard covers whatever field is being typed
+  // into — scroll the focused field into the visible area above it once the
+  // keyboard has finished animating in.
+  form.querySelectorAll('input, select').forEach(el => {
+    el.addEventListener('focus', () => {
+      setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+    });
+  });
+
+  if (!sessionId || !token) {
+    document.getElementById('companyHeading').textContent = 'Invalid Link';
+    document.getElementById('sessionSub').textContent = 'Please scan the QR code shown by a volunteer.';
+    form.style.display = 'none';
+  } else if (isSpot) {
+    priorFields.classList.add('hidden');
+    spotFields.classList.remove('hidden');
+    document.getElementById('companyHeading').textContent = 'Register & Mark Attendance';
+    document.getElementById('sessionSub').textContent = 'No prior registration found — please fill in your details below.';
+    spotName.focus();
+  } else {
+    document.getElementById('companyHeading').textContent = 'Mark Your Attendance';
+    document.getElementById('sessionSub').textContent = 'Enter your enrollment number and mobile number below.';
+    restoreDraft();
+    enrollmentInput.focus();
+    enrollmentInput.addEventListener('input', saveDraft);
+    mobileLast4Input.addEventListener('input', saveDraft);
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    formErr.classList.add('hidden');
+
+    if (isSpot) {
+      const studentData = {
+        Student_Name: spotName.value.trim(),
+        Enrollment_No: spotEnrollment.value.trim(),
+        Branch: spotBranch.value.trim(),
+        College: spotCollege.value.trim(),
+        Mobile_No: spotMobile.value.trim(),
+        Email_ID: spotEmail.value.trim()
+      };
+      if (!studentData.Student_Name) return showErr('Please enter your name.');
+      if (!studentData.Enrollment_No) return showErr('Please enter your enrollment number.');
+      if (!studentData.Branch) return showErr('Please select your branch.');
+      if (!studentData.College) return showErr('Please select your college.');
+      if (!studentData.Mobile_No || studentData.Mobile_No.replace(/\D/g, '').length < 6) return showErr('Please enter a valid mobile number.');
+
+      setSubmitting(true);
+      google.script.run
+        .withSuccessHandler(function (res) { setSubmitting(false); showResult(res); })
+        .withFailureHandler(function (err) { setSubmitting(false); showErr('Something went wrong: ' + err.message); })
+        .checkInAttendanceSpot(sessionId, token, studentData);
+    } else {
+      const enrollmentNo = enrollmentInput.value.trim();
+      const mobileLast4 = mobileLast4Input.value.trim();
+      if (!enrollmentNo) return showErr('Please enter your enrollment number.');
+      if (!/^\d{4}$/.test(mobileLast4)) return showErr('Please enter the last 4 digits of your mobile number.');
+
+      setSubmitting(true);
+      google.script.run
+        .withSuccessHandler(function (res) { setSubmitting(false); showResult(res); })
+        .withFailureHandler(function (err) { setSubmitting(false); showErr('Something went wrong: ' + err.message); })
+        .checkInAttendance(sessionId, token, enrollmentNo, mobileLast4);
+    }
+  });
+
+  function showErr(msg) {
+    formErr.textContent = msg;
+    formErr.classList.remove('hidden');
+    formErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function setSubmitting(isSubmitting) {
+    submitBtn.disabled = isSubmitting;
+    submitBtn.textContent = isSubmitting ? 'Checking…' : 'Mark My Attendance';
+  }
+
+  function showResult(res) {
+    formView.classList.add('hidden');
+    resultView.classList.remove('hidden');
+    const icon = document.getElementById('resultIcon');
+    const title = document.getElementById('resultTitle');
+    const text = document.getElementById('resultText');
+    const tryAgain = document.getElementById('tryAgainBtn');
+    tryAgain.classList.add('hidden');
+    tryAgain.textContent = 'Try again';
+    tryAgain.onclick = resetForm;
+
+    if (res.success) {
+      resultView.className = 'result ok';
+      icon.textContent = '✓';
+      // A successful check-in is a natural end-of-flow for this
+      // enrollment — clear the remembered draft so the next time this
+      // device opens the link (a different student, or a re-scan) it
+      // starts blank rather than showing someone else's details.
+      clearDraft();
+      if (res.alreadyPresent) {
+        title.textContent = 'Already marked present';
+        text.textContent = res.studentName + ', you were already checked in at ' + res.previousCheckInTime + '.';
+      } else {
+        title.textContent = 'You\'re marked present!';
+        text.textContent = res.studentName + ' • ' + res.checkInTime;
+      }
+    } else if (res.expired) {
+      resultView.className = 'result warn';
+      icon.textContent = '⟳';
+      title.textContent = 'Code expired';
+      text.textContent = res.message;
+      tryAgain.classList.remove('hidden');
+      tryAgain.textContent = 'Ask the volunteer to rescan';
+      tryAgain.onclick = () => window.location.reload();
+    } else if (res.notRegistered) {
+      resultView.className = 'result bad';
+      icon.textContent = '✕';
+      title.textContent = 'Not found';
+      text.textContent = res.message;
+      tryAgain.classList.remove('hidden');
+    } else if (res.mobileMismatch) {
+      resultView.className = 'result bad';
+      icon.textContent = '✕';
+      title.textContent = 'Mobile number doesn\'t match';
+      text.textContent = res.message;
+      tryAgain.classList.remove('hidden');
+    } else if (res.ended) {
+      resultView.className = 'result bad';
+      icon.textContent = '✕';
+      title.textContent = 'Session ended';
+      text.textContent = res.message;
+    } else {
+      resultView.className = 'result bad';
+      icon.textContent = '✕';
+      title.textContent = 'Could not check in';
+      text.textContent = res.message || 'Please try again or check with a volunteer.';
+      tryAgain.classList.remove('hidden');
+    }
+  }
+
+  function resetForm() {
+    resultView.classList.add('hidden');
+    formView.classList.remove('hidden');
+    if (isSpot) {
+      spotName.value = ''; spotEnrollment.value = ''; spotBranch.value = '';
+      spotCollege.value = ''; spotMobile.value = ''; spotEmail.value = '';
+      spotName.focus();
+    } else {
+      enrollmentInput.value = '';
+      mobileLast4Input.value = '';
+      clearDraft();
+      enrollmentInput.focus();
+    }
+  }
+</script>
+</body>
+</html>

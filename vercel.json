@@ -1,0 +1,14 @@
+{
+  "rewrites": [
+    { "source": "/", "has": [{ "type": "query", "key": "page", "value": "kiosk" }],            "destination": "/Kiosk.html" },
+    { "source": "/", "has": [{ "type": "query", "key": "page", "value": "checkin" }],          "destination": "/Checkin.html" },
+    { "source": "/", "has": [{ "type": "query", "key": "page", "value": "register" }],         "destination": "/RegistrationForm.html" },
+    { "source": "/", "has": [{ "type": "query", "key": "page", "value": "volunteer" }],        "destination": "/Volunteer.html" },
+    { "source": "/", "has": [{ "type": "query", "key": "page", "value": "volunteer-admin" }],  "destination": "/VolunteerAdmin.html" },
+    { "source": "/", "has": [{ "type": "query", "key": "page", "value": "test" }],             "destination": "/Test.html" },
+    { "source": "/", "has": [{ "type": "query", "key": "page", "value": "feedback" }],         "destination": "/Feedback.html" },
+    { "source": "/", "has": [{ "type": "query", "key": "page", "value": "employer-feedback" }],"destination": "/EmployerFeedbackForm.html" },
+    { "source": "/", "has": [{ "type": "query", "key": "page", "value": "photo" }],            "destination": "/PhotoUpload.html" },
+    { "source": "/", "destination": "/Index.html" }
+  ]
+}

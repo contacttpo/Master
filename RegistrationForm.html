@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base target="_top">
+<script src="/gas-shim.js"></script>
+<meta charset="UTF-8">
+<title>Registration Form</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;700;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --ink: #16233f;
+    --ink-2: #0b1220;
+    --gold: #c98a1f;
+    --gold-bg: #fdf1d9;
+    --teal: #178f6c;
+    --coral: #d64545;
+    --paper: #f5f7fb;
+    --muted: #64748b;
+    --violet: #6d28d9;
+    --violet-2: #8b5cf6;
+    --blue: #2563eb;
+    --pink: #db2777;
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0; min-height: 100%; display: flex; align-items: flex-start; justify-content: center;
+    background: linear-gradient(160deg, #eef2ff 0%, #f5f3ff 30%, #fdf4ff 55%, #fff7ed 100%);
+    color: #1e293b; font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    padding: 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .card {
+    width: 100%; max-width: 400px; margin: 20px auto; padding: 26px 22px; padding-bottom: 40vh;
+    background: #fff; border-radius: 22px;
+    box-shadow: 0 20px 45px -18px rgba(76, 29, 149, .28), 0 2px 8px rgba(15, 23, 42, .06);
+    border: 1px solid #ece9fc;
+  }
+  .top-ribbon {
+    height: 6px; margin: -26px -22px 22px; border-radius: 22px 22px 0 0;
+    background: linear-gradient(90deg, var(--violet) 0%, var(--blue) 45%, var(--pink) 100%);
+  }
+  .brand-row { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+  .medallion {
+    width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--violet), var(--blue));
+    box-shadow: 0 6px 16px -4px rgba(109, 40, 217, .55);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-weight: 700; font-size: 17px; color: #fff;
+  }
+  h1 { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 700; margin: 0 0 2px; color: var(--ink); }
+  .sub { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .jd-btn {
+    display: inline-flex; align-items: center; gap: 6px; margin: 4px 0 20px;
+    font-size: 13px; font-weight: 700; color: var(--violet);
+    background: var(--gold-bg); border: 1.5px solid #f1dfb0;
+    padding: 8px 14px; border-radius: 10px; text-decoration: none;
+    transition: background .15s, border-color .15s;
+  }
+  .jd-btn:hover { background: #fbe8c2; border-color: #e9c877; }
+  .section-label {
+    font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--violet); margin: 22px 0 10px; display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, #ddd6fe, transparent); }
+  label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; display: block; }
+  .req { color: var(--coral); }
+  input, select {
+    width: 100%; margin-top: 6px; margin-bottom: 16px; padding: 14px; font-size: 16px;
+    border: 1.5px solid #e2e8f0; border-radius: 12px;
+    font-family: inherit; background: #fbfbff; color: #1e293b;
+    scroll-margin-top: 90px; scroll-margin-bottom: 90px;
+    transition: border-color .15s, box-shadow .15s, background .15s;
+    appearance: none; -webkit-appearance: none;
+  }
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath fill='%236d28d9' d='M1 1l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 16px center; padding-right: 38px;
+  }
+  input[type="file"] { padding: 10px; font-size: 13px; background: #fbfbff; }
+  input:focus, select:focus { outline: none; border-color: var(--violet-2); background: #fff; box-shadow: 0 0 0 4px rgba(139,92,246,.14); }
+  .field-hint { font-size: 12px; color: var(--muted); margin: -12px 0 16px; }
+  .choice-group { margin: 6px 0 16px; }
+  .choice-option {
+    display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 400;
+    text-transform: none; letter-spacing: normal; color: #1e293b; margin-bottom: 8px;
+  }
+  .choice-option input[type="radio"], .choice-option input[type="checkbox"] {
+    width: auto; margin: 0; accent-color: var(--violet-2);
+  }
+  button {
+    width: 100%; padding: 15px; font-size: 16px; font-weight: 700; color: #fff;
+    background: linear-gradient(90deg, var(--violet), var(--blue));
+    border: none; border-radius: 14px; cursor: pointer;
+    letter-spacing: .01em;
+    box-shadow: 0 10px 24px -10px rgba(37, 99, 235, .55);
+    scroll-margin-bottom: 90px;
+    transition: transform .1s, box-shadow .1s;
+  }
+  button:active:not(:disabled) { transform: translateY(1px); }
+  button:disabled { opacity: .55; box-shadow: none; }
+  .err { color: #fff; background: var(--coral); font-size: 13px; margin: -6px 0 14px; padding: 10px 12px; border-radius: 10px; font-weight: 600; }
+  .state-msg { font-size: 14px; color: var(--muted); padding: 30px 4px; text-align: center; white-space: pre-line; }
+  .result { text-align: center; padding: 30px 10px; }
+  .result .icon {
+    width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: 700;
+  }
+  .result.ok .icon { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: var(--teal); box-shadow: 0 8px 20px -8px rgba(23,143,108,.4); }
+  .result.bad .icon { background: linear-gradient(135deg, #fee2e2, #fecaca); color: var(--coral); box-shadow: 0 8px 20px -8px rgba(214,69,69,.4); }
+  .result h2 { font-family: 'Fraunces', serif; margin: 0 0 6px; font-size: 22px; color: var(--ink); }
+  .result p { margin: 0; color: var(--muted); font-size: 14px; }
+  .warn-note { margin-top: 14px; font-size: 12px; color: var(--gold); background: var(--gold-bg); padding: 10px 12px; border-radius: 10px; }
+  .qr-note { margin-top: 22px; }
+  .qr-wrap {
+    display: inline-block; background: #fff; border-radius: 16px; padding: 16px;
+    border: 1px solid var(--line, #e5e7eb); box-shadow: 0 6px 20px -10px rgba(0,0,0,.25);
+  }
+  .qr-wrap img { display: block; width: 200px; height: 200px; }
+  .qr-caption { margin-top: 10px; font-size: 12.5px; color: var(--muted); max-width: 320px; margin-left: auto; margin-right: auto; }
+  .qr-save-btn {
+    margin-top: 14px; display: inline-block; font-size: 13px; font-weight: 600; text-decoration: none;
+    padding: 10px 18px; border-radius: 10px; background: var(--teal, #178f6c); color: #fff;
+  }
+  .hidden { display: none !important; }
+  .pulse { animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
+  .countdown-banner {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    margin: 0 0 20px; padding: 12px 14px; border-radius: 12px;
+    background: var(--gold-bg); border: 1.5px solid #f1dfb0;
+  }
+  .countdown-banner.urgent { background: #fee2e2; border-color: #fecaca; }
+  .countdown-banner .cb-label { font-size: 12px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: .04em; }
+  .countdown-banner.urgent .cb-label { color: var(--coral); }
+  .countdown-banner .cb-timer { font-size: 15px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="top-ribbon"></div>
+
+    <div id="loadingState">
+      <div class="brand-row" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+        <img id="brandLogoSrc" src="data:image/jpeg;base64,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" alt="Gyan Ganga Group of Institutions" style="height: 46px; width: auto;">
+        <h1>Loading…</h1>
+      </div>
+      <div class="state-msg pulse">Fetching this drive's registration form…</div>
+    </div>
+
+    <div id="errorState" class="hidden">
+      <div class="result bad">
+        <div class="icon">!</div>
+        <h2>Can't open this form</h2>
+        <p id="errorText"></p>
+      </div>
+    </div>
+
+    <div id="closedState" class="hidden">
+      <div class="result bad">
+        <div class="icon">⏱</div>
+        <h2>Registration Closed</h2>
+        <p id="closedText">This drive is no longer accepting registrations.</p>
+      </div>
+    </div>
+
+    <div id="notEligibleState" class="hidden">
+      <div class="result bad">
+        <div class="icon">✕</div>
+        <h2>Not Eligible</h2>
+        <p id="notEligibleText"></p>
+      </div>
+    </div>
+
+    <div id="companyHeader" class="hidden">
+      <div class="brand-row" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+        <img id="brandLogoImg2" src="" alt="Gyan Ganga Group of Institutions" style="height: 46px; width: auto;">
+        <div>
+          <h1 id="companyHeading">Registration</h1>
+          <p id="companyDescription" class="sub" style="margin: 4px 0 0; display: none;"></p>
+        </div>
+      </div>
+
+      <a id="jdButton" href="#" target="_blank" rel="noopener" class="jd-btn hidden">View Job Description ↗</a>
+
+      <div id="countdownBanner" class="countdown-banner hidden">
+        <span class="cb-label">Closes in</span>
+        <span class="cb-timer" id="countdownTimer"></span>
+      </div>
+    </div>
+
+    <div id="enrollmentGate" class="hidden">
+      <form id="enrollmentGateForm">
+        <label for="gateEnrollment">Enrollment Number <span class="req">*</span></label>
+        <input id="gateEnrollment" name="gateEnrollment" type="text" inputmode="text" autocomplete="off"
+               autocapitalize="characters" placeholder="e.g. 21CS1234" required>
+        <div class="field-hint">No spaces allowed. We'll check your eligibility for this drive before showing the rest of the form.</div>
+        <div class="err" id="gateErr" style="display:none;"></div>
+        <button type="submit" id="gateSubmitBtn">Continue</button>
+      </form>
+    </div>
+
+    <div id="formView" class="hidden">
+      <form id="regForm">
+        <label for="enrollment">Enrollment Number <span class="req">*</span></label>
+        <input id="enrollment" name="enrollment" type="text" readonly>
+        <div class="field-hint">Not you? <a href="#" id="changeEnrollmentLink">Change enrollment number</a></div>
+
+        <div id="dynamicFields"></div>
+
+        <div id="cvFieldWrap" class="hidden">
+          <div class="section-label">Documents</div>
+          <label for="cvFile">Upload CV <span class="req">*</span></label>
+          <input id="cvFile" name="cvFile" type="file" accept=".pdf,.doc,.docx">
+          <div class="field-hint" id="cvHint">PDF or Word document only, max 5 MB.</div>
+        </div>
+
+        <div class="err" id="formErr" style="display:none;"></div>
+        <button type="submit" id="submitBtn">Submit Registration</button>
+      </form>
+    </div>
+
+
+    <div id="successState" class="hidden">
+      <div class="result ok">
+        <div class="icon">✓</div>
+        <h2>Registered!</h2>
+        <p id="successMessage"></p>
+        <p id="successWarn" class="warn-note hidden"></p>
+        <div class="qr-note" id="qrNote" style="display:none;">
+          <div class="qr-wrap">
+            <img id="successQrImg" alt="Your attendance QR code">
+          </div>
+          <p class="qr-caption">
+            Save this QR code (screenshot it) and bring it on drive day — a volunteer will scan it to mark your attendance.
+          </p>
+          <a id="qrDownloadLink" class="qr-save-btn" download="attendance-qr.png" href="#">Save QR Code</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // The form-view logo reuses the loading-view logo's already-embedded
+  // base64 image data instead of embedding the ~21KB base64 string a
+  // second time in the page markup — cuts the page's HTML payload by
+  // roughly a third, which is most of what was making this page slow to
+  // load, especially on mobile data.
+  document.getElementById('brandLogoImg2').src = document.getElementById('brandLogoSrc').src;
+
+  const companyName = PARAMS.company || '';
+  let formConfig = null;
+  const DEFAULT_MAX_CV_BYTES = 5 * 1024 * 1024; // 5 MB fallback if server didn't send a limit
+
+  function show(id) {
+    ['loadingState', 'errorState', 'closedState', 'notEligibleState', 'enrollmentGate', 'formView', 'successState'].forEach(s => {
+      document.getElementById(s).classList.toggle('hidden', s !== id);
+    });
+    // The company header (logo/heading/JD link/countdown) sits alongside
+    // both the enrollment gate and the full form, so it's on-screen the
+    // whole time a company's registration link is open — not just once a
+    // student is confirmed eligible.
+    document.getElementById('companyHeader').classList.toggle('hidden', id !== 'enrollmentGate' && id !== 'formView');
+  }
+
+  function showError(msg) {
+    document.getElementById('errorText').textContent = msg;
+    show('errorState');
+  }
+
+  function showClosed(msg) {
+    stopCountdown();
+    if (msg) document.getElementById('closedText').textContent = msg;
+    show('closedState');
+  }
+
+  function showNotEligible(msg) {
+    document.getElementById('notEligibleText').textContent = msg || 'You are not eligible for this drive.';
+    show('notEligibleState');
+  }
+
+  // ---------- Closing-time countdown ----------
+  let countdownTimerId = null;
+
+  function stopCountdown() {
+    if (countdownTimerId) { clearInterval(countdownTimerId); countdownTimerId = null; }
+  }
+
+  function formatCountdown(msRemaining) {
+    const totalSec = Math.max(0, Math.floor(msRemaining / 1000));
+    const days = Math.floor(totalSec / 86400);
+    const hours = Math.floor((totalSec % 86400) / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = totalSec % 60;
+    const pad = n => String(n).padStart(2, '0');
+    if (days > 0) return days + 'd ' + pad(hours) + 'h ' + pad(mins) + 'm';
+    if (hours > 0) return pad(hours) + 'h ' + pad(mins) + 'm ' + pad(secs) + 's';
+    return pad(mins) + 'm ' + pad(secs) + 's';
+  }
+
+  // Starts a live "closes in ..." banner above the form. When the deadline
+  // is reached, swaps the whole page over to the closed state — the
+  // server re-checks this independently on submit, so this is purely for
+  // a responsive UI, not the actual enforcement.
+  function startCountdown(closesAtIso) {
+    const closesAtMs = new Date(closesAtIso).getTime();
+    if (isNaN(closesAtMs)) return;
+    const banner = document.getElementById('countdownBanner');
+    const timerEl = document.getElementById('countdownTimer');
+    banner.classList.remove('hidden');
+
+    function tick() {
+      const remaining = closesAtMs - Date.now();
+      if (remaining <= 0) {
+        showClosed('This drive\'s registration deadline has passed.');
+        return;
+      }
+      timerEl.textContent = formatCountdown(remaining);
+      banner.classList.toggle('urgent', remaining <= 60 * 60 * 1000); // last hour
+    }
+
+    tick();
+    countdownTimerId = setInterval(tick, 1000);
+  }
+
+  if (!companyName) {
+    showError('No company specified. Ask the admin for the correct registration link.');
+  } else {
+    google.script.run
+      .withSuccessHandler(res => {
+        if (!res.success) { showError(res.message || 'Could not load this form.'); return; }
+        if (res.isClosed) { showClosed(); return; }
+        formConfig = res;
+        populateCompanyHeader(res);
+        show('enrollmentGate');
+        if (res.closesAt) startCountdown(res.closesAt);
+      })
+      .withFailureHandler(err => showError('Error: ' + err.message))
+      .getRegistrationFormForCompany(companyName);
+  }
+
+  function inputTypeFor(type) {
+    if (type === 'date') return 'date';
+    if (type === 'number') return 'number';
+    if (type === 'mobile') return 'tel';
+    if (type === 'email') return 'email';
+    return 'text';
+  }
+
+  // Builds a plain <select> populated from `options`, with a leading blank
+  // "choose one" placeholder. Shared by the fixed-option dropdowns below
+  // (gender/category/grad-degree) as well as branch/college.
+  function fillSelectOptions_(select, placeholderText, options) {
+    select.innerHTML = '';
+    const blank = document.createElement('option');
+    blank.value = ''; blank.textContent = placeholderText;
+    select.appendChild(blank);
+    (options || []).forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o; opt.textContent = o;
+      select.appendChild(opt);
+    });
+  }
+  function buildSelect(id, name, placeholderText, options) {
+    const select = document.createElement('select');
+    select.id = id;
+    select.name = name;
+    fillSelectOptions_(select, placeholderText, options);
+    return select;
+  }
+
+  // Hides/reveals the course-specific fields based on what's picked in the
+  // Course dropdown, and clears out whatever's in a field the moment it's
+  // hidden — so a value typed before switching courses (e.g. a B.Tech CGPA
+  // entered, then the student realizes they meant to pick MCA) can never
+  // silently ride along in the submission. Only ever called at all when
+  // the admin has actually ticked the Course field for this drive.
+  // Kept in sync with REGISTRATION_FORM_BTECH_ONLY_KEYS_ /
+  // REGISTRATION_FORM_MCA_MBA_ONLY_KEYS_ / REGISTRATION_FORM_GRAD_PERCENT_KEYS_
+  // in Code.gs.
+  const BTECH_ONLY_KEYS = ['BTech_CGPA'];
+  const MCA_MBA_ONLY_KEYS = ['MCA_Grad_Stream', 'MCA_MBA_Percent'];
+  const GRAD_PERCENT_KEYS = ['Grad_Marks'];
+  function clearField(key) {
+    const el = document.getElementById('f_' + key);
+    if (el) el.value = '';
+    const otherEl = document.getElementById('f_' + key + '_other');
+    if (otherEl) { otherEl.value = ''; otherEl.classList.add('hidden'); }
+  }
+  function setFieldVisible(key, visible) {
+    const wrap = document.getElementById('fieldWrap_' + key);
+    if (!wrap) return;
+    wrap.classList.toggle('hidden', !visible);
+    if (!visible) clearField(key);
+  }
+  function applyCourseVisibility(courseValue) {
+    const showBtech = courseValue === 'Engineering';
+    const showMcaMba = courseValue === 'MCA' || courseValue === 'Management';
+    // Graduation % is asked for MCA/Management (their prior UG %) and for
+    // Non Engineering Graduation (their own graduation %) — everyone
+    // except Engineering.
+    const showGradPercent = showMcaMba || courseValue === 'Non Engineering Graduation';
+    BTECH_ONLY_KEYS.forEach(k => setFieldVisible(k, showBtech));
+    MCA_MBA_ONLY_KEYS.forEach(k => setFieldVisible(k, showMcaMba));
+    GRAD_PERCENT_KEYS.forEach(k => setFieldVisible(k, showGradPercent));
+  }
+
+  // Branch dropdown's contents are driven entirely by the Course dropdown
+  // (formConfig.branchOptionsByCourse, keyed by course — see Code.gs).
+  // Called on initial render and every time Course changes. If this
+  // drive's admin didn't tick Course at all, there's no course context to
+  // filter by, so Branch instead shows every branch across every course,
+  // combined — same "no filtering" fallback as applyCourseVisibility.
+  function hasCourseField_() {
+    return !!(formConfig && formConfig.fields && formConfig.fields.some(x => x.key === 'Course'));
+  }
+  function refreshBranchOptions_(courseValue) {
+    const select = document.getElementById('f_Branch');
+    if (!select) return;
+    const hint = document.getElementById('branchHint');
+    const map = (formConfig && formConfig.branchOptionsByCourse) || {};
+    let options = [];
+    let placeholder = 'Select your branch';
+    let hintText = '';
+    if (hasCourseField_()) {
+      if (!courseValue) {
+        placeholder = 'Select your course first';
+        hintText = 'Pick a course above to see matching branches.';
+      } else {
+        options = map[courseValue] || [];
+      }
+    } else {
+      const seen = {};
+      Object.keys(map).forEach(c => (map[c] || []).forEach(b => {
+        if (!seen[b]) { seen[b] = true; options.push(b); }
+      }));
+    }
+    fillSelectOptions_(select, placeholder, options);
+    if (hint) hint.textContent = hintText;
+  }
+
+  // Company logo/heading/description/JD link — populated as soon as the
+  // config loads (so they're visible behind the enrollment gate too), not
+  // just once renderForm builds the full field list after eligibility
+  // passes. renderForm calls this again itself so it stays correct even
+  // if this is ever invoked out of order.
+  function populateCompanyHeader(cfg) {
+    document.getElementById('companyHeading').textContent = cfg.companyName + ' Registration Form';
+
+    const descEl = document.getElementById('companyDescription');
+    if (cfg.companyDescription) {
+      descEl.textContent = cfg.companyDescription;
+      descEl.style.display = '';
+    } else {
+      descEl.style.display = 'none';
+    }
+
+    const jdBtn = document.getElementById('jdButton');
+    if (cfg.jdFileUrl) {
+      jdBtn.href = cfg.jdFileUrl;
+      jdBtn.textContent = 'View Job Description ↗';
+      jdBtn.classList.remove('hidden');
+    } else {
+      jdBtn.classList.add('hidden');
+    }
+  }
+
+  function renderForm(cfg) {
+    populateCompanyHeader(cfg);
+
+    const container = document.getElementById('dynamicFields');
+    container.innerHTML = '';
+    const hasCourseField = cfg.fields.some(x => x.key === 'Course');
+
+    cfg.fields.forEach(f => {
+      // Every field's label + input(s) live in their own wrapper div, so
+      // the Course dropdown (if this drive asks for it) can show/hide a
+      // whole field — label, input, and hint together — as one unit.
+      const wrap = document.createElement('div');
+      wrap.id = 'fieldWrap_' + f.key;
+      container.appendChild(wrap);
+
+      const label = document.createElement('label');
+      label.setAttribute('for', 'f_' + f.key);
+      label.textContent = f.label + (f.minRequired !== null && f.minRequired !== undefined ? ' (minimum ' + f.minRequired + ' required)' : '');
+      wrap.appendChild(label);
+
+      if (f.type === 'course_select') {
+        const select = buildSelect('f_' + f.key, f.key, 'Select your course', cfg.courseOptions);
+        wrap.appendChild(select);
+        select.addEventListener('change', () => {
+          applyCourseVisibility(select.value);
+          refreshBranchOptions_(select.value);
+        });
+        return;
+      }
+
+      if (f.type === 'branch_select') {
+        const select = buildSelect('f_' + f.key, f.key, 'Select your branch', []);
+        wrap.appendChild(select);
+        const hint = document.createElement('div');
+        hint.className = 'field-hint';
+        hint.id = 'branchHint';
+        wrap.appendChild(hint);
+        return;
+      }
+
+      if (f.type === 'college_select') {
+        const select = buildSelect('f_' + f.key, f.key, 'Select your college', cfg.collegeOptions);
+        const otherOpt = document.createElement('option');
+        otherOpt.value = 'Other'; otherOpt.textContent = 'Other';
+        select.appendChild(otherOpt);
+        wrap.appendChild(select);
+
+        const otherInput = document.createElement('input');
+        otherInput.type = 'text';
+        otherInput.id = 'f_' + f.key + '_other';
+        otherInput.placeholder = 'Enter your college name';
+        otherInput.classList.add('hidden');
+        select.addEventListener('change', () => {
+          otherInput.classList.toggle('hidden', select.value !== 'Other');
+        });
+        wrap.appendChild(otherInput);
+        return;
+      }
+
+      if (f.type === 'gender_select') {
+        const select = buildSelect('f_' + f.key, f.key, 'Select gender', cfg.genderOptions);
+        wrap.appendChild(select);
+        return;
+      }
+
+      if (f.type === 'category_select') {
+        const select = buildSelect('f_' + f.key, f.key, 'Select category', cfg.categoryOptions);
+        wrap.appendChild(select);
+        return;
+      }
+
+      if (f.type === 'gap_select') {
+        const select = buildSelect('f_' + f.key, f.key, 'Select gap (years)', cfg.gapOptions);
+        wrap.appendChild(select);
+        return;
+      }
+
+      if (f.type === 'board_select') {
+        const select = buildSelect('f_' + f.key, f.key, 'Select board', cfg.boardOptions);
+        wrap.appendChild(select);
+        return;
+      }
+
+      if (f.type === 'medium_select') {
+        const select = buildSelect('f_' + f.key, f.key, 'Select medium', cfg.mediumOptions);
+        wrap.appendChild(select);
+        return;
+      }
+
+      if (f.type === 'year_select') {
+        const select = buildSelect('f_' + f.key, f.key, 'Select year of passing', cfg.yearOptions);
+        wrap.appendChild(select);
+        return;
+      }
+
+      if (f.type === 'grad_degree_select') {
+        // Same pattern as College above: picking "Other" reveals a
+        // free-text box right here, and whatever's typed into it is what
+        // actually gets submitted for this field — not a separate field
+        // that has to be ticked on its own to exist.
+        const select = buildSelect('f_' + f.key, f.key, 'Select your graduation degree', cfg.gradDegreeOptions);
+        const otherOpt = document.createElement('option');
+        otherOpt.value = 'Other'; otherOpt.textContent = 'Other';
+        select.appendChild(otherOpt);
+        wrap.appendChild(select);
+
+        const otherInput = document.createElement('input');
+        otherInput.type = 'text';
+        otherInput.id = 'f_' + f.key + '_other';
+        otherInput.placeholder = 'Enter your graduation stream (e.g. B.E., B.Arch, etc.)';
+        otherInput.classList.add('hidden');
+        select.addEventListener('change', () => {
+          otherInput.classList.toggle('hidden', select.value !== 'Other');
+        });
+        wrap.appendChild(otherInput);
+        return;
+      }
+
+      const input = document.createElement('input');
+      input.type = inputTypeFor(f.type);
+      input.id = 'f_' + f.key;
+      input.name = f.key;
+      if (f.type === 'number') input.step = 'any';
+      if (f.key === 'BTech_CGPA') {
+        // 0–10 scale — enforced here too (not just server-side) so a
+        // student sees the problem immediately instead of at submit time.
+        input.min = '0';
+        input.max = '10';
+      }
+      if (f.type === 'mobile') {
+        input.inputMode = 'numeric';
+        input.maxLength = 10;
+        input.placeholder = '10-digit mobile number';
+        input.addEventListener('input', () => {
+          input.value = input.value.replace(/\D/g, '').slice(0, 10);
+        });
+      }
+      if (f.key === '10th_Marks_Obtained' || f.key === '12th_Marks_Obtained') {
+        input.placeholder = 'e.g. 432';
+      }
+      if (f.key === '10th_Total_Marks' || f.key === '12th_Total_Marks') {
+        input.placeholder = 'e.g. 500';
+      }
+      wrap.appendChild(input);
+      if (f.key === 'BTech_CGPA') {
+        const hint = document.createElement('div');
+        hint.className = 'field-hint';
+        hint.textContent = 'On a 0–10 scale.';
+        wrap.appendChild(hint);
+      }
+    });
+
+    // Custom Questions — the up-to-3 ad-hoc slots this company enabled
+    // (see getRegistrationFormForCompany in Code.gs), always rendered
+    // after every fixed field above, in slot order. Only enabled slots
+    // are ever sent down, so there's nothing to filter here.
+    (cfg.customQuestions || []).forEach(q => {
+      const wrap = document.createElement('div');
+      wrap.id = 'fieldWrap_' + q.key;
+      container.appendChild(wrap);
+
+      const label = document.createElement('label');
+      label.setAttribute('for', 'f_' + q.key);
+      label.textContent = q.label;
+      if (q.required) {
+        const req = document.createElement('span');
+        req.className = 'req';
+        req.textContent = ' *';
+        label.appendChild(req);
+      }
+      wrap.appendChild(label);
+
+      if (q.type === 'yes_no') {
+        wrap.appendChild(buildSelect('f_' + q.key, q.key, 'Select an answer', ['Yes', 'No']));
+        return;
+      }
+
+      if (q.type === 'dropdown') {
+        wrap.appendChild(buildSelect('f_' + q.key, q.key, 'Select an option', q.options || []));
+        return;
+      }
+
+      if (q.type === 'radio') {
+        const group = document.createElement('div');
+        group.id = 'f_' + q.key;
+        group.className = 'choice-group';
+        (q.options || []).forEach((opt, i) => {
+          const optLabel = document.createElement('label');
+          optLabel.className = 'choice-option';
+          const radio = document.createElement('input');
+          radio.type = 'radio';
+          radio.name = 'f_' + q.key;
+          radio.id = 'f_' + q.key + '_' + i;
+          radio.value = opt;
+          optLabel.appendChild(radio);
+          optLabel.appendChild(document.createTextNode(opt));
+          group.appendChild(optLabel);
+        });
+        wrap.appendChild(group);
+        return;
+      }
+
+      if (q.type === 'checkbox') {
+        const group = document.createElement('div');
+        group.id = 'f_' + q.key;
+        group.className = 'choice-group';
+        (q.options || []).forEach((opt, i) => {
+          const optLabel = document.createElement('label');
+          optLabel.className = 'choice-option';
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.id = 'f_' + q.key + '_' + i;
+          cb.value = opt;
+          cb.dataset.customCheckboxFor = q.key;
+          optLabel.appendChild(cb);
+          optLabel.appendChild(document.createTextNode(opt));
+          group.appendChild(optLabel);
+        });
+        wrap.appendChild(group);
+        return;
+      }
+
+      // 'text' — plain free-typed answer, same as any other text field.
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.id = 'f_' + q.key;
+      input.name = q.key;
+      wrap.appendChild(input);
+    });
+
+    // Until a course is actually picked, hide every course-specific field
+    // rather than guessing — the change listener above takes over from here.
+    if (hasCourseField) applyCourseVisibility('');
+    refreshBranchOptions_('');
+
+    document.getElementById('cvFieldWrap').classList.toggle('hidden', !cfg.includeCV);
+    const maxBytes = cfg.maxCVSizeBytes || DEFAULT_MAX_CV_BYTES;
+    document.getElementById('cvHint').textContent =
+      'PDF or Word document only, max ' + Math.round(maxBytes / (1024 * 1024)) + ' MB.';
+
+    show('formView');
+  }
+
+  // Enrollment number is now readonly on the main form — it's set once,
+  // from whatever the student typed into the eligibility gate below, and
+  // can only change by going back through that gate again (see
+  // changeEnrollmentLink), so the number that got the "you're eligible"
+  // check is always the exact one the form later submits.
+  let checkedEnrollment = '';
+
+  const enrollmentGateForm = document.getElementById('enrollmentGateForm');
+  const gateEnrollmentInput = document.getElementById('gateEnrollment');
+  const gateErr = document.getElementById('gateErr');
+  const gateSubmitBtn = document.getElementById('gateSubmitBtn');
+
+  // Strip whitespace as the student types, so it's simply impossible to
+  // check/submit an enrollment number with a space in it.
+  gateEnrollmentInput.addEventListener('input', () => {
+    const withoutSpaces = gateEnrollmentInput.value.replace(/\s/g, '');
+    if (withoutSpaces !== gateEnrollmentInput.value) gateEnrollmentInput.value = withoutSpaces;
+  });
+
+  enrollmentGateForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    gateErr.style.display = 'none';
+    const enrollment = gateEnrollmentInput.value.trim();
+    if (!enrollment) {
+      gateErr.textContent = 'Enrollment number is required.';
+      gateErr.style.display = 'block';
+      return;
+    }
+    gateSubmitBtn.disabled = true;
+    gateSubmitBtn.textContent = 'Checking…';
+    google.script.run
+      .withSuccessHandler(res => {
+        gateSubmitBtn.disabled = false;
+        gateSubmitBtn.textContent = 'Continue';
+        if (!res.success) {
+          if (res.closed) { showClosed(res.message); return; }
+          showNotEligible(res.message);
+          return;
+        }
+        checkedEnrollment = enrollment;
+        document.getElementById('enrollment').value = enrollment;
+        renderForm(formConfig);
+      })
+      .withFailureHandler(err => {
+        gateSubmitBtn.disabled = false;
+        gateSubmitBtn.textContent = 'Continue';
+        gateErr.textContent = 'Error: ' + err.message;
+        gateErr.style.display = 'block';
+      })
+      .checkRegistrationEligibility(companyName, enrollment);
+  });
+
+  // "Not you?" — sends the student back to re-enter and re-check a
+  // different enrollment number, prefilled with whatever passed last time
+  // as a starting point.
+  document.getElementById('changeEnrollmentLink').addEventListener('click', function (e) {
+    e.preventDefault();
+    gateEnrollmentInput.value = checkedEnrollment;
+    gateErr.style.display = 'none';
+    show('enrollmentGate');
+  });
+
+  function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = () => reject(new Error('Could not read the selected file.'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const form = document.getElementById('regForm');
+  const formErr = document.getElementById('formErr');
+  const submitBtn = document.getElementById('submitBtn');
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    formErr.style.display = 'none';
+
+    const enrollment = document.getElementById('enrollment').value.trim();
+    if (!enrollment) {
+      formErr.textContent = 'Enrollment number is required.';
+      formErr.style.display = 'block';
+      return;
+    }
+    if (/\s/.test(enrollment)) {
+      formErr.textContent = 'Enrollment number cannot contain any spaces.';
+      formErr.style.display = 'block';
+      return;
+    }
+
+    const fieldValues = {};
+    let clientErr = '';
+    formConfig.fields.forEach(f => {
+      // College and Graduation Degree both fall back to a free-text box
+      // when "Other" is picked — the submitted value is whatever was
+      // typed there, not the literal word "Other".
+      if (f.type === 'college_select' || f.type === 'grad_degree_select') {
+        const select = document.getElementById('f_' + f.key);
+        const val = select ? select.value : '';
+        if (val === 'Other') {
+          const otherEl = document.getElementById('f_' + f.key + '_other');
+          fieldValues[f.key] = otherEl ? otherEl.value.trim() : '';
+        } else {
+          fieldValues[f.key] = val;
+        }
+        return;
+      }
+      const el = document.getElementById('f_' + f.key);
+      const val = el ? el.value.trim() : '';
+      fieldValues[f.key] = val;
+      if (f.type === 'mobile' && val && !/^\d{10}$/.test(val)) {
+        clientErr = f.label + ' must be exactly 10 digits (no +91 or spaces).';
+      }
+      if (f.key === 'BTech_CGPA' && val) {
+        const cgpaNum = parseFloat(val);
+        if (isNaN(cgpaNum) || cgpaNum < 0 || cgpaNum > 10) {
+          clientErr = 'B.Tech CGPA must be a number between 0 and 10.';
+        }
+      }
+    });
+
+    // Custom Questions — radio/checkbox groups aren't a single element
+    // with an id matching 'f_' + key (that id belongs to their wrapping
+    // group div instead), so they're read out separately here rather
+    // than through the generic f.type loop above. Checkbox answers are
+    // joined with '; ' for submission — Code.gs splits them back apart
+    // to validate and store.
+    (formConfig.customQuestions || []).forEach(q => {
+      let val = '';
+      if (q.type === 'radio') {
+        const checked = document.querySelector('input[name="f_' + q.key + '"]:checked');
+        val = checked ? checked.value : '';
+      } else if (q.type === 'checkbox') {
+        const checked = document.querySelectorAll('input[data-custom-checkbox-for="' + q.key + '"]:checked');
+        val = Array.prototype.map.call(checked, c => c.value).join('; ');
+      } else {
+        const el = document.getElementById('f_' + q.key);
+        val = el ? el.value.trim() : '';
+      }
+      fieldValues[q.key] = val;
+      if (!clientErr && q.required && !val) {
+        clientErr = '"' + q.label + '" is required.';
+      }
+    });
+
+    // Marks Obtained can't exceed Out of Total Marks — mirrors the
+    // server-side check in submitRegistrationForm, just surfaced to the
+    // student immediately instead of after a round-trip.
+    [['10th_Marks_Obtained', '10th_Total_Marks', '10th'], ['12th_Marks_Obtained', '12th_Total_Marks', '12th']].forEach(pair => {
+      const obtainedKey = pair[0], totalKey = pair[1], label = pair[2];
+      if (fieldValues[obtainedKey] === undefined || fieldValues[totalKey] === undefined) return;
+      const obtained = parseFloat(fieldValues[obtainedKey]);
+      const total = parseFloat(fieldValues[totalKey]);
+      if (!clientErr && !isNaN(obtained) && !isNaN(total) && obtained > total) {
+        clientErr = 'Marks Obtained in ' + label + ' cannot be more than Out of Total Marks of ' + label + '.';
+      }
+    });
+
+    if (!clientErr && formConfig.fields.some(f => f.key === 'Course') && !fieldValues.Course) {
+      clientErr = 'Please select your Course.';
+    }
+
+    if (clientErr) {
+      formErr.textContent = clientErr;
+      formErr.style.display = 'block';
+      return;
+    }
+
+    let cvFile = null;
+    if (formConfig.includeCV) {
+      const fileInput = document.getElementById('cvFile');
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) {
+        formErr.textContent = 'Please attach your CV.';
+        formErr.style.display = 'block';
+        return;
+      }
+      const maxBytes = formConfig.maxCVSizeBytes || DEFAULT_MAX_CV_BYTES;
+      if (file.size > maxBytes) {
+        formErr.textContent = 'CV file is too large — please upload a file under ' + Math.round(maxBytes / (1024 * 1024)) + ' MB.';
+        formErr.style.display = 'block';
+        return;
+      }
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Preparing file…';
+      try {
+        const base64Data = await readFileAsBase64(file);
+        cvFile = { base64Data: base64Data, fileName: file.name, mimeType: file.type };
+      } catch (readErr) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Registration';
+        formErr.textContent = readErr.message;
+        formErr.style.display = 'block';
+        return;
+      }
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting…';
+
+    google.script.run
+      .withSuccessHandler(res => {
+        if (!res.success) {
+          if (res.closed) { showClosed(res.message); return; }
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Submit Registration';
+          formErr.textContent = res.message || 'Could not submit your registration.';
+          formErr.style.display = 'block';
+          return;
+        }
+        const successName = res.studentName || fieldValues.Name || '';
+        document.getElementById('successMessage').textContent =
+          (successName ? successName + ', ' : '') + 'You have successfully registered for the ' + companyName + ' drive.';
+        if (res.warning) {
+          const warnEl = document.getElementById('successWarn');
+          warnEl.textContent = res.warning;
+          warnEl.classList.remove('hidden');
+        }
+        if (res.qrPayload) {
+          const qrImg = document.getElementById('successQrImg');
+          const qrDownload = document.getElementById('qrDownloadLink');
+          const qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=8&data='
+            + encodeURIComponent(res.qrPayload);
+          qrImg.src = qrApiUrl;
+          qrDownload.href = qrApiUrl;
+          document.getElementById('qrNote').style.display = 'block';
+        }
+        stopCountdown();
+        show('successState');
+      })
+      .withFailureHandler(err => {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Registration';
+        formErr.textContent = 'Error: ' + err.message;
+        formErr.style.display = 'block';
+      })
+      .submitRegistrationForm(companyName, enrollment, fieldValues, cvFile);
+  });
+</script>
+</body>
+</html>

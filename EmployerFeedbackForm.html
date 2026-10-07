@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<script src="/gas-shim.js"></script>
+<title>Employer Feedback — Gyan Ganga Group</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --ink:#1e293b; --mute:#64748b; --line:#e2e8f0; --brand:#4f46e5; --bg:#f1f5f9; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; line-height:1.5; }
+  .wrap { max-width:680px; margin:0 auto; padding:16px 14px 60px; }
+  .hero { background:linear-gradient(135deg,#4f46e5,#7c3aed); color:#fff; border-radius:18px; padding:22px 20px; margin-bottom:14px; }
+  .hero small { opacity:.85; letter-spacing:.06em; text-transform:uppercase; font-weight:700; font-size:11px; }
+  .hero h1 { margin:6px 0 4px; font-size:22px; }
+  .hero p { margin:0; opacity:.9; font-size:14px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px 16px; margin-bottom:14px; }
+  .card h2 { margin:0 0 2px; font-size:16px; }
+  .card .sub { color:var(--mute); font-size:13px; margin:0 0 14px; }
+  label.f { display:block; font-size:13px; font-weight:600; margin:12px 0 5px; }
+  input[type=text], input[type=email], input[type=tel], input[type=number], textarea {
+    width:100%; border:1px solid #cbd5e1; border-radius:10px; padding:11px 12px; font:inherit; background:#fff; }
+  textarea { min-height:84px; resize:vertical; }
+  input:focus, textarea:focus { outline:2px solid #c7d2fe; border-color:var(--brand); }
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  @media (max-width:520px) { .row2 { grid-template-columns:1fr; } }
+  .q { padding:12px 0; border-top:1px solid #f1f5f9; }
+  .q:first-of-type { border-top:0; }
+  .q .t { font-size:14px; font-weight:600; margin-bottom:8px; }
+  .scale { display:flex; gap:6px; }
+  .scale button { flex:1; min-width:0; border:1px solid #cbd5e1; background:#fff; border-radius:10px; padding:10px 0; font:inherit; font-weight:700; color:#475569; cursor:pointer; }
+  .scale button.on { background:var(--brand); border-color:var(--brand); color:#fff; }
+  .ends { display:flex; justify-content:space-between; font-size:11px; color:var(--mute); margin-top:4px; }
+  .nps { flex-wrap:wrap; }
+  .nps button { flex:0 0 calc(9.09% - 5px); padding:9px 0; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; }
+  .chips button { border:1px solid #cbd5e1; background:#fff; border-radius:999px; padding:8px 14px; font:inherit; font-size:13px; font-weight:600; color:#475569; cursor:pointer; }
+  .chips button.on { background:#eef2ff; border-color:var(--brand); color:var(--brand); }
+  .chk { display:flex; gap:10px; align-items:flex-start; font-size:13px; color:#475569; margin-top:10px; }
+  .chk input { margin-top:3px; width:18px; height:18px; }
+  .submit { width:100%; background:var(--brand); color:#fff; border:0; border-radius:12px; padding:15px; font:inherit; font-size:16px; font-weight:700; cursor:pointer; }
+  .submit:disabled { opacity:.6; }
+  .err { color:#b91c1c; background:#fee2e2; border:1px solid #fecaca; border-radius:10px; padding:10px 12px; font-size:13px; margin-bottom:12px; }
+  .center { text-align:center; padding:40px 18px; }
+  .center .big { font-size:46px; }
+  .foot { text-align:center; color:var(--mute); font-size:12px; margin-top:18px; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="card center">Loading…</div></div>
+
+<script>
+  const COMPANY = PARAMS.company || '';
+  const KEY = PARAMS.k || '';
+  const MEMBER = PARAMS.m || '';
+  const app = document.getElementById('app');
+  const form = {};   // answers keyed by sheet column name
+  let meta = null;
+
+  const DRIVE_QS = [
+    ['R_Communication', 'Coordination & communication before the drive'],
+    ['R_Logistics', 'Venue, seating, internet and refreshments'],
+    ['R_Team_Support', 'Support from the placement team and student volunteers'],
+    ['R_Shortlist_Quality', 'Relevance of the students shortlisted for your criteria'],
+    ['R_Punctuality', 'Punctuality and discipline of students on the day']
+  ];
+  const CAND_QS = [
+    ['R_Technical', 'Technical / domain knowledge'],
+    ['R_Communication_Skills', 'Communication skills'],
+    ['R_Problem_Solving', 'Aptitude and problem solving'],
+    ['R_Professionalism', 'Attitude and professionalism'],
+    ['R_Job_Readiness', 'Overall job readiness']
+  ];
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  function scale(key, lo, hi) {
+    const cur = Number(form[key]);
+    let h = '<div class="scale">';
+    for (let i = 1; i <= 5; i++) h += `<button type="button" class="${cur === i ? 'on' : ''}" onclick="setVal('${key}',${i})">${i}</button>`;
+    return h + '</div><div class="ends"><span>' + lo + '</span><span>' + hi + '</span></div>';
+  }
+  function rateBlock(list) {
+    return list.map(([k, t]) => `<div class="q"><div class="t">${t}</div>${scale(k, 'Poor', 'Excellent')}</div>`).join('');
+  }
+  function chips(key, opts) {
+    return '<div class="chips">' + opts.map(o =>
+      `<button type="button" class="${form[key] === o ? 'on' : ''}" onclick="setVal('${key}','${o}')">${o}</button>`).join('') + '</div>';
+  }
+  function setVal(k, v) { form[k] = (form[k] === v ? '' : v); draw(); }
+  function bind(k, v) { form[k] = v; }
+
+  function draw() {
+    const y = window.scrollY;
+    const branches = (meta.branches || []);
+    const nps = Array.from({ length: 11 }, (_, i) =>
+      `<button type="button" class="${String(form.Recommend_Score) === String(i) ? 'on' : ''}" onclick="setVal('Recommend_Score',${i})">${i}</button>`).join('');
+    app.innerHTML = `
+      <div class="hero">
+        <small>Gyan Ganga Group · Training &amp; Placement Cell</small>
+        <h1>Employer Feedback</h1>
+        <p>${esc(meta.company)}${meta.date ? ' · Drive on ' + esc(meta.date) : ''} — thank you for visiting our campus. This takes about 3 minutes.</p>
+      </div>
+      <div id="err"></div>
+
+      <div class="card">
+        <h2>About you</h2><p class="sub">So we know who to thank and follow up with.</p>
+        <label class="f">Your name *</label>
+        <input type="text" value="${esc(form.Respondent_Name)}" oninput="bind('Respondent_Name',this.value)">
+        <div class="row2">
+          <div><label class="f">Designation</label><input type="text" value="${esc(form.Designation)}" oninput="bind('Designation',this.value)"></div>
+          <div><label class="f">Phone</label><input type="tel" value="${esc(form.Phone)}" oninput="bind('Phone',this.value)"></div>
+        </div>
+        <label class="f">Email</label>
+        <input type="email" value="${esc(form.Email)}" oninput="bind('Email',this.value)">
+      </div>
+
+      <div class="card">
+        <h2>The drive</h2><p class="sub">1 = Poor, 5 = Excellent</p>
+        ${rateBlock(DRIVE_QS)}
+      </div>
+
+      <div class="card">
+        <h2>The candidates</h2><p class="sub">Based on the students you interacted with.</p>
+        ${rateBlock(CAND_QS)}
+        <div class="q"><div class="t">Compared with other colleges you recruit from, our students were…</div>
+          ${chips('Compared_To_Other_Colleges', ['Better', 'About the same', 'Below', 'Not sure'])}</div>
+      </div>
+
+      <div class="card">
+        <h2>Hiring outcome &amp; next year</h2>
+        <label class="f">Number of offers made (if known)</label>
+        <input type="number" min="0" value="${esc(form.Offers_Made)}" oninput="bind('Offers_Made',this.value)">
+        <div class="q"><div class="t">Would you recruit from our campus again?</div>
+          ${chips('Recruit_Again', ['Yes', 'Maybe', 'No'])}</div>
+        <div class="q"><div class="t">How likely are you to recommend our campus to other employers?</div>
+          <div class="scale nps">${nps}</div>
+          <div class="ends"><span>0 · Not likely</span><span>10 · Very likely</span></div></div>
+        <label class="f">Roles / branches you would hire for next year</label>
+        <input type="text" placeholder="${branches.length ? 'e.g. ' + esc(branches.slice(0, 3).join(', ')) : 'e.g. Software Engineer — CSE, IT'}" value="${esc(form.Next_Year_Roles)}" oninput="bind('Next_Year_Roles',this.value)">
+        <label class="f">Approximate number of students you may hire next year</label>
+        <input type="text" value="${esc(form.Next_Year_Hiring)}" oninput="bind('Next_Year_Hiring',this.value)">
+      </div>
+
+      <div class="card">
+        <h2>In your own words</h2>
+        <label class="f">What went well?</label>
+        <textarea oninput="bind('Went_Well',this.value)">${esc(form.Went_Well)}</textarea>
+        <label class="f">What could we improve?</label>
+        <textarea oninput="bind('To_Improve',this.value)">${esc(form.To_Improve)}</textarea>
+        <label class="f">Skills our students should build before they face recruiters</label>
+        <textarea oninput="bind('Skill_Gaps',this.value)">${esc(form.Skill_Gaps)}</textarea>
+        <label class="f">Anything else?</label>
+        <textarea oninput="bind('Other_Remarks',this.value)">${esc(form.Other_Remarks)}</textarea>
+        <div class="q"><div class="t">Overall, how satisfied are you with this campus drive?</div>${scale('R_Overall', 'Not satisfied', 'Very satisfied')}</div>
+        <label class="chk"><input type="checkbox" ${form.May_Quote === 'Yes' ? 'checked' : ''} onchange="bind('May_Quote',this.checked?'Yes':'No')">
+          <span>We may quote this feedback (without your name) in internal reports to improve training.</span></label>
+      </div>
+
+      <button class="submit" id="sbtn" onclick="submitForm()">Submit feedback</button>
+      <div class="foot">Your responses go only to the Training &amp; Placement Cell.</div>`;
+    window.scrollTo(0, y);
+  }
+
+  function submitForm() {
+    const err = document.getElementById('err');
+    const btn = document.getElementById('sbtn');
+    err.innerHTML = '';
+    btn.disabled = true; btn.textContent = 'Submitting…';
+    google.script.run
+      .withSuccessHandler(res => {
+        if (!res.success) {
+          err.innerHTML = '<div class="err">' + esc(res.message || 'Could not submit.') + '</div>';
+          btn.disabled = false; btn.textContent = 'Submit feedback';
+          window.scrollTo(0, 0);
+          return;
+        }
+        app.innerHTML = '<div class="card center"><div class="big">🙏</div><h2>Thank you!</h2>' +
+          '<p class="sub">Your feedback has been recorded. We truly value your time and look forward to hosting you again.</p></div>';
+        window.scrollTo(0, 0);
+      })
+      .withFailureHandler(e => {
+        err.innerHTML = '<div class="err">Error: ' + esc(e.message) + '. Please try again.</div>';
+        btn.disabled = false; btn.textContent = 'Submit feedback';
+      })
+      .submitEmployerFeedback(COMPANY, KEY, form, MEMBER);
+  }
+
+  google.script.run
+    .withSuccessHandler(res => {
+      if (!res.success) { app.innerHTML = '<div class="card center"><h2>Link not valid</h2><p class="sub">' + esc(res.message) + '</p></div>'; return; }
+      meta = res;
+      form.Respondent_Name = meta.pocName || '';
+      form.Email = meta.pocEmail || '';
+      draw();
+    })
+    .withFailureHandler(e => { app.innerHTML = '<div class="card center"><h2>Something went wrong</h2><p class="sub">' + esc(e.message) + '</p></div>'; })
+    .getEmployerFeedbackFormData(COMPANY, KEY, MEMBER);
+</script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+<script src="/gas-shim.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <title>Interview Feedback</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
+    [x-cloak] { display: none !important; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+  <div class="max-w-xl mx-auto px-4 py-8">
+    <div class="text-center mb-6">
+      <h1 class="text-xl font-bold text-slate-800">Interview Process Feedback</h1>
+      <p class="text-sm text-slate-500 mt-1" id="companyLabel"></p>
+    </div>
+
+    <!-- STEP 1: enrollment gate -->
+    <div id="gateCard" class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+      <label class="block text-sm font-medium text-slate-600 mb-1">Enrollment Number</label>
+      <input id="enrollmentInput" type="text" placeholder="e.g. 21BCS0012"
+        class="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-base mb-3" autocomplete="off">
+      <button id="continueBtn"
+        class="w-full bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 text-white font-medium px-4 py-2.5 rounded-lg">
+        Continue
+      </button>
+      <p id="gateError" class="text-sm text-red-600 mt-3 hidden"></p>
+      <p id="gateLoading" class="text-sm text-slate-400 mt-3 hidden">Checking…</p>
+    </div>
+
+    <!-- STEP 2: dynamic form -->
+    <div id="formCard" class="hidden">
+      <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mb-4">
+        <p class="text-sm text-slate-600">
+          Hi <span id="studentNameLabel" class="font-semibold"></span> — thanks for going through the process with
+          <span id="companyLabel2" class="font-semibold"></span>. A few quick questions about each round will help
+          juniors prepare better. Everything below is optional — answer whatever you remember.
+        </p>
+      </div>
+
+      <div id="sectionsHost"></div>
+
+      <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mt-4">
+        <button id="submitBtn"
+          class="w-full bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 text-white font-medium px-4 py-2.5 rounded-lg">
+          Submit Feedback
+        </button>
+        <p id="submitError" class="text-sm text-red-600 mt-3 hidden"></p>
+        <p id="submitLoading" class="text-sm text-slate-400 mt-3 hidden">Saving…</p>
+      </div>
+    </div>
+
+    <!-- STEP 3: thank-you -->
+    <div id="doneCard" class="hidden bg-white border border-slate-200 rounded-2xl shadow-sm p-8 text-center">
+      <div class="text-emerald-600 text-4xl mb-2">&#10003;</div>
+      <h2 class="text-lg font-semibold text-slate-800">Thanks for the feedback!</h2>
+      <p class="text-sm text-slate-500 mt-1">Your response has been recorded. You can close this page now.</p>
+    </div>
+  </div>
+
+  <script>
+    const COMPANY_NAME = PARAMS.company || '';
+    document.getElementById('companyLabel').textContent = COMPANY_NAME;
+    document.getElementById('companyLabel2').textContent = COMPANY_NAME;
+
+    let schema = [];
+    let enrollmentNo = '';
+    let studentName = '';
+
+    function showError(elId, msg) {
+      const el = document.getElementById(elId);
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+    function hideError(elId) {
+      document.getElementById(elId).classList.add('hidden');
+    }
+
+    document.getElementById('continueBtn').addEventListener('click', () => {
+      const val = document.getElementById('enrollmentInput').value.trim();
+      hideError('gateError');
+      if (!val) { showError('gateError', 'Please enter your Enrollment Number.'); return; }
+      document.getElementById('continueBtn').disabled = true;
+      document.getElementById('gateLoading').classList.remove('hidden');
+
+      google.script.run
+        .withSuccessHandler(res => {
+          document.getElementById('continueBtn').disabled = false;
+          document.getElementById('gateLoading').classList.add('hidden');
+          if (!res.success) {
+            showError('gateError', res.message || 'Something went wrong.');
+            return;
+          }
+          enrollmentNo = val;
+          studentName = res.studentName || '';
+          schema = res.schema || [];
+          renderForm(res.existing || null);
+          document.getElementById('gateCard').classList.add('hidden');
+          document.getElementById('formCard').classList.remove('hidden');
+        })
+        .withFailureHandler(err => {
+          document.getElementById('continueBtn').disabled = false;
+          document.getElementById('gateLoading').classList.add('hidden');
+          showError('gateError', 'Error: ' + err.message);
+        })
+        .getFeedbackFormForStudent(COMPANY_NAME, val);
+    });
+
+    function renderForm(existing) {
+      document.getElementById('studentNameLabel').textContent = studentName || 'there';
+      const host = document.getElementById('sectionsHost');
+      host.innerHTML = '';
+
+      schema.forEach((section, idx) => {
+        const card = document.createElement('div');
+        card.className = 'bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mb-4';
+
+        const heading = document.createElement('h3');
+        heading.className = 'font-semibold text-slate-800 mb-3';
+        heading.textContent = (idx + 1) + '. ' + section.Round_Name;
+        card.appendChild(heading);
+
+        section.fields.forEach(field => {
+          const wrap = document.createElement('div');
+          wrap.className = 'mb-3 last:mb-0';
+
+          const label = document.createElement('label');
+          label.className = 'block text-xs font-medium text-slate-500 mb-1';
+          label.textContent = field.label + (section.type === 'gd' ? '' : ' (optional)');
+          wrap.appendChild(label);
+
+          const input = document.createElement('textarea');
+          input.rows = section.type === 'gd' ? 2 : 2;
+          input.placeholder = field.placeholder || '';
+          input.dataset.key = field.key;
+          input.className = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm feedback-field';
+          if (existing && existing[field.key]) input.value = existing[field.key];
+          wrap.appendChild(input);
+
+          card.appendChild(wrap);
+        });
+
+        host.appendChild(card);
+      });
+    }
+
+    document.getElementById('submitBtn').addEventListener('click', () => {
+      hideError('submitError');
+      const answers = {};
+      document.querySelectorAll('.feedback-field').forEach(el => {
+        answers[el.dataset.key] = el.value.trim();
+      });
+
+      document.getElementById('submitBtn').disabled = true;
+      document.getElementById('submitLoading').classList.remove('hidden');
+
+      google.script.run
+        .withSuccessHandler(res => {
+          document.getElementById('submitBtn').disabled = false;
+          document.getElementById('submitLoading').classList.add('hidden');
+          if (!res.success) {
+            showError('submitError', res.message || 'Could not save your feedback.');
+            return;
+          }
+          document.getElementById('formCard').classList.add('hidden');
+          document.getElementById('doneCard').classList.remove('hidden');
+        })
+        .withFailureHandler(err => {
+          document.getElementById('submitBtn').disabled = false;
+          document.getElementById('submitLoading').classList.add('hidden');
+          showError('submitError', 'Error: ' + err.message);
+        })
+        .submitCompanyFeedback(COMPANY_NAME, enrollmentNo, studentName, answers);
+    });
+  </script>
+</body>
+</html>

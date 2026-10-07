@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base target="_top">
+<script src="/gas-shim.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Online Test</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; }
+  [x-cloak] { display: none !important; }
+  .fade-in { animation: fadeIn .25s ease-out; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+</style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800" x-data="testApp()" x-init="init()" x-cloak>
+
+  <!-- ============ GATE: enrollment number entry ============ -->
+  <div x-show="stage === 'gate'" x-cloak class="min-h-screen flex items-center justify-center p-4 fade-in">
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 w-full max-w-sm">
+      <h1 class="text-lg font-bold text-slate-800 mb-1">Online Test</h1>
+      <p class="text-sm text-slate-500 mb-5" x-text="companyName"></p>
+
+      <label class="text-xs font-medium text-slate-500">Enrollment Number</label>
+      <input type="text" x-model="enrollmentNo" @keydown.enter="startTest()"
+        placeholder="e.g. 21XX0000123" autocomplete="off"
+        class="w-full mt-1 mb-4 border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 outline-none">
+
+      <p x-show="errorMsg" x-text="errorMsg" class="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 mb-4"></p>
+
+      <button @click="startTest()" :disabled="loading || !enrollmentNo.trim()"
+        class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition-colors">
+        <span x-show="!loading">Start Test</span>
+        <span x-show="loading">Checking…</span>
+      </button>
+
+      <p class="text-xs text-slate-400 mt-4 text-center">
+        Once you start, the timer runs continuously. Closing this tab does not pause it — you can reopen this
+        same link to resume with time remaining.
+      </p>
+    </div>
+  </div>
+
+  <!-- ============ ALREADY SUBMITTED / RESULT ============ -->
+  <div x-show="stage === 'result'" x-cloak class="min-h-screen flex items-center justify-center p-4 fade-in">
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-8 w-full max-w-sm text-center">
+      <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-emerald-50 flex items-center justify-center">
+        <svg class="w-7 h-7 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <h2 class="font-bold text-slate-800 mb-1">Test Submitted</h2>
+      <p class="text-sm text-slate-500 mb-1" x-text="studentName"></p>
+      <p class="text-xs text-slate-400 mb-5" x-text="companyName"></p>
+      <p x-show="autoSubmitted" class="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-4">
+        Time ran out — your test was submitted automatically with the answers you'd marked so far.
+      </p>
+      <div class="bg-slate-50 border border-slate-200 rounded-xl py-4 mb-2">
+        <p class="text-3xl font-bold text-indigo-700"><span x-text="obtainedMarks"></span><span class="text-slate-400 text-lg"> / <span x-text="totalMarks"></span></span></p>
+        <p class="text-xs text-slate-400 mt-1">Marks Obtained</p>
+      </div>
+      <p class="text-xs text-slate-400 mt-4">You can close this page now.</p>
+    </div>
+  </div>
+
+  <!-- ============ TEST IN PROGRESS ============ -->
+  <div x-show="stage === 'test'" x-cloak class="min-h-screen pb-28">
+
+    <!-- Sticky top bar: company + timer -->
+    <div class="sticky top-0 z-20 bg-white border-b border-slate-200 px-4 py-3">
+      <div class="flex items-center justify-between max-w-2xl mx-auto">
+        <div class="min-w-0">
+          <p class="text-sm font-semibold text-slate-800 truncate" x-text="companyName"></p>
+          <p class="text-xs text-slate-400 truncate" x-text="studentName"></p>
+        </div>
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-sm font-semibold flex-shrink-0"
+             :class="remainingSeconds <= 300 ? 'bg-red-50 text-red-600' : 'bg-indigo-50 text-indigo-700'">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span x-text="formatTime(remainingSeconds)"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="max-w-2xl mx-auto px-4 pt-4">
+
+      <!-- Question palette -->
+      <div class="bg-white border border-slate-200 rounded-xl p-3 mb-4">
+        <div class="flex items-center gap-3 mb-2.5 text-xs text-slate-400">
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span> Answered</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-slate-300 inline-block"></span> Not answered</span>
+        </div>
+        <div class="grid grid-cols-8 sm:grid-cols-10 gap-1.5">
+          <template x-for="(q, i) in questions" :key="q.id">
+            <button @click="goTo(i)"
+              class="aspect-square rounded-lg text-xs font-semibold flex items-center justify-center transition-colors"
+              :class="[
+                answers[q.id] ? 'bg-emerald-400 text-white' : 'bg-slate-200 text-slate-600',
+                i === currentIndex ? 'ring-2 ring-indigo-500 ring-offset-1' : ''
+              ]"
+              x-text="i + 1"></button>
+          </template>
+        </div>
+      </div>
+
+      <!-- Current question -->
+      <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-4 fade-in" :key="currentQuestion.id">
+        <p class="text-xs font-medium text-indigo-600 mb-2">Question <span x-text="currentIndex + 1"></span> of <span x-text="questions.length"></span></p>
+        <p class="text-slate-800 font-medium mb-4 leading-relaxed" x-text="currentQuestion.text"></p>
+
+        <div class="space-y-2">
+          <template x-for="opt in ['A','B','C','D']" :key="opt">
+            <button @click="selectOption(opt)"
+              class="w-full text-left px-4 py-3 rounded-xl border text-sm flex items-start gap-3 transition-colors"
+              :class="answers[currentQuestion.id] === opt
+                ? 'border-indigo-500 bg-indigo-50 text-indigo-900'
+                : 'border-slate-200 hover:bg-slate-50 text-slate-700'">
+              <span class="w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 text-[10px] font-bold mt-0.5"
+                :class="answers[currentQuestion.id] === opt ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 text-slate-400'"
+                x-text="opt"></span>
+              <span x-text="currentQuestion[opt]"></span>
+            </button>
+          </template>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-400 text-center mb-4">
+        <span x-text="answeredCount()"></span> of <span x-text="questions.length"></span> answered
+      </p>
+    </div>
+
+    <!-- Sticky bottom nav -->
+    <div class="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 px-4 py-3 z-20">
+      <div class="max-w-2xl mx-auto flex items-center gap-2">
+        <button @click="goPrev()" :disabled="currentIndex === 0"
+          class="flex-1 border border-slate-300 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed font-medium py-2.5 rounded-lg text-sm">
+          Previous
+        </button>
+        <button x-show="currentIndex < questions.length - 1" @click="goNext()"
+          class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg text-sm">
+          Next
+        </button>
+        <button @click="openSubmitConfirm()"
+          class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg text-sm">
+          Submit
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SUBMIT CONFIRMATION MODAL ============ -->
+  <div x-show="showSubmitConfirm" x-cloak
+       class="fixed inset-0 bg-black/40 z-30 flex items-center justify-center p-4"
+       @click.self="showSubmitConfirm = false">
+    <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 fade-in">
+      <h3 class="font-semibold text-slate-800 mb-2">Submit test?</h3>
+      <p class="text-sm text-slate-500 mb-4">
+        You've answered <span class="font-semibold text-slate-700" x-text="answeredCount()"></span> of
+        <span class="font-semibold text-slate-700" x-text="questions.length"></span> questions.
+        <span x-show="answeredCount() < questions.length" class="text-amber-700">
+          <span x-text="questions.length - answeredCount()"></span> question(s) are still unanswered.
+        </span>
+        This cannot be undone.
+      </p>
+      <div class="flex gap-2">
+        <button @click="showSubmitConfirm = false" class="flex-1 border border-slate-300 text-slate-600 font-medium py-2.5 rounded-lg text-sm">
+          Go Back
+        </button>
+        <button @click="doSubmit()" :disabled="submitting"
+          class="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-medium py-2.5 rounded-lg text-sm">
+          <span x-show="!submitting">Yes, Submit</span>
+          <span x-show="submitting">Submitting…</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+<script>
+function testApp() {
+  return {
+    companyName: PARAMS.company || '',
+    enrollmentNo: '',
+    stage: 'gate', // 'gate' | 'test' | 'result'
+    loading: false,
+    submitting: false,
+    errorMsg: '',
+    studentName: '',
+
+    questions: [],
+    answers: {},
+    currentIndex: 0,
+    remainingSeconds: 0,
+    timerHandle: null,
+
+    totalMarks: 0,
+    obtainedMarks: 0,
+    autoSubmitted: false,
+    showSubmitConfirm: false,
+
+    init() {
+      if (!this.companyName) {
+        this.errorMsg = 'No company specified — use the link your placement cell shared with you.';
+      }
+      // Warn before leaving mid-test (accidental back/refresh/close).
+      window.addEventListener('beforeunload', (e) => {
+        if (this.stage === 'test') { e.preventDefault(); e.returnValue = ''; }
+      });
+    },
+
+    get currentQuestion() {
+      return this.questions[this.currentIndex] || {};
+    },
+
+    answeredCount() {
+      return this.questions.filter(q => !!this.answers[q.id]).length;
+    },
+
+    formatTime(sec) {
+      sec = Math.max(0, sec);
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    },
+
+    startTest() {
+      if (!this.enrollmentNo.trim()) return;
+      this.loading = true;
+      this.errorMsg = '';
+      google.script.run
+        .withSuccessHandler(res => {
+          this.loading = false;
+          if (!res.success) { this.errorMsg = res.message || 'Something went wrong.'; return; }
+
+          this.studentName = res.studentName || '';
+
+          if (res.status === 'submitted') {
+            this.totalMarks = res.totalMarks || 0;
+            this.obtainedMarks = res.obtainedMarks || 0;
+            this.autoSubmitted = !!res.autoSubmitted;
+            this.stage = 'result';
+            return;
+          }
+
+          this.questions = res.questions || [];
+          this.answers = res.answers || {};
+          this.remainingSeconds = res.remainingSeconds || 0;
+          this.currentIndex = 0;
+
+          // Defensive: if an attempt somehow has zero questions (e.g. a
+          // pre-fix attempt row, or the admin hasn't finished configuring
+          // the test), don't drop the student into an empty test screen
+          // with a running timer and nothing to answer — show a clear
+          // message instead and stay on the gate.
+          if (!this.questions.length) {
+            this.errorMsg = res.warning || 'No questions are set up for this test yet. Please contact the placement cell.';
+            return;
+          }
+
+          this.stage = 'test';
+          this.startTimer();
+        })
+        .withFailureHandler(err => {
+          this.loading = false;
+          this.errorMsg = 'Error: ' + err.message;
+        })
+        .getTestForStudent(this.companyName, this.enrollmentNo.trim());
+    },
+
+    startTimer() {
+      clearInterval(this.timerHandle);
+      this.timerHandle = setInterval(() => {
+        this.remainingSeconds--;
+        if (this.remainingSeconds <= 0) {
+          clearInterval(this.timerHandle);
+          this.autoSubmitted = true;
+          this.doSubmit();
+        }
+      }, 1000);
+    },
+
+    selectOption(opt) {
+      const q = this.currentQuestion;
+      if (!q.id) return;
+      this.answers[q.id] = opt; // instant visual feedback
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (res && res.expired) {
+            clearInterval(this.timerHandle);
+            this.autoSubmitted = true;
+            this.doSubmit();
+          }
+        })
+        .withFailureHandler(() => { /* answer stays saved locally; next click retries the save */ })
+        .saveTestAnswer(this.companyName, this.enrollmentNo.trim(), q.id, opt);
+    },
+
+    goNext() { if (this.currentIndex < this.questions.length - 1) this.currentIndex++; },
+    goPrev() { if (this.currentIndex > 0) this.currentIndex--; },
+    goTo(i) { this.currentIndex = i; },
+
+    openSubmitConfirm() { this.showSubmitConfirm = true; },
+
+    doSubmit() {
+      this.submitting = true;
+      google.script.run
+        .withSuccessHandler(res => {
+          this.submitting = false;
+          this.showSubmitConfirm = false;
+          clearInterval(this.timerHandle);
+          if (!res.success) { this.errorMsg = res.message || 'Submit failed — please try again.'; return; }
+          this.totalMarks = res.totalMarks || 0;
+          this.obtainedMarks = res.obtainedMarks || 0;
+          this.stage = 'result';
+        })
+        .withFailureHandler(err => {
+          this.submitting = false;
+          this.errorMsg = 'Error: ' + err.message;
+        })
+        .submitTest(this.companyName, this.enrollmentNo.trim());
+    }
+  };
+}
+</script>
+</body>
+</html>

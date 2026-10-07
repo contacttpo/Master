@@ -1,0 +1,2002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base target="_top">
+<script src="/gas-shim.js"></script>
+<meta charset="UTF-8">
+<title>Volunteer Portal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; min-height: 100vh; background: #f8fafc; color: #1e293b;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif; font-size: 16px;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 20px 18px 44px; }
+  .brand { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: #4f46e5; font-weight: 800; margin-bottom: 2px; }
+  h1 { font-size: 26px; margin: 2px 0 6px; font-weight: 800; color: #0f172a; }
+  .sub { font-size: 15px; color: #64748b; margin-bottom: 20px; line-height: 1.4; }
+
+  input, select {
+    width: 100%; padding: 15px 16px; font-size: 17px; border: 1.5px solid #e2e8f0;
+    border-radius: 12px; background: #fff; color: #0f172a; margin-bottom: 14px;
+  }
+  input:focus, select:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99,102,241,.15); }
+  button { cursor: pointer; font-family: inherit; }
+  /* Tactile "pressed" feedback on every tappable control. */
+  /* .btn, .backBtn, .cnt tactile "pressed" feedback — shared with a couple
+     other tappable controls below. */
+  .btn, .backBtn, .cnt {
+    transition: transform .08s ease, opacity .08s ease, box-shadow .1s ease, border-color .1s ease;
+  }
+  .btn:active, .backBtn:active, .cnt:active {
+    transform: scale(0.95);
+    opacity: .82;
+  }
+  .btn {
+    width: 100%; padding: 15px; font-size: 16px; font-weight: 700; color: #fff;
+    background: #4f46e5; border: none; border-radius: 12px;
+  }
+  .btn:disabled { opacity: .5; }
+  .btn.ghost { background: #fff; color: #334155; border: 1.5px solid #e2e8f0; }
+  .btn.sm { width: auto; padding: 10px 14px; font-size: 14px; border-radius: 10px; }
+
+  /* Attendance / Spot Registration buttons — a plain, contained "press":
+     the button itself shifts down a couple px and darkens, nothing else on
+     the page moves. No scale/opacity fade here on purpose (that read as
+     the surrounding card/page shifting on tap).
+     These render as real <a> links (not <button>) so tapping them is a
+     native, user-activated navigation — see openAttendance's comment for
+     why that matters. flex:1 (rather than width:auto + flex-wrap:wrap) is
+     what keeps Attendance QR and Spot Registration QR side-by-side on one
+     line on narrow phones instead of the second one wrapping and visually
+     landing on top of the first. */
+  .attSessionRow { display: flex; gap: 8px; margin-top: 10px; }
+  .sessBtn {
+    flex: 1 1 0; min-width: 0; display: inline-flex; align-items: center; justify-content: center;
+    text-align: center; text-decoration: none; box-sizing: border-box;
+    padding: 12px 8px; font-size: 13.5px; font-weight: 800; line-height: 1.2;
+    border-radius: 10px; border: none; color: #fff; background: #4f46e5;
+    transition: transform .06s ease, background-color .06s ease;
+    transform: translateY(0);
+  }
+  .sessBtn.spot { background: #0f766e; }
+  .sessBtn:active, .sessBtn.is-pressed {
+    transform: translateY(2px);
+    background-color: #3730a3;
+  }
+  .sessBtn.spot:active, .sessBtn.spot.is-pressed {
+    background-color: #0b544f;
+  }
+  .sessBtn[aria-disabled="true"] { opacity: .65; pointer-events: none; }
+
+  .err { color: #dc2626; font-size: 14px; margin: -8px 0 14px; font-weight: 600; }
+
+  .card {
+    background: #fff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 18px;
+    margin-bottom: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.03);
+    transition: transform .08s ease, border-color .08s ease;
+  }
+  .card:active { border-color: #6366f1; transform: scale(0.98); }
+  /* Attendance cards hold their own buttons rather than being tappable as
+     a whole — without this, pressing a button inside still visually
+     "pressed" the whole surrounding card too (CSS :active applies to an
+     element AND every ancestor it's nested in while pressed), which read
+     as the entire section shifting instead of just the button. */
+  .card.staticCard:active { border-color: inherit; transform: none; }
+  /* Paused round/attendance cards — locked, not tappable, visually dimmed
+     so it's obvious at a glance without reading the text. */
+  .card.pausedCard { opacity: .6; cursor: default; }
+  .card.pausedCard:active { border-color: #e2e8f0; transform: none; }
+  .card.pausedCard .rd { color: #b45309; }
+  .card .co { font-size: 18px; font-weight: 800; color: #0f172a; }
+  .card .rd { font-size: 15px; color: #4f46e5; margin-top: 3px; font-weight: 600; }
+  .badge {
+    display: inline-block; font-size: 12px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .03em; padding: 4px 10px; border-radius: 999px; margin-top: 10px;
+  }
+  .badge.gd { background: #f3e8ff; color: #7c2d92; }
+  .badge.other { background: #f1f5f9; color: #475569; }
+
+  .topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .backBtn { background: #fff; border: 1.5px solid #e2e8f0; color: #4f46e5; font-size: 22px; padding: 4px 12px; border-radius: 10px; line-height: 1.6; }
+  .topbar .titles { flex: 1; min-width: 0; }
+  .topbar .co { font-weight: 800; font-size: 18px; color: #0f172a; }
+  .topbar .rd { font-size: 14px; color: #64748b; }
+
+  .headerRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .logoutLink { background: none; border: none; color: #64748b; font-size: 13.5px; font-weight: 700; padding: 6px 0; margin-top: 4px; text-decoration: underline; }
+
+  .counts { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 10px; padding-bottom: 2px; }
+  .cnt { flex: 0 0 auto; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 10px 14px; text-align: center; min-width: 72px; cursor: pointer; }
+  .cnt .n { font-size: 20px; font-weight: 800; } .cnt .l { font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 700; }
+  .cnt.pending .n { color: #64748b; }
+  .cnt.appeared .n { color: #0284c7; }
+  .cnt.shortlisted .n { color: #d97706; } .cnt.rejected .n { color: #dc2626; }
+  .cnt.selected .n { color: #059669; }
+  .cnt.active-filter { border-color: #4f46e5; box-shadow: 0 0 0 2px rgba(79,70,229,.22); }
+  .filterHint { font-size: 13px; color: #64748b; margin: 0 0 14px; }
+  .filterHint .clear { color: #4f46e5; font-weight: 700; cursor: pointer; }
+
+  /* Status tick shown right in front of a student's name, so the current
+     outcome is visible at a glance without reading the buttons below. */
+  .tick {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px; border-radius: 50%; font-size: 11px; font-weight: 800;
+    color: #fff; margin-right: 5px; vertical-align: -2px;
+  }
+  .tick.appeared { background: #0284c7; }
+  .tick.shortlisted { background: #d97706; }
+  .tick.rejected { background: #dc2626; }
+  .tick.selected { background: #059669; }
+
+  .groupManager { font-size: 12px; color: #64748b; font-weight: 700; margin: -2px 0 8px; }
+  .tpoNote {
+    background: #fff7ed; border: 1.5px solid #fed7aa; color: #9a3412; border-radius: 12px;
+    padding: 12px 14px; font-size: 13.5px; line-height: 1.4; margin-bottom: 14px;
+  }
+
+  .student { border-top: 1px solid #f1f5f9; padding: 14px 0; }
+  .student:first-child { border-top: none; }
+  .student .name { font-weight: 700; font-size: 16px; color: #0f172a; }
+  .student .meta { font-size: 13.5px; color: #64748b; margin-top: 2px; }
+  .rowCheckSpacer { width: 20px; flex: 0 0 auto; margin: 3px 0 0; }
+
+  .section-title { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: #4f46e5; margin: 20px 0 10px; }
+
+  /* One collapsible card per company on the assignments screen. The whole
+     header is a button — tapping the company name expands the card to
+     show every item for that company (Attendance/Spot Registration QR
+     access AND rounds to manage) together. Closed by default so a
+     volunteer with several companies sees a short, organized list of
+     names first instead of every round/attendance card at once. */
+  .companyCard {
+    background: #fff; border: 1.5px solid #e2e8f0; border-radius: 16px;
+    margin-bottom: 14px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.03);
+  }
+  .companyToggle {
+    width: 100%; display: flex; justify-content: space-between; align-items: center;
+    gap: 10px; background: #fff; border: none; padding: 16px 18px; text-align: left; cursor: pointer;
+  }
+  .companyToggle:active { background: #f8fafc; }
+  .companyToggle .cname { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 800; color: #0f172a; }
+  .companyToggle .ccount { font-size: 12.5px; color: #64748b; font-weight: 700; white-space: nowrap; }
+  .companyBody { padding: 0 14px 14px; border-top: 1px solid #f1f5f9; }
+  .companyBody .card { margin: 14px 0 0; }
+  .companyBody .card:first-child { margin-top: 14px; }
+
+  /* Feedback entry within a company's body — its own small collapsible
+     row, not a navigable round card, so it never triggers openRound(). */
+  .feedbackCard { padding: 0; overflow: hidden; }
+  .feedbackToggle {
+    width: 100%; display: flex; justify-content: space-between; align-items: center;
+    gap: 10px; background: #fff; border: none; padding: 14px 16px; text-align: left; cursor: pointer;
+  }
+  .feedbackToggle:active { background: #f8fafc; }
+  .feedbackToggle .rd { margin: 0; }
+  .feedbackBody { padding: 0 16px 16px; border-top: 1px solid #f1f5f9; }
+  .feedbackQrWrap { display: flex; justify-content: center; padding: 6px 0 14px; }
+  .feedbackQrWrap img { border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 8px; background: #fff; }
+  .feedbackLinkRow { display: flex; gap: 8px; align-items: center; }
+  .feedbackLinkInput {
+    flex: 1; min-width: 0; border: 1.5px solid #e2e8f0; border-radius: 10px;
+    padding: 9px 10px; font-size: 12.5px; color: #475569; background: #f8fafc;
+  }
+  .groupCard { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; }
+  .groupCard .ghead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .groupCard .gname { font-weight: 800; font-size: 16px; color: #0f172a; }
+  .groupCard .gcount { font-size: 13px; color: #64748b; font-weight: 700; }
+  .searchBox { margin-bottom: 12px; }
+  .hint { font-size: 13px; color: #64748b; margin: 6px 0 0; line-height: 1.4; }
+  .stateMsg { text-align: center; color: #64748b; padding: 34px 10px; font-size: 15px; }
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+    background: #0f172a; border: none; color: #fff; font-size: 14px; font-weight: 600;
+    padding: 12px 20px; border-radius: 999px; box-shadow: 0 8px 24px rgba(0,0,0,.2);
+    opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 50;
+  }
+  .toast.show { opacity: 1; }
+
+  /* Collapsible group header — the whole head is now a button; group starts
+     closed and only opens when tapped. */
+  .groupCard { padding: 0; overflow: hidden; }
+  .groupToggle {
+    width: 100%; display: flex; justify-content: space-between; align-items: center;
+    background: #fff; border: none; padding: 14px 16px; text-align: left; cursor: pointer;
+  }
+  .groupToggle:active { background: #f8fafc; }
+  .gname { display: flex; align-items: center; gap: 8px; }
+  .chev { font-size: 12px; color: #94a3b8; transition: transform .15s ease; }
+  .groupBody { padding: 0 16px 14px; border-top: 1px solid #f1f5f9; }
+
+  /* Checkbox + name row used everywhere a student is listed. */
+  .student { display: flex; align-items: flex-start; gap: 10px; }
+  .rowCheck { width: 20px; height: 20px; flex: 0 0 auto; margin: 3px 0 0; accent-color: #4f46e5; cursor: pointer; }
+  .student-info { flex: 1; min-width: 0; }
+
+  /* Sticky bulk action bar — shows how many are selected and lets the
+     volunteer mark all of them at once instead of one-by-one. */
+  .bulkBar {
+    position: sticky; top: 0; z-index: 20; background: #eef2ff; border: 1.5px solid #c7d2fe;
+    border-radius: 12px; padding: 10px 12px; margin-bottom: 12px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  }
+  .bulkCount { font-size: 13.5px; font-weight: 800; color: #3730a3; white-space: nowrap; }
+  .bulkSelectAll { font-size: 12.5px; color: #4f46e5; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .bulkActions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .bulkBtn {
+    padding: 9px 14px; font-size: 13px; font-weight: 800; border-radius: 10px; border: 1.5px solid transparent;
+    color: #fff; opacity: 1;
+  }
+  .bulkBtn:disabled { opacity: .45; cursor: not-allowed; }
+  .bulkBtn.appeared { background: #0284c7; }
+  .bulkBtn.shortlist { background: #d97706; }
+  .bulkBtn.reject { background: #dc2626; }
+  .bulkBtn.select { background: #059669; }
+  .bulkBtn.move { background: #4f46e5; }
+  .bulkBtn.clear { background: #fff; color: #475569; border-color: #e2e8f0; }
+
+  /* ---- Roll Call Mode ---- */
+  .rcHeader {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 14px; padding: 14px 16px; margin-bottom: 12px;
+  }
+  .rcLabel { font-size: 11px; font-weight: 800; color: #047857; text-transform: uppercase; letter-spacing: .03em; }
+  .rcGroup { font-size: 24px; font-weight: 900; color: #064e3b; }
+  .rcCount { font-size: 24px; font-weight: 900; color: #334155; text-align: right; }
+  .rcCount.full { color: #059669; }
+  .rcFullTag { font-size: 12px; color: #64748b; text-align: right; }
+  .rcSwitcher { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .rcSwitcher input {
+    width: 64px; text-align: center; font-weight: 800; font-size: 15px;
+    border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 9px 6px;
+  }
+  .rcMatch {
+    width: 100%; display: flex; justify-content: space-between; align-items: center;
+    background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;
+    font-size: 14.5px; font-weight: 600; color: #0f172a; text-align: left;
+  }
+  .rcMatch:active { border-color: #34d399; background: #f0fdf4; }
+  .rcMatch .rcAdd { font-size: 12.5px; font-weight: 800; color: #059669; white-space: nowrap; margin-left: 8px; }
+  .rcError { color: #dc2626; font-weight: 700; font-size: 13.5px; margin: 4px 0 10px; }
+  .rcLastAddedBar {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 10px 14px; margin-top: 10px;
+    font-size: 13.5px; color: #334155;
+  }
+  .rcUndo { font-size: 12.5px; font-weight: 800; color: #dc2626; background: none; border: none; }
+</style>
+<style id="vivid-theme">
+  /* ===================================================================
+     VIVID THEME — same bright, colourful look as the admin app. It is only
+     a colour layer on top of the styles above; deleting this whole
+     <style id="vivid-theme"> block restores the previous look.
+     =================================================================== */
+  body {
+    background: linear-gradient(135deg, #e0e7ff 0%, #fae8ff 34%, #cffafe 68%, #ffedd5 100%) fixed;
+  }
+
+  /* ---- header ---- */
+  .brand {
+    display: inline-block; padding: 5px 13px; border-radius: 999px; color: #fff; margin-bottom: 8px;
+    background: linear-gradient(90deg, #4f46e5, #a21caf 60%, #f97316);
+    box-shadow: 0 6px 14px -6px rgba(124, 58, 237, .7);
+  }
+  .brand span { background: #f59e0b !important; }   /* the ADMIN / PE badge */
+  h1 {
+    background: linear-gradient(90deg, #4338ca, #c026d3 60%, #f97316);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .logoutLink { color: #7c3aed; }
+
+  /* ---- inputs & buttons ---- */
+  input, select { border-color: #ddd6fe; }
+  input:focus, select:focus { border-color: #8b5cf6; box-shadow: 0 0 0 4px rgba(139, 92, 246, .22); }
+  .btn {
+    background: linear-gradient(90deg, #6366f1, #8b5cf6 55%, #ec4899);
+    box-shadow: 0 8px 18px -8px rgba(139, 92, 246, .8);
+  }
+  .btn:disabled { box-shadow: none; }
+  .btn.ghost { background: #fff; color: #6d28d9; border-color: #ddd6fe; box-shadow: none; }
+  .btn.sm { box-shadow: none; }
+  .backBtn { color: #7c3aed; border-color: #ddd6fe; background: #faf5ff; }
+
+  /* ---- Attendance / Spot Registration buttons ---- */
+  .sessBtn { background: linear-gradient(135deg, #6366f1, #8b5cf6); box-shadow: 0 6px 14px -6px rgba(99, 102, 241, .8); }
+  .sessBtn.spot { background: linear-gradient(135deg, #f97316, #ec4899); box-shadow: 0 6px 14px -6px rgba(236, 72, 153, .8); }
+  .sessBtn:active, .sessBtn.is-pressed, .sessBtn.spot:active, .sessBtn.spot.is-pressed { filter: brightness(.88); }
+
+  /* ---- cards ---- */
+  .card { border-color: #e0e7ff; border-left: 5px solid #6366f1; box-shadow: 0 8px 20px -12px rgba(99, 102, 241, .45); }
+  .card:nth-child(6n+2) { border-left-color: #ec4899; }
+  .card:nth-child(6n+3) { border-left-color: #f59e0b; }
+  .card:nth-child(6n+4) { border-left-color: #10b981; }
+  .card:nth-child(6n+5) { border-left-color: #06b6d4; }
+  .card:nth-child(6n+6) { border-left-color: #f97316; }
+  .card:active { border-color: #8b5cf6; }
+  .card.staticCard:active { border-color: #e0e7ff; }
+  .card[style*="padding:6px 18px"] { border-left-width: 1.5px; border-left-color: #e0e7ff; }   /* student lists stay neutral */
+  .card .rd { color: #7c3aed; }
+  .card.pausedCard .rd { color: #b45309; }
+  .badge.gd { background: linear-gradient(90deg, #f3e8ff, #fce7f3); color: #a21caf; }
+  .badge.other { background: #e0f2fe; color: #0369a1; }
+
+  /* ---- company cards on the assignments screen ---- */
+  .companyCard { border-color: #ddd6fe; border-left: 6px solid #6366f1; box-shadow: 0 10px 24px -14px rgba(99, 102, 241, .55); }
+  .companyCard:nth-of-type(6n+2) { border-left-color: #ec4899; }
+  .companyCard:nth-of-type(6n+3) { border-left-color: #f59e0b; }
+  .companyCard:nth-of-type(6n+4) { border-left-color: #10b981; }
+  .companyCard:nth-of-type(6n+5) { border-left-color: #06b6d4; }
+  .companyCard:nth-of-type(6n+6) { border-left-color: #f97316; }
+  .companyToggle, .feedbackToggle, .groupToggle { background: linear-gradient(90deg, #faf5ff, #ffffff); }
+  .companyToggle:active, .feedbackToggle:active, .groupToggle:active { background: #f3e8ff; }
+  .companyToggle .ccount { color: #7c3aed; background: #ede9fe; padding: 3px 10px; border-radius: 999px; }
+  .companyBody, .groupBody, .feedbackBody { border-top-color: #ede9fe; }
+  .chev { color: #8b5cf6; }
+  .groupCard { border-color: #ddd6fe; }
+  .feedbackQrWrap img { border-color: #ddd6fe; }
+  .feedbackLinkInput { border-color: #ddd6fe; background: #faf5ff; }
+
+  /* ---- status counters: each outcome has its own colour ---- */
+  .cnt { background: #f5f3ff; border-color: #ddd6fe; }
+  .cnt.pending { background: #f1f5f9; border-color: #cbd5e1; }
+  .cnt.appeared { background: #e0f2fe; border-color: #7dd3fc; }
+  .cnt.shortlisted { background: #fef3c7; border-color: #fcd34d; }
+  .cnt.rejected { background: #ffe4e6; border-color: #fda4af; }
+  .cnt.selected { background: #d1fae5; border-color: #6ee7b7; }
+  .cnt.active-filter { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124, 58, 237, .28); }
+  .cnt .l { color: #475569; }
+  .filterHint .clear { color: #7c3aed; }
+
+  /* ---- headings, lists, bulk bar ---- */
+  .section-title { color: #7c3aed; border-left: 4px solid #ec4899; padding-left: 10px; }
+  .student { border-top-color: #ede9fe; }
+  .rowCheck { accent-color: #7c3aed; }
+  .bulkBar { background: linear-gradient(90deg, #e0e7ff, #fae8ff); border-color: #c4b5fd; }
+  .bulkCount { color: #5b21b6; }
+  .bulkSelectAll { color: #7c3aed; }
+  .bulkBtn.move { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+  .bulkBtn.clear { border-color: #ddd6fe; color: #6d28d9; }
+  .toast { background: linear-gradient(90deg, #4338ca, #c026d3); }
+  /* ---- status colours: the WHOLE row is tinted by outcome, so a wrong
+     mark stands out at a glance. Same colours on the counters, the bulk
+     buttons and the tick in front of the name.
+       Appeared = blue · Shortlisted = green · Rejected = red · Selected = gold
+     Pending rows stay plain white. ---- */
+  .student { padding-left: 10px; padding-right: 10px; border-radius: 10px; border-top-color: transparent; }
+  .student.st-appeared    { background: #e0f2fe; box-shadow: inset 5px 0 0 #0284c7; }
+  .student.st-shortlisted { background: #dcfce7; box-shadow: inset 5px 0 0 #16a34a; }
+  .student.st-rejected    { background: #fee2e2; box-shadow: inset 5px 0 0 #dc2626; }
+  .student.st-selected    { background: #fef3c7; box-shadow: inset 5px 0 0 #d97706; }
+  .student.st-appeared .name    { color: #075985; }
+  .student.st-shortlisted .name { color: #166534; }
+  .student.st-rejected .name    { color: #991b1b; }
+  .student.st-selected .name    { color: #92400e; }
+  .student + .student { margin-top: 3px; }
+  .tick.shortlisted { background: #16a34a; }
+  .tick.selected { background: #d97706; }
+  .cnt.shortlisted { background: #dcfce7; border-color: #86efac; }
+  .cnt.shortlisted .n { color: #16a34a; }
+  .cnt.selected { background: #fef3c7; border-color: #fcd34d; }
+  .cnt.selected .n { color: #d97706; }
+  .bulkBtn.shortlist { background: #16a34a; }
+  .bulkBtn.select { background: #d97706; }
+</style>
+<meta name="theme-color" content="#6d28d9">
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+  const app = document.getElementById('app');
+  const toastEl = document.getElementById('toast');
+  let toastTimer = null;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+  }
+
+  let state = {
+    mobile: null,
+    assignments: [],
+    isPermanentAdmin: false,  // true when this mobile is in PERMANENT_ADMIN_MOBILES_ (VolunteerBackend.gs) — always Admin everywhere, no assignment needed
+    current: null,
+    students: [],
+    groupCount: 0,
+    search: '',
+    statusFilter: null,
+    pollTimer: null,
+    pendingWrites: 0, boardLoading: false,
+    rollCall: null,           // active Roll Call Mode session state — see openRollCall()
+    selected: new Set(),      // enrollment numbers currently ticked, for bulk marking
+    openGroups: new Set(),    // GD group numbers currently expanded (closed by default)
+    openCompanies: new Set(), // company names currently expanded on the assignments screen (closed by default)
+    openFeedback: new Set(),  // company names whose Feedback link/QR panel is currently expanded (closed by default)
+    feedbackUrls: {},         // company name -> feedback form URL, fetched once and cached
+    markMode: null,           // null, or 'Shortlisted'/'Rejected'/'Selected'/'MoveGroup' while a marking/move pass is in progress
+    downloadingGroups: false  // true while a group export is being generated (Admin-role volunteers only)
+  };
+
+  function isGD(roundType) {
+    return /gd|group\s*discussion/i.test(roundType || '');
+  }
+
+  // 'Attendance' is a plain Round_Volunteers assignment like any other round
+  // (see verifyVolunteerMobile in Code.gs) — this just recognizes it so it
+  // renders as a QR/kiosk button instead of a round board.
+  function isAttendance(a) {
+    return !!a.IsAttendance || /^attendance$/i.test(a.Round_Name || '');
+  }
+
+  // Only a company's FINAL round gets a "Mark Selected" bulk action — every
+  // other round only needs Appeared/Shortlisted/Rejected. IsFinalRound is
+  // computed server-side (isFinalRoundForCompany_ in Volunteer.gs) and
+  // comes back on the assignment object from volunteerLogin, so it's just
+  // whichever round is last in this company's process — not tied to a
+  // specific round type anymore.
+  function isFinal(a) {
+    return !!a.IsFinalRound;
+  }
+
+  // ---------------------------------------------------------------
+  // SCREEN 1 — mobile login
+  // ---------------------------------------------------------------
+  // ---------------------------------------------------------------
+  // Session memory — a page refresh used to drop everyone back on the
+  // login screen. The mobile number and the screen you were on (round
+  // board / Roll Call) are kept in this browser's local storage and
+  // restored on load. Storage can throw inside Apps Script's iframe, so
+  // every access is guarded; worst case is the old behaviour.
+  // ---------------------------------------------------------------
+  const SESSION_KEY_ = 'vp_session_v1';
+  function readSession_() {
+    try { return JSON.parse(localStorage.getItem(SESSION_KEY_) || 'null') || {}; } catch (e) { return {}; }
+  }
+  function writeSession_(patch) {
+    try {
+      const cur = readSession_();
+      localStorage.setItem(SESSION_KEY_, JSON.stringify(Object.assign(cur, patch)));
+    } catch (e) {}
+  }
+  function clearSession_() { try { localStorage.removeItem(SESSION_KEY_); } catch (e) {} }
+
+  function renderLogin(errMsg) {
+    app.innerHTML = `
+      <div class="brand">Volunteer Portal</div>
+      <h1>Welcome</h1>
+      <div class="sub">Enter your mobile number to see the rounds you've been assigned to manage.</div>
+      <input id="mobileInput" type="tel" inputmode="numeric" placeholder="Your mobile number" autofocus>
+      ${errMsg ? '<div class="err">' + errMsg + '</div>' : ''}
+      <button class="btn" id="loginBtn">Continue</button>
+    `;
+    document.getElementById('loginBtn').onclick = doLogin;
+    document.getElementById('mobileInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  }
+
+  function doLogin() {
+    const val = document.getElementById('mobileInput').value.trim();
+    if (!val) { renderLogin('Please enter your mobile number.'); return; }
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true; btn.textContent = 'Checking…';
+    google.script.run
+      .withSuccessHandler(res => {
+        if (!res.success) { renderLogin(res.message); return; }
+        state.mobile = res.mobile;
+        state.assignments = res.assignments;
+        state.isPermanentAdmin = !!res.isPermanentAdmin;
+        writeSession_({ mobile: val, company: null, round: null, rollCall: false });
+        renderAssignments();
+      })
+      .withFailureHandler(err => renderLogin('Error: ' + err.message))
+      .volunteerLogin(val);
+  }
+
+  // ---------------------------------------------------------------
+  // SCREEN 2 — list of assigned company/rounds
+  // ---------------------------------------------------------------
+  function renderAssignments() {
+    clearInterval(state.pollTimer);
+    writeSession_({ company: null, round: null, rollCall: false });
+    if (!state.assignments.length) {
+      app.innerHTML = `
+        <div class="headerRow">
+          <div class="brand">Volunteer Portal</div>
+          <button class="logoutLink" id="logoutBtn">Logout</button>
+        </div>
+        <div class="stateMsg">No rounds are currently assigned to your number. Ask the admin to assign you — this page will pick it up automatically, no need to refresh.</div>
+      `;
+      document.getElementById('logoutBtn').onclick = doLogout;
+      // Keep checking in the background so the moment the admin assigns
+      // this number to a round, it shows up here on its own.
+      state.pollTimer = setInterval(() => {
+        google.script.run
+          .withSuccessHandler(res => {
+            if (!res.success || !res.assignments.length) return;
+            state.assignments = res.assignments;
+            renderAssignments();
+          })
+          .withFailureHandler(() => {})
+          .volunteerLogin(state.mobile);
+      }, 20000);
+      return;
+    }
+    const volunteerName = (state.assignments.find(a => (a.Volunteer_Name || '').trim()) || {}).Volunteer_Name || '';
+    app.innerHTML = `
+      <div class="headerRow">
+        <div>
+          <div class="brand">Volunteer Portal${state.isPermanentAdmin ? ' <span style="background:#4f46e5;color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;margin-left:6px;vertical-align:middle;">PERMANENT ADMIN</span>' : ''}</div>
+          <h1>${volunteerName ? 'Welcome, ' + escapeHtml(volunteerName) + '!' : 'Your Rounds'}</h1>
+        </div>
+        <button class="logoutLink" id="logoutBtn">Logout</button>
+      </div>
+      <div class="sub">Tap a company to open everything for it — rounds to manage and Attendance/QR access alike.</div>
+      <div id="list"></div>
+    `;
+    document.getElementById('logoutBtn').onclick = doLogout;
+    const list = document.getElementById('list');
+
+    // Every assignment for a company — its rounds AND its Attendance/Spot
+    // Registration access — lives behind ONE tappable company card, closed
+    // by default. Tapping the company name opens the whole card and shows
+    // both kinds of item together, instead of splitting attendance off
+    // into its own section elsewhere on the page. Companies are ordered by
+    // where they first appear in the assignment list.
+    const companyOrder = [];
+    const companyItems = {};
+    state.assignments.forEach((a) => {
+      const key = a.Company_Name || '';
+      if (!companyItems[key]) { companyItems[key] = []; companyOrder.push(key); }
+      companyItems[key].push(a);
+    });
+
+    companyOrder.forEach((companyName) => {
+      const items = companyItems[companyName];
+      const attItems = items.filter(isAttendance);
+      const roundItems = items.filter(a => !isAttendance(a));
+      // Closed by default (state.openCompanies starts empty each time this
+      // screen is entered) — the whole header is the toggle button, same
+      // pattern as the GD group cards inside a round.
+      const isOpen = state.openCompanies.has(companyName);
+      const n = items.length;
+
+      const card = document.createElement('div');
+      card.className = 'companyCard';
+      card.innerHTML = `
+        <button type="button" class="companyToggle" data-toggle-company="${escapeHtml(companyName)}">
+          <div class="cname"><span class="chev">${isOpen ? '▾' : '▸'}</span>${escapeHtml(companyName)}</div>
+          <div class="ccount">${n} to manage</div>
+        </button>
+        <div class="companyBody" style="display:${isOpen ? 'block' : 'none'};"></div>
+      `;
+      const body = card.querySelector('.companyBody');
+
+      attItems.forEach((a) => {
+        const sessions = a.Attendance_Sessions || [];
+        const attCard = document.createElement('div');
+        attCard.className = 'card staticCard';
+        // Paused by the admin — show a locked message instead of the
+        // normal QR buttons. ('Stopped' items never reach this list at
+        // all — volunteerLogin drops them, same as not being assigned.)
+        if (a.Access_Status === 'Paused') {
+          attCard.classList.add('pausedCard');
+          attCard.innerHTML = `
+            <div class="rd">⏸ Paused by admin — check back later</div>
+            <span class="badge other">Attendance</span>
+          `;
+          body.appendChild(attCard);
+          return;
+        }
+        if (!sessions.length) {
+          attCard.innerHTML = `
+            <div class="rd">No attendance session is open right now</div>
+            <span class="badge other">Attendance</span>
+          `;
+          body.appendChild(attCard);
+          return;
+        }
+        // Usually just one open session (plain Attendance). If the admin also
+        // has a Spot Registration session running at the same time, a second
+        // button shows up right alongside it — same card, one tap each, no
+        // separate login for either. .attSessionRow is flex with no wrap
+        // (see CSS) so the two buttons always sit on one line, sharing
+        // width equally, even on a narrow phone screen.
+        attCard.innerHTML = `
+          <div class="rd">${sessions.length > 1 ? 'Choose a check-in to open' : 'Tap to open the check-in QR code'}</div>
+          <div class="attSessionRow"></div>
+        `;
+        const modeCounts = {};
+        sessions.forEach(s => { modeCounts[s.Registration_Mode] = (modeCounts[s.Registration_Mode] || 0) + 1; });
+        const row = attCard.querySelector('.attSessionRow');
+        sessions.forEach(s => {
+          const isSpot = s.Registration_Mode === 'spot';
+          let label = isSpot ? 'Spot Registration QR' : 'Attendance QR';
+          // Only disambiguate with the session's own name if there's more
+          // than one open session of the SAME mode — the common case (one
+          // Attendance + one Spot Registration) just gets the two plain labels.
+          if (modeCounts[s.Registration_Mode] > 1) label += ' — ' + s.Session_Name;
+          // A real <a> link, not a <button> with a JS-driven navigation —
+          // see the big comment on openAttendance() below for why. The href
+          // is filled in as soon as the server responds; until then the
+          // link is inert (aria-disabled) so a tap can't fire a broken
+          // navigation before the real URL is known.
+          const btn = document.createElement('a');
+          btn.href = '#';
+          btn.setAttribute('aria-disabled', 'true');
+          btn.className = 'sessBtn is-loading' + (isSpot ? ' spot' : '');
+          btn.textContent = label;
+          btn.addEventListener('click', (e) => {
+            if (btn.getAttribute('aria-disabled') === 'true') { e.preventDefault(); return; }
+            // From here the browser's own <a target="_top"> navigation
+            // (via the <base target="_top"> tag) takes over — nothing else
+            // to do in JS, which is exactly the point.
+          });
+          row.appendChild(btn);
+          openAttendance(a, s.Session_ID, btn);
+        });
+        body.appendChild(attCard);
+      });
+
+      roundItems.forEach((a) => {
+        const rCard = document.createElement('div');
+        const isPaused = a.Access_Status === 'Paused';
+        rCard.className = 'card roundCard' + (isPaused ? ' pausedCard' : '');
+        rCard.innerHTML = `
+          <div class="rd">${escapeHtml(a.Round_Name)}${isPaused ? ' — ⏸ Paused by admin' : ''}</div>
+          <span class="badge ${isGD(a.Round_Type) ? 'gd' : 'other'}">${escapeHtml(a.Round_Type || 'Round')}</span>
+        `;
+        // Paused rounds aren't clickable — nothing to open until an admin
+        // plays it again. ('Stopped' rounds never reach this list.)
+        if (!isPaused) rCard.onclick = () => openRound(a);
+        body.appendChild(rCard);
+      });
+
+      // Feedback — a separate, lightweight entry per company (not tied to
+      // any one round). Tapping it reveals the feedback form's link and a
+      // scannable QR code so the volunteer can hand their phone to, or
+      // project it for, students who've appeared in the final round.
+      // Submitted responses are NEVER shown here — only on the Round
+      // Manager admin screen (getCompanyFeedbackReport) — so this panel is
+      // strictly a "show the QR" surface for the volunteer.
+      const fbOpen = state.openFeedback.has(companyName);
+      const fbCard = document.createElement('div');
+      fbCard.className = 'card feedbackCard';
+      fbCard.innerHTML = `
+        <button type="button" class="feedbackToggle" data-toggle-feedback="${escapeHtml(companyName)}">
+          <div class="rd">Feedback — link &amp; QR for students</div>
+          <span class="chev">${fbOpen ? '▾' : '▸'}</span>
+        </button>
+        <div class="feedbackBody" style="display:${fbOpen ? 'block' : 'none'};"></div>
+      `;
+      const fbBody = fbCard.querySelector('.feedbackBody');
+      if (fbOpen) {
+        const cachedUrl = state.feedbackUrls[companyName];
+        if (cachedUrl) {
+          fbBody.innerHTML = feedbackPanelHtml_(cachedUrl);
+        } else {
+          fbBody.innerHTML = `<div class="hint" style="padding:10px 2px 2px;">Loading feedback link…</div>`;
+          // fbBody is captured by closure, so the result lands back in the
+          // right panel even though the whole list re-renders on any other
+          // toggle in the meantime — a stale/detached fbBody is a harmless
+          // no-op rather than an error.
+          google.script.run
+            .withSuccessHandler((url) => {
+              state.feedbackUrls[companyName] = url;
+              fbBody.innerHTML = feedbackPanelHtml_(url);
+            })
+            .withFailureHandler((err) => {
+              fbBody.innerHTML = `<p class="err" style="margin:8px 0 0;">Could not load the feedback link: ${escapeHtml(err.message)}</p>`;
+            })
+            .getFeedbackFormUrl(companyName);
+        }
+      }
+      body.appendChild(fbCard);
+
+      list.appendChild(card);
+    });
+
+    list.querySelectorAll('[data-toggle-company]').forEach((btn) => {
+      btn.onclick = () => {
+        const name = btn.getAttribute('data-toggle-company');
+        if (state.openCompanies.has(name)) state.openCompanies.delete(name); else state.openCompanies.add(name);
+        renderAssignments();
+      };
+    });
+    list.querySelectorAll('[data-toggle-feedback]').forEach((btn) => {
+      btn.onclick = (e) => {
+        e.stopPropagation(); // sits inside the (already-open) company body, not the company toggle itself, but stop it from bubbling to anything else just in case
+        const name = btn.getAttribute('data-toggle-feedback');
+        if (state.openFeedback.has(name)) state.openFeedback.delete(name); else state.openFeedback.add(name);
+        renderAssignments();
+      };
+    });
+
+    // Silently re-checks this volunteer's assignment list every 20s while
+    // they're sitting on this screen, so a round the admin assigns them
+    // mid-session just appears — no manual refresh or re-login needed.
+    clearInterval(state.pollTimer);
+    state.pollTimer = setInterval(() => {
+      google.script.run
+        .withSuccessHandler(res => {
+          if (!res.success) return; // e.g. admin unassigned everything — leave the list as-is rather than bouncing to an error screen
+          const changed = JSON.stringify(res.assignments) !== JSON.stringify(state.assignments);
+          state.assignments = res.assignments;
+          if (changed) renderAssignments();
+        })
+        .withFailureHandler(() => {})
+        .volunteerLogin(state.mobile);
+    }, 20000);
+  }
+
+  function doLogout() {
+    clearInterval(state.pollTimer);
+    clearSession_();
+    state = {
+      mobile: null, assignments: [], current: null, students: [], groupCount: 0,
+      search: '', statusFilter: null, pollTimer: null,
+      selected: new Set(), openGroups: new Set(), openCompanies: new Set(),
+      openFeedback: new Set(), feedbackUrls: {}, markMode: null, pendingWrites: 0, boardLoading: false
+    };
+    renderLogin();
+  }
+
+  // Builds the QR + link markup for one company's feedback panel. Uses a
+  // free, no-key QR image API (api.qrserver.com) to turn the feedback
+  // form URL into a scannable code — nothing to bundle or configure. The
+  // link is also shown as plain text (in case a phone can't be handed
+  // around, e.g. sharing over a projector or reading it aloud), plus an
+  // "Open" link so the volunteer can preview the form themselves.
+  function feedbackPanelHtml_(url) {
+    const qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(url);
+    return `
+      <p class="hint" style="margin:10px 2px 12px;">
+        Show this QR to students who've appeared in the final round — they scan it to submit their own feedback.
+        You won't see individual responses here; the admin reviews them in Round Manager.
+      </p>
+      <div class="feedbackQrWrap"><img src="${qrSrc}" alt="Feedback form QR code" width="200" height="200"></div>
+      <div class="feedbackLinkRow">
+        <input type="text" class="feedbackLinkInput" value="${escapeHtml(url)}" readonly onclick="this.select()">
+        <a class="btn ghost sm" href="${escapeHtml(url)}" target="_blank" rel="noopener">Open</a>
+      </div>
+    `;
+  }
+
+  // Fills in the real kiosk URL on one of the Attendance / Spot
+  // Registration link buttons, so tapping it is a plain, native <a
+  // target="_top"> navigation (target="_top" comes from the page's
+  // <base> tag) straight into the QR kiosk for one of this company's
+  // currently-open attendance sessions — no second login: the mobile
+  // number already logged in with here is passed along and auto-verified
+  // on the Kiosk page (see the `mobile` param handling in Kiosk.html).
+  //
+  // This is deliberately NOT "set top.location.href inside a
+  // google.script.run success handler" (the previous approach, and still
+  // what Kiosk.html's own Back button did) even though that pattern looks
+  // equivalent. The success handler fires only after a full network round
+  // trip to the server, and by then some browsers no longer treat the tap
+  // as "user-activated" — a sandboxed Apps Script iframe is only reliably
+  // allowed to navigate the real top-level tab in direct response to a
+  // user gesture. Miss that window and the navigation can silently misfire
+  // (that's the mechanism behind the Kiosk "Back" button landing on a
+  // blank googleusercontent.com page instead of the real portal). Setting
+  // .href on a real link ahead of time and letting the browser's own
+  // click-navigation handle it sidesteps the timing issue entirely.
+  //
+  // Must still be built server-side (getKioskUrl uses
+  // ScriptApp.getService().getUrl()) — this page's own location.href is
+  // just the sandboxed iframe's internal address, not the real public URL.
+  function openAttendance(a, sessionId, linkEl) {
+    if (!sessionId) {
+      linkEl.classList.remove('is-loading');
+      linkEl.removeAttribute('aria-disabled');
+      linkEl.href = '#';
+      linkEl.addEventListener('click', function onClick(e) {
+        e.preventDefault();
+        toast('No attendance session is open for ' + a.Company_Name + ' right now. Ask the admin to start one.');
+      });
+      return;
+    }
+    google.script.run
+      .withSuccessHandler(url => {
+        linkEl.href = url + '&mobile=' + encodeURIComponent(state.mobile);
+        linkEl.classList.remove('is-loading');
+        linkEl.removeAttribute('aria-disabled');
+      })
+      .withFailureHandler(err => {
+        linkEl.classList.remove('is-loading');
+        linkEl.removeAttribute('aria-disabled');
+        linkEl.href = '#';
+        toast('Error: ' + err.message);
+      })
+      .getKioskUrl(sessionId);
+  }
+
+  // ---------------------------------------------------------------
+  // SCREEN 3 — round board
+  // ---------------------------------------------------------------
+  function openRound(a) {
+    writeSession_({ company: a.Company_Name, round: a.Round_Name, rollCall: false });
+    state.current = a;
+    state.rollCallActive = false; // opening a round always starts on the board, never inside Roll Call
+    state.search = '';
+    state.statusFilter = null;
+    state.groupCount = 0;
+    state.selected = new Set();
+    state.openGroups = new Set();
+    state.markMode = null;
+    state.boardCache = state.boardCache || {};
+    const cacheKey = a.Company_Name + '||' + a.Round_Name;
+    const cached = state.boardCache[cacheKey];
+    if (cached) {
+      // Reopening a round already opened this session: paint it INSTANTLY
+      // from the last copy, then refresh quietly underneath.
+      state.students = cached;
+      renderBoard();
+      loadBoard(false);
+    } else {
+      loadBoard(true);
+    }
+    syncRoundInBackground_(a);
+    clearInterval(state.pollTimer);
+    state.pollTimer = setInterval(boardPoll_, 12000);
+  }
+
+  // showLoading=true is only true for the very first load of a round (and
+  // when it's reopened): that's the only time we rebuild the topbar/search
+  // box. The background poll (every 6s) only refreshes the count numbers
+  // and the student list below — it used to rebuild the whole screen
+  // (including recreating and re-focusing the search box), which is what
+  // kept popping the mobile keyboard open every few seconds while someone
+  // was mid-search or mid-tap.
+  // SPEED: the poll used to fire every 6s regardless of whether the last
+  // one had come back. When the server is slow (several volunteers on one
+  // spreadsheet) requests piled up in Apps Script's queue and every click
+  // waited behind them. Now it skips a tick if a load or a write is still
+  // in flight, or if the phone screen/tab isn't visible.
+  function boardPoll_() {
+    if (document.hidden || state.boardLoading || state.pendingWrites > 0) return;
+    loadBoard(false);
+  }
+
+  function loadBoard(showLoading) {
+    // Roll Call owns the screen until the volunteer taps Back.
+    if (state.rollCallActive && !showLoading) return;
+    if (showLoading) app.innerHTML = `<div class="stateMsg">Opening ${escapeHtml(state.current.Round_Name || 'round')}…</div>`;
+    state.boardLoading = true;
+    google.script.run
+      .withSuccessHandler(res => {
+        state.boardLoading = false;
+        // A write finished-or-started while this poll was in flight: its
+        // data may predate the write, so drop it (the next poll catches up).
+        if (!showLoading && state.pendingWrites > 0) return;
+        // A poll request that was already in flight when Roll Call opened
+        // must not repaint over it.
+        // Roll Call owns the screen — also covers a refresh that restores straight
+        // into Roll Call while the board's first load is still in flight.
+        if (state.rollCallActive) { state.boardLoading = false; return; }
+        if (!res.success) {
+          toast(res.message || 'Could not load round.');
+          // An admin paused/stopped this round while it was open — bounce
+          // back to the assignments list rather than leaving a stuck or
+          // stale board on screen.
+          if (res.accessPaused || res.accessStopped) {
+            clearInterval(state.pollTimer);
+            google.script.run
+              .withSuccessHandler(loginRes => {
+                if (loginRes.success) state.assignments = loginRes.assignments;
+                renderAssignments();
+              })
+              .withFailureHandler(() => renderAssignments())
+              .volunteerLogin(state.mobile);
+          }
+          return;
+        }
+        state.students = res.data || [];
+        state.boardCache = state.boardCache || {};
+        state.boardCache[state.current.Company_Name + '||' + state.current.Round_Name] = state.students;
+        if (showLoading || !document.getElementById('boardBody')) {
+          renderBoard();
+        } else {
+          refreshBoardDataOnly();
+        }
+      })
+      .withFailureHandler(err => { state.boardLoading = false; toast('Error: ' + err.message); })
+      // Only pull Present students into Round 1 on the initial open of a
+      // round (showLoading === true), not on every 6s background poll —
+      // pulling is idempotent either way, but there's no reason to hit the
+      // Registered_Students sheet on every poll tick. state.mobile is sent
+      // so the backend can reject the call if an admin Pauses/Stops this
+      // volunteer's access to the round while they're sitting on it — the
+      // renderAssignments() screen already keeps a Paused/Stopped round
+      // from being opened in the first place, this is just the
+      // belt-and-braces server-side check for a board already open.
+      .getVolunteerRoundBoard(state.current.Company_Name, state.current.Round_Name, false, state.mobile);
+  }
+
+  // Runs AFTER the board is already on screen: pulls Present students into
+  // Round 1 and catches up Shortlisted carry-forward on the server. This
+  // used to happen inside the board load itself, which is what made
+  // opening a round take 12-15s. If it added anything, reload quietly.
+  function syncRoundInBackground_(a) {
+    google.script.run
+      .withSuccessHandler(res => {
+        if (res && res.success && res.changed && state.current === a && !state.rollCallActive) loadBoard(false);
+      })
+      .withFailureHandler(() => {})
+      .syncVolunteerRoundOnOpen(a.Company_Name, a.Round_Name, state.mobile);
+  }
+
+  function computeCounts() {
+    const counts = { Pending: 0, Appeared: 0, Shortlisted: 0, Rejected: 0, Selected: 0 };
+    state.students.forEach(s => {
+      const r = (s.Result || '').trim();
+      if (counts[r] !== undefined) counts[r]++; else counts.Pending++;
+    });
+    return counts;
+  }
+
+  function updateCounts() {
+    const counts = computeCounts();
+    const row = document.getElementById('countsRow');
+    if (!row) return;
+    Object.keys(counts).forEach(k => {
+      const el = row.querySelector('.cnt.' + k.toLowerCase() + ' .n');
+      if (el) el.textContent = counts[k];
+    });
+  }
+
+  // Used for every refresh that ISN'T the first load of a round (background
+  // polling, and after any action that changes a student's status/group) —
+  // updates the numbers and re-renders just the student list, and restores
+  // the page's scroll position afterward. Rebuilding the whole screen on
+  // every poll used to yank the page back to the top every few seconds,
+  // which was what made it hard to work near the bottom of a long list.
+  function refreshBoardDataOnly() {
+    const scrollY = window.scrollY;
+    updateCounts();
+    renderBoardBody();
+    window.scrollTo(0, scrollY);
+  }
+
+  function renderBoard() {
+    const a = state.current;
+    const counts = computeCounts();
+    // Admin-role volunteers only, and only once this round actually has
+    // groups to export — mirrors the same gating the main admin app uses
+    // for its own "Download all groups" button.
+    const showGroupDownload = isGD(a.Round_Type) && a.Role === 'Admin' &&
+      state.students.some(s => s.Group_No !== '' && s.Group_No !== null && s.Group_No !== undefined);
+
+    app.innerHTML = `
+      <div class="topbar">
+        <button class="backBtn" id="backBtn">‹</button>
+        <div class="titles">
+          <div class="co">${escapeHtml(a.Company_Name)}${state.isPermanentAdmin ? ' <span style="background:#4f46e5;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:999px;vertical-align:middle;">ADMIN</span>' : ''}</div>
+          <div class="rd">${escapeHtml(a.Round_Name)} · ${escapeHtml(a.Round_Type || 'Round')}</div>
+        </div>
+      </div>
+      ${showGroupDownload ? `
+      <div class="groupDownloadRow" style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+        <span style="font-size:12px;font-weight:700;color:#64748b;">Download all groups:</span>
+        <button class="btn ghost sm" id="dlGroupsXlsx">⤓ Excel</button>
+        <button class="btn ghost sm" id="dlGroupsPdf">⤓ PDF</button>
+      </div>` : ''}
+      ${isGD(a.Round_Type) ? `
+      <div style="margin-bottom:10px;">
+        <button class="btn sm" id="startRollCallBtn" style="background:#059669;color:#fff;">🏃 Start Roll Call</button>
+      </div>` : ''}
+      <div class="counts" id="countsRow">
+        <div class="cnt pending" data-status="Pending"><div class="n">${counts.Pending}</div><div class="l">Pending</div></div>
+        <div class="cnt appeared" data-status="Appeared"><div class="n">${counts.Appeared}</div><div class="l">Appeared</div></div>
+        <div class="cnt shortlisted" data-status="Shortlisted"><div class="n">${counts.Shortlisted}</div><div class="l">Shortlist</div></div>
+        <div class="cnt rejected" data-status="Rejected"><div class="n">${counts.Rejected}</div><div class="l">Rejected</div></div>
+        <div class="cnt selected" data-status="Selected"><div class="n">${counts.Selected}</div><div class="l">Selected</div></div>
+      </div>
+      <div class="filterHint" id="filterHint" style="display:none;"></div>
+      <input class="searchBox" id="searchInput" placeholder="Search by name or enrollment no." value="${escapeHtml(state.search)}">
+      <div class="bulkBar" id="bulkBar">${renderBulkBarHtml()}</div>
+      <div id="boardBody"></div>
+    `;
+    document.getElementById('backBtn').onclick = () => {
+      clearInterval(state.pollTimer);
+      // Refetch before showing the list — if the admin assigned a new
+      // round while this volunteer was inside a board, "Back" should show
+      // it immediately rather than waiting for the next background poll.
+      google.script.run
+        .withSuccessHandler(res => { if (res.success) state.assignments = res.assignments; renderAssignments(); })
+        .withFailureHandler(() => renderAssignments())
+        .volunteerLogin(state.mobile);
+    };
+    if (showGroupDownload) {
+      document.getElementById('dlGroupsXlsx').onclick = () => downloadAllGroupsFromPortal('xlsx');
+      document.getElementById('dlGroupsPdf').onclick = () => downloadAllGroupsFromPortal('pdf');
+    }
+    if (isGD(a.Round_Type)) {
+      document.getElementById('startRollCallBtn').onclick = openRollCall;
+    }
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('input', e => { state.search = e.target.value; renderBoardBody(); });
+    // No auto-focus here on purpose — pulling up the keyboard the moment a
+    // round opens (before the volunteer has asked for it) is exactly the
+    // unwanted popping behaviour being fixed. They tap the search box when
+    // they actually want to search.
+
+    wireBulkBar();
+    wireCountClicks();
+    applyFilterHint();
+    renderBoardBody();
+  }
+
+  // Mirrors Index.html's downloadAllGroups(format) in the main admin app —
+  // same section-per-group shape, same exportAllGroupsFile backend call —
+  // so Excel/PDF output is identical whichever surface generated it. Only
+  // reachable for Admin-role volunteers on a GD round that already has
+  // groups (see showGroupDownload in renderBoard above).
+  // Asks Landscape or Portrait before a GD group-list PDF is generated.
+  function askPdfOrientation_(run) {
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    const box = (w, h) => `<span style="display:block;border:2px solid #94a3b8;border-radius:3px;width:${w}px;height:${h}px;"></span>`;
+    const optCss = 'flex:1;border:2px solid #c7d2fe;background:#fff;border-radius:14px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;font:600 14px inherit;color:#334155;cursor:pointer;';
+    ov.innerHTML = `
+      <div style="background:#fff;border-radius:18px;max-width:340px;width:100%;padding:18px;">
+        <div style="font-weight:800;font-size:16px;color:#1e293b;margin-bottom:4px;">Print orientation</div>
+        <div style="font-size:13px;color:#64748b;margin-bottom:14px;">How should the PDF be laid out? The list is fitted to the full page width with 0.5&quot; left and right margins.</div>
+        <div style="display:flex;gap:10px;margin-bottom:10px;">
+          <button type="button" data-o="landscape" style="${optCss}">${box(56, 40)}Landscape</button>
+          <button type="button" data-o="portrait" style="${optCss}">${box(40, 56)}Portrait</button>
+        </div>
+        <button type="button" data-o="" style="width:100%;background:none;border:0;color:#64748b;font-size:14px;padding:6px;cursor:pointer;">Cancel</button>
+      </div>`;
+    ov.addEventListener('click', e => {
+      const b = e.target.closest('[data-o]');
+      if (!b && e.target !== ov) return;
+      const o = b ? b.getAttribute('data-o') : '';
+      document.body.removeChild(ov);
+      if (o) run(o);
+    });
+    document.body.appendChild(ov);
+  }
+
+  function downloadAllGroupsFromPortal(format, orientation) {
+    if (state.downloadingGroups) return;
+    if (format === 'pdf' && !orientation) { askPdfOrientation_(o => downloadAllGroupsFromPortal('pdf', o)); return; }
+    const a = state.current;
+    const groups = {};
+    state.students.forEach(s => {
+      const g = s.Group_No;
+      if (g === '' || g === null || g === undefined) return;
+      const gn = Number(g);
+      (groups[gn] = groups[gn] || []).push(s);
+    });
+    const groupNos = Object.keys(groups).map(Number).sort((x, y) => x - y);
+    if (!groupNos.length) { toast('No groups exist yet for this round.'); return; }
+
+    const todayStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const fields = [
+      { key: 'Enrollment_No', label: 'Enrollment No' },
+      { key: 'Student_Name', label: 'Student Name' },
+      { key: 'Branch', label: 'Branch' },
+      { key: 'College', label: 'College' },
+      { key: 'Result', label: 'Result' }
+    ];
+    const sections = groupNos.map(g => {
+      const members = groups[g].slice().sort((x, y) => String(x.Student_Name || '').localeCompare(String(y.Student_Name || '')));
+      return {
+        groupNo: g,
+        title: [
+          'GYAN GANGA INSTITUTE OF TECHNOLOGY & SCIENCES, JABALPUR',
+          a.Company_Name || '',
+          'Group ' + g + '   •   ' + todayStr
+        ],
+        fields,
+        rows: members.map(s => ({
+          Enrollment_No: s.Enrollment_No, Student_Name: s.Student_Name,
+          Branch: s.Branch || '', College: s.College || '', Result: s.Result || 'Pending'
+        }))
+      };
+    });
+
+    state.downloadingGroups = true;
+    const btns = [document.getElementById('dlGroupsXlsx'), document.getElementById('dlGroupsPdf')];
+    btns.forEach(b => { if (b) b.disabled = true; });
+    toast('Preparing download…');
+
+    google.script.run
+      .withSuccessHandler(res => {
+        state.downloadingGroups = false;
+        btns.forEach(b => { if (b) b.disabled = false; });
+        if (!res.success) { toast(res.message || 'Export failed'); return; }
+        const byteChars = atob(res.base64);
+        const byteNumbers = new Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+        const blob = new Blob([new Uint8Array(byteNumbers)], { type: res.mimeType });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url; link.download = res.fileName;
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      })
+      .withFailureHandler(err => {
+        state.downloadingGroups = false;
+        btns.forEach(b => { if (b) b.disabled = false; });
+        toast('Error: ' + err.message);
+      })
+      .exportAllGroupsFile(sections, a.Company_Name + '_' + a.Round_Name + '_All_Groups', format, format === 'pdf' ? orientation : '');
+  }
+
+  // ---------------------------------------------------------------
+  // ROLL CALL MODE — fast walk-the-row GD group building. Whoever's
+  // running it keeps one screen open showing "Group N — X/size", types a
+  // few letters of a name or enrollment number, taps the match, and the
+  // group fills; the screen auto-advances to the next group once it's
+  // full. Deliberately unrestricted by Assigned_Groups — unlike the
+  // normal group cards above (which only show a scoped volunteer their
+  // own group), Roll Call lets ANY volunteer or admin on this round add
+  // to ANY group, since filling ~20 groups fast needs several people free
+  // to jump wherever they're needed. counts.poll every few seconds so
+  // several people running this on the same round at once stay in sync;
+  // the actual write (rollCallAssignStudent) re-checks the real headcount
+  // under a server-side lock right before writing, so a group can never
+  // be overfilled even if two people tap into it at the same instant.
+  // ---------------------------------------------------------------
+  function openRollCall() {
+    // FIX: the board's 6s background poll (state.pollTimer -> loadBoard(false))
+    // used to keep running while Roll Call was open. Roll Call has no
+    // #boardBody, so loadBoard() thought the board was missing and called
+    // renderBoard(), which threw the volunteer back to the board screen
+    // a few seconds after starting. Stop that poll for the whole session.
+    clearInterval(state.pollTimer);
+    state.pollTimer = null;
+    state.rollCallActive = true;
+    writeSession_({ rollCall: true });
+    state.rollCall = { groupNo: 1, size: 20, counts: {}, search: '', busy: false, lastAdded: null, error: '', pollTimer: null };
+    app.innerHTML = `<div class="stateMsg">Loading Roll Call…</div>`;
+    google.script.run
+      .withSuccessHandler(res => {
+        if (!res.success) { toast(res.message || 'Could not load Roll Call.'); exitRollCallToBoard_(); return; }
+        state.rollCall.size = res.groupSize || 20;
+        state.rollCall.counts = res.counts || {};
+        // Start on the first group that isn't already full, so reopening
+        // Roll Call after a break picks up where it left off instead of
+        // always restarting at Group 1.
+        let g = 1;
+        while ((state.rollCall.counts[g] || 0) >= state.rollCall.size) g++;
+        state.rollCall.groupNo = g;
+        renderRollCall();
+        clearInterval(state.rollCall.pollTimer);
+        state.rollCall.pollTimer = setInterval(rollCallPoll, 6000);
+      })
+      .withFailureHandler(err => { toast('Error: ' + err.message); exitRollCallToBoard_(); })
+      .getGDRollCallState(state.current.Company_Name, state.current.Round_Name);
+  }
+
+  function closeRollCall() {
+    exitRollCallToBoard_();
+  }
+
+  // Single exit path: stop Roll Call's own poll, clear the flag, reload the
+  // board fresh and restart the normal board poll that openRollCall paused.
+  function exitRollCallToBoard_() {
+    if (state.rollCall) clearInterval(state.rollCall.pollTimer);
+    state.rollCallActive = false;
+    writeSession_({ rollCall: false });
+    loadBoard(true);
+    clearInterval(state.pollTimer);
+    state.pollTimer = setInterval(boardPoll_, 12000);
+  }
+
+  // Counts-only refresh (not the whole board) — cheap enough to run every
+  // few seconds so this screen reflects adds made by someone else running
+  // Roll Call on the same round at the same time. Uses the lightweight
+  // counts-only endpoint rather than getGDRollCallState, since re-reading
+  // the full round board every few seconds from several screens at once
+  // was part of what was slowing the whole spreadsheet down.
+  function rollCallPoll() {
+    if (document.hidden || state.rollCall.pollBusy) return;
+    state.rollCall.pollBusy = true;
+    google.script.run
+      .withSuccessHandler(res => { state.rollCall.pollBusy = false; if (res.success && !state.rollCall.busy) { state.rollCall.counts = res.counts || {}; updateRollCallCountDisplay(); } })
+      .withFailureHandler(() => { state.rollCall.pollBusy = false; })
+      .getGDRollCallCounts(state.current.Company_Name, state.current.Round_Name);
+  }
+
+  function rollCallGoTo(n) {
+    const g = Math.max(1, parseInt(n, 10) || 1);
+    state.rollCall.groupNo = g;
+    state.rollCall.error = '';
+    patchRollCallUI();
+  }
+
+  // Matches computed straight from state.students (already loaded, no
+  // extra round trip per keystroke) — only students still ungrouped,
+  // matching by name or enrollment number, capped short since this is a
+  // quick tap while someone's standing in front of you, not a roster browse.
+  function rollCallMatches() {
+    const q = (state.rollCall.search || '').trim().toLowerCase();
+    if (!q) return [];
+    return state.students
+      .filter(s => (s.Group_No === '' || s.Group_No === null || s.Group_No === undefined))
+      .filter(s => String(s.Student_Name || '').toLowerCase().includes(q) || String(s.Enrollment_No || '').toLowerCase().includes(q))
+      .slice(0, 8);
+  }
+
+  function renderRollCall() {
+    const rc = state.rollCall;
+    const count = rc.counts[rc.groupNo] || 0;
+    app.innerHTML = `
+      <div class="topbar">
+        <button class="backBtn" id="rcBack">‹</button>
+        <div class="titles">
+          <div class="co">🏃 Roll Call Mode</div>
+          <div class="rd">${escapeHtml(state.current.Company_Name)} · ${escapeHtml(state.current.Round_Name)}</div>
+        </div>
+      </div>
+      <div class="rcHeader">
+        <div>
+          <div class="rcLabel">Now filling</div>
+          <div class="rcGroup" id="rcGroupLabel">Group ${rc.groupNo}</div>
+        </div>
+        <div>
+          <div class="rcCount${count >= rc.size ? ' full' : ''}" id="rcCount">${count} / ${rc.size}</div>
+          <div class="rcFullTag" id="rcFullTag" style="${count >= rc.size ? '' : 'display:none;'}">Full ✓</div>
+        </div>
+      </div>
+      <div class="rcSwitcher">
+        <button class="btn ghost sm" id="rcPrev" ${rc.groupNo <= 1 ? 'disabled' : ''}>−</button>
+        <input type="number" min="1" id="rcGroupInput" value="${rc.groupNo}">
+        <button class="btn ghost sm" id="rcNext">+</button>
+        <span class="hint" style="margin:0 0 0 4px;">jump to any group anytime</span>
+      </div>
+      <div class="rcSwitcher">
+        <span class="hint" style="margin:0 4px 0 0;font-weight:600;">GROUP SIZE</span>
+        <input type="number" min="1" max="500" id="rcSizeInput" value="${rc.size}">
+        <span class="hint" style="margin:0 0 0 4px;">students per group</span>
+      </div>
+      <input class="searchBox" id="rcSearch" placeholder="Type name or enrollment number…" value="${escapeHtml(rc.search)}">
+      <div id="rcMatches"></div>
+      <div id="rcError" class="rcError" style="display:none;"></div>
+      <div id="rcLastAdded"></div>
+    `;
+    document.getElementById('rcBack').onclick = closeRollCall;
+    document.getElementById('rcPrev').onclick = () => rollCallGoTo(rc.groupNo - 1);
+    document.getElementById('rcNext').onclick = () => rollCallGoTo(rc.groupNo + 1);
+    document.getElementById('rcGroupInput').addEventListener('change', e => rollCallGoTo(e.target.value));
+    document.getElementById('rcSizeInput').addEventListener('change', e => {
+      const n = parseInt(e.target.value, 10);
+      if (!n || n < 1 || n > 500) { toast('Group size must be between 1 and 500.'); e.target.value = rc.size; return; }
+      rc.size = n;
+      patchRollCallUI();
+      // Saved on the round so every other volunteer/admin gets the same size.
+      google.script.run
+        .withSuccessHandler(res => { if (!res.success) toast(res.message || 'Could not save group size.'); })
+        .withFailureHandler(() => {})
+        .setGDGroupSize(state.current.Company_Name, state.current.Round_Name, n, null, state.current.Volunteer_Name, state.mobile);
+    });
+    const searchEl = document.getElementById('rcSearch');
+    searchEl.addEventListener('input', e => { rc.search = e.target.value; renderRollCallMatches(); });
+    searchEl.focus();
+    renderRollCallMatches();
+    renderRollCallLastAdded();
+  }
+
+  // Surgical update — patches just the pieces that changed (group number,
+  // count, matches list, last-added bar) instead of rebuilding the whole
+  // screen via renderRollCall(). Rebuilding the full innerHTML on every
+  // single add was visibly flickering and — worse on a phone — briefly
+  // dropping keyboard focus out of the search box every time, forcing a
+  // re-tap before the next name could be typed. This keeps the same DOM
+  // nodes (and their already-attached listeners) in place and just
+  // updates text/attributes, which is both faster and smoother.
+  function patchRollCallUI() {
+    const rc = state.rollCall;
+    const count = rc.counts[rc.groupNo] || 0;
+    const groupLabel = document.getElementById('rcGroupLabel');
+    if (groupLabel) groupLabel.textContent = 'Group ' + rc.groupNo;
+    const countEl = document.getElementById('rcCount');
+    if (countEl) {
+      countEl.textContent = count + ' / ' + rc.size;
+      countEl.className = 'rcCount' + (count >= rc.size ? ' full' : '');
+    }
+    const fullTag = document.getElementById('rcFullTag');
+    if (fullTag) fullTag.style.display = count >= rc.size ? '' : 'none';
+    const prevBtn = document.getElementById('rcPrev');
+    if (prevBtn) prevBtn.disabled = rc.groupNo <= 1;
+    const groupInput = document.getElementById('rcGroupInput');
+    if (groupInput) groupInput.value = rc.groupNo;
+    const searchEl = document.getElementById('rcSearch');
+    if (searchEl) searchEl.value = rc.search;
+    renderRollCallMatches();
+    renderRollCallLastAdded();
+  }
+
+  function renderRollCallMatches() {
+    const el = document.getElementById('rcMatches');
+    if (!el) return;
+    if (!state.rollCall.search.trim()) { el.innerHTML = ''; return; }
+    const matches = rollCallMatches();
+    if (!matches.length) {
+      el.innerHTML = '<div class="hint">No ungrouped student matches — check spelling, or they may already be in a group.</div>';
+      return;
+    }
+    el.innerHTML = matches.map(m => `
+      <button class="rcMatch" data-en="${escapeHtml(m.Enrollment_No)}">
+        <span>${escapeHtml(m.Student_Name)} (${escapeHtml(m.Enrollment_No)})</span>
+        <span class="rcAdd">+ Add</span>
+      </button>
+    `).join('');
+    el.querySelectorAll('.rcMatch').forEach(btn => {
+      btn.onclick = () => {
+        const en = btn.getAttribute('data-en');
+        const m = matches.find(x => String(x.Enrollment_No) === en);
+        if (m) rollCallAdd(m);
+      };
+    });
+  }
+
+  function renderRollCallLastAdded() {
+    const el = document.getElementById('rcLastAdded');
+    if (!el) return;
+    const la = state.rollCall.lastAdded;
+    if (!la) { el.innerHTML = ''; return; }
+    el.innerHTML = `
+      <div class="rcLastAddedBar">
+        <span>✓ Added <b>${escapeHtml(la.name)}</b> to Group ${la.groupNo}</span>
+        <button class="rcUndo" id="rcUndoBtn">Undo</button>
+      </div>
+    `;
+    document.getElementById('rcUndoBtn').onclick = rollCallUndo;
+  }
+
+  function showRollCallError(msg) {
+    const el = document.getElementById('rcError');
+    if (!el) return;
+    if (!msg) { el.style.display = 'none'; el.textContent = ''; return; }
+    el.style.display = 'block'; el.textContent = msg;
+  }
+
+  function updateRollCallCountDisplay() {
+    const rc = state.rollCall;
+    const countEl = document.getElementById('rcCount');
+    if (!countEl) return;
+    const count = rc.counts[rc.groupNo] || 0;
+    countEl.textContent = count + ' / ' + rc.size;
+    countEl.className = 'rcCount' + (count >= rc.size ? ' full' : '');
+    const fullTag = document.getElementById('rcFullTag');
+    if (fullTag) fullTag.style.display = count >= rc.size ? '' : 'none';
+  }
+
+  function rollCallAdd(student) {
+    const rc = state.rollCall;
+    if (rc.busy) return;
+    rc.busy = true;
+    showRollCallError('');
+    const a = state.current;
+    google.script.run
+      .withSuccessHandler(res => {
+        rc.busy = false;
+        if (!res.success) {
+          showRollCallError(res.message);
+          // The group filled (possibly from someone else's device) between
+          // this screen's last count and this tap — move on automatically
+          // instead of leaving the volunteer stuck retrying a full group.
+          if (res.groupFull) {
+            rc.counts[res.groupNo] = res.count;
+            rc.groupNo = res.groupNo + 1;
+            patchRollCallUI();
+          }
+          return;
+        }
+        const s = state.students.find(x => String(x.Enrollment_No) === String(student.Enrollment_No));
+        if (s) s.Group_No = res.groupNo;
+        rc.counts[res.groupNo] = res.count;
+        rc.lastAdded = { enrollmentNo: res.enrollmentNo, name: res.studentName, groupNo: res.groupNo };
+        rc.search = '';
+        if (res.groupFull) rc.groupNo = res.groupNo + 1; // auto-advance
+        patchRollCallUI();
+      })
+      .withFailureHandler(err => { rc.busy = false; showRollCallError('Error: ' + err.message); })
+      .rollCallAssignStudent(a.Company_Name, a.Round_Name, student.Enrollment_No, rc.groupNo, rc.size, null, a.Volunteer_Name, a.Volunteer_Mobile);
+  }
+
+  function rollCallUndo() {
+    const rc = state.rollCall;
+    if (!rc.lastAdded || rc.busy) return;
+    const undone = rc.lastAdded;
+    const a = state.current;
+    rc.busy = true;
+    google.script.run
+      .withSuccessHandler(res => {
+        rc.busy = false;
+        if (!res.success) { showRollCallError(res.message); return; }
+        const s = state.students.find(x => String(x.Enrollment_No) === String(undone.enrollmentNo));
+        if (s) s.Group_No = '';
+        rc.counts[undone.groupNo] = Math.max(0, (rc.counts[undone.groupNo] || 1) - 1);
+        rc.lastAdded = null;
+        patchRollCallUI();
+      })
+      .withFailureHandler(err => { rc.busy = false; showRollCallError('Error: ' + err.message); })
+      .removeStudentFromGDGroup(a.Company_Name, a.Round_Name, undone.enrollmentNo, null, a.Volunteer_Name, a.Volunteer_Mobile);
+  }
+
+  // ---------------------------------------------------------------
+  // Marking mode — two taps instead of one, on purpose. The first tap on
+  // "Mark Shortlisted" / "Mark Rejected" / "Mark Selected" just switches the
+  // board into that marking mode, which is what makes checkboxes appear (and
+  // only in front of students who are still Pending — anyone already
+  // decided is frozen out of the tick list so a Rejected pass can't
+  // accidentally scoop up someone already Shortlisted). The second tap
+  // ("Confirm") is the one that actually writes the result and locks those
+  // students in; "Cancel" backs out without changing anything.
+  // ---------------------------------------------------------------
+  function markClass_(status) {
+    if (status === 'Appeared') return 'appeared';
+    if (status === 'Shortlisted') return 'shortlist';
+    if (status === 'Rejected') return 'reject';
+    if (status === 'MoveGroup') return 'move';
+    return 'select';
+  }
+
+  // 'MoveGroup' is a pseudo-status that reuses the exact same tick-then-
+  // confirm flow as Shortlisted/Rejected/Selected (see the big comment
+  // above enterMarkMode below), but instead of writing a Result it moves
+  // every ticked student into one group number. This replaces what used to
+  // be a "Move to Group" button under every single name inside a GD group
+  // card — with groups of any size that made the list hard to scan, and
+  // only let you move one student at a time anyway. Living beside Mark
+  // Shortlisted / Mark Rejected up top instead keeps every name row to just
+  // the name + status tick, and moving several students to a group is now
+  // one tick pass + one prompt instead of one prompt per student.
+  function renderBulkBarHtml() {
+    const a = state.current;
+    if (!state.markMode) {
+      return `
+        <div>
+          <div class="bulkCount" id="bulkCount">Tap a status below to start marking</div>
+        </div>
+        <div class="bulkActions">
+          <button class="bulkBtn appeared" id="modeAppearedBtn">Mark Appeared</button>
+          <button class="bulkBtn shortlist" id="modeShortlistBtn">Mark Shortlisted</button>
+          <button class="bulkBtn reject" id="modeRejectBtn">Mark Rejected</button>
+          ${isFinal(a) ? '<button class="bulkBtn select" id="modeSelectBtn">Mark Selected</button>' : ''}
+          ${isGD(a.Round_Type) ? '<button class="bulkBtn move" id="modeMoveBtn">Move to Group</button>' : ''}
+        </div>
+      `;
+    }
+    const isMove = state.markMode === 'MoveGroup';
+    const modeLabel = isMove ? 'Moving to group' : ('Marking ' + state.markMode);
+    const confirmLabel = isMove ? 'Move Selected' : ('Confirm ' + state.markMode);
+    return `
+      <div>
+        <div class="bulkCount" id="bulkCount">0 selected · ${escapeHtml(modeLabel)}</div>
+        <span class="bulkSelectAll" id="bulkSelectAllBtn">Select all visible</span>
+      </div>
+      <div class="bulkActions">
+        <button class="bulkBtn ${markClass_(state.markMode)}" id="confirmMarkBtn" disabled>${escapeHtml(confirmLabel)}</button>
+        <button class="bulkBtn clear" id="cancelMarkBtn">Cancel</button>
+      </div>
+    `;
+  }
+
+  function wireBulkBar() {
+    if (!state.markMode) {
+      document.getElementById('modeAppearedBtn').onclick = () => enterMarkMode('Appeared');
+      document.getElementById('modeShortlistBtn').onclick = () => enterMarkMode('Shortlisted');
+      document.getElementById('modeRejectBtn').onclick = () => enterMarkMode('Rejected');
+      const modeSelectBtn = document.getElementById('modeSelectBtn');
+      if (modeSelectBtn) modeSelectBtn.onclick = () => enterMarkMode('Selected');
+      const modeMoveBtn = document.getElementById('modeMoveBtn');
+      if (modeMoveBtn) modeMoveBtn.onclick = () => enterMarkMode('MoveGroup');
+      return;
+    }
+    document.getElementById('confirmMarkBtn').onclick = confirmMark;
+    document.getElementById('cancelMarkBtn').onclick = exitMarkMode;
+    document.getElementById('bulkSelectAllBtn').onclick = () => {
+      const boxes = document.querySelectorAll('.rowCheck');
+      const allChecked = boxes.length > 0 && Array.from(boxes).every(cb => cb.checked);
+      boxes.forEach(cb => {
+        cb.checked = !allChecked;
+        if (!allChecked) state.selected.add(cb.dataset.en); else state.selected.delete(cb.dataset.en);
+      });
+      updateBulkBar();
+    };
+  }
+
+  function enterMarkMode(status) {
+    state.markMode = status;
+    state.selected.clear();
+    document.getElementById('bulkBar').innerHTML = renderBulkBarHtml();
+    wireBulkBar();
+    renderBoardBody(); // reveals checkboxes on Pending students only
+  }
+
+  function exitMarkMode() {
+    state.markMode = null;
+    state.selected.clear();
+    document.getElementById('bulkBar').innerHTML = renderBulkBarHtml();
+    wireBulkBar();
+    renderBoardBody();
+  }
+
+  function updateBulkBar() {
+    const n = state.selected.size;
+    const countEl = document.getElementById('bulkCount');
+    if (countEl) {
+      const modeLabel = state.markMode === 'MoveGroup' ? 'Moving to group' : ('Marking ' + state.markMode);
+      countEl.textContent = state.markMode
+        ? n + (n === 1 ? ' selected' : ' selected') + ' · ' + modeLabel
+        : 'Tap a status below to start marking';
+    }
+    const confirmBtn = document.getElementById('confirmMarkBtn');
+    if (confirmBtn) confirmBtn.disabled = (n === 0);
+    const selectAllBtn = document.getElementById('bulkSelectAllBtn');
+    if (selectAllBtn) {
+      const boxes = document.querySelectorAll('.rowCheck');
+      const allChecked = boxes.length > 0 && Array.from(boxes).every(cb => cb.checked);
+      selectAllBtn.textContent = allChecked ? 'Deselect all visible' : 'Select all visible';
+    }
+  }
+
+  function confirmMark() {
+    const a = state.current;
+    const status = state.markMode;
+    const ids = Array.from(state.selected);
+    if (!ids.length) { toast('Tick at least one student first.'); return; }
+    if (status === 'MoveGroup') { confirmMoveToGroup(ids); return; }
+    // Spell out any decision this would OVERWRITE — that is exactly how
+    // Shortlisted students end up Rejected by mistake.
+    const changing = {};
+    ids.forEach(en => {
+      const st = state.students.find(x => String(x.Enrollment_No) === String(en));
+      const prev = st && String(st.Result || '').trim();
+      if (prev && prev !== status && (prev === 'Shortlisted' || prev === 'Rejected' || prev === 'Selected')) changing[prev] = (changing[prev] || 0) + 1;
+    });
+    const warn = Object.keys(changing).map(k => changing[k] + ' currently ' + k).join(', ');
+    const msg = 'Mark ' + ids.length + ' student' + (ids.length > 1 ? 's' : '') + ' as ' + status + '?' +
+      (warn ? '\n\n⚠ This will CHANGE the existing result of ' + warn + '.' : '');
+    if (!confirm(msg)) return;
+    // SPEED (perceived): update the screen immediately and let the server
+    // catch up in the background; put the old values back if it fails.
+    const before = {};
+    ids.forEach(en => {
+      const s = state.students.find(x => String(x.Enrollment_No) === String(en));
+      if (s) { before[en] = s.Result; s.Result = status; }
+    });
+    state.pendingWrites++;
+    exitMarkMode();
+    refreshBoardDataOnly();
+    const undoLocal = () => {
+      Object.keys(before).forEach(en => {
+        const s = state.students.find(x => String(x.Enrollment_No) === String(en));
+        if (s) s.Result = before[en];
+      });
+      refreshBoardDataOnly();
+    };
+    google.script.run
+      .withSuccessHandler(res => {
+        state.pendingWrites--;
+        if (!res.success) { undoLocal(); toast(res.message || 'Could not update.'); return; }
+        toast(status === 'Shortlisted'
+          ? ids.length + ' shortlisted — carried into the next round automatically.'
+          : ids.length + ' marked ' + status + '.');
+      })
+      .withFailureHandler(err => { state.pendingWrites--; undoLocal(); toast('Error: ' + err.message); })
+      .bulkSetRoundStatus(a.Company_Name, a.Round_Name, ids, status, null, a.Volunteer_Name, a.Volunteer_Mobile);
+  }
+
+  // Moves every ticked student into one target group. There's no bulk
+  // group-move endpoint on the server, so this fires one setStudentGDGroup
+  // call per student and waits for all of them before refreshing — still
+  // one prompt and one confirmation for the whole batch from the
+  // volunteer's side.
+  function confirmMoveToGroup(ids) {
+    const a = state.current;
+    const target = prompt('Move ' + ids.length + ' student' + (ids.length > 1 ? 's' : '') + ' to which group number?');
+    if (!target) return;
+    const groupNo = parseInt(target.trim(), 10);
+    if (!groupNo || groupNo < 1) { toast('Enter a valid group number.'); return; }
+    if (!confirm('Move ' + ids.length + ' student' + (ids.length > 1 ? 's' : '') + ' to Group ' + groupNo + '?')) return;
+
+    // SPEED: one server call for the whole batch (setStudentsGDGroup)
+    // instead of one call per student.
+    const before = {};
+    ids.forEach(en => {
+      const s = state.students.find(x => String(x.Enrollment_No) === String(en));
+      if (s) { before[en] = s.Group_No; s.Group_No = groupNo; }
+    });
+    state.pendingWrites++;
+    exitMarkMode();
+    refreshBoardDataOnly();
+    google.script.run
+      .withSuccessHandler(res => {
+        state.pendingWrites--;
+        if (!res.success) { revertMove_(before); toast(res.message || 'Could not move.'); return; }
+        toast('Moved ' + ids.length + ' student' + (ids.length > 1 ? 's' : '') + ' to Group ' + groupNo + '.');
+      })
+      .withFailureHandler(err => { state.pendingWrites--; revertMove_(before); toast('Error: ' + err.message); })
+      .setStudentsGDGroup(a.Company_Name, a.Round_Name, ids, groupNo, null, a.Volunteer_Name, a.Volunteer_Mobile);
+  }
+
+  function revertMove_(before) {
+    Object.keys(before).forEach(en => {
+      const s = state.students.find(x => String(x.Enrollment_No) === String(en));
+      if (s) s.Group_No = before[en];
+    });
+    refreshBoardDataOnly();
+  }
+
+  // Tapping a Pending / Shortlist / Rejected / Selected tile opens that
+  // list (filters the board to just that status); tapping the same tile
+  // again clears the filter.
+  function wireCountClicks() {
+    document.querySelectorAll('#countsRow .cnt').forEach(el => {
+      el.onclick = () => {
+        const status = el.getAttribute('data-status');
+        state.statusFilter = (state.statusFilter === status) ? null : status;
+        document.querySelectorAll('#countsRow .cnt').forEach(c =>
+          c.classList.toggle('active-filter', c.getAttribute('data-status') === state.statusFilter));
+        applyFilterHint();
+        renderBoardBody();
+      };
+    });
+  }
+
+  function applyFilterHint() {
+    const hint = document.getElementById('filterHint');
+    if (!hint) return;
+    if (state.statusFilter) {
+      hint.style.display = 'block';
+      hint.innerHTML = 'Showing <b>' + escapeHtml(state.statusFilter) + '</b> only · <span class="clear" id="clearFilterBtn">Clear</span>';
+      document.getElementById('clearFilterBtn').onclick = () => {
+        state.statusFilter = null;
+        document.querySelectorAll('#countsRow .cnt').forEach(c => c.classList.remove('active-filter'));
+        applyFilterHint();
+        renderBoardBody();
+      };
+    } else {
+      hint.style.display = 'none';
+      hint.innerHTML = '';
+    }
+  }
+
+  function filteredStudents() {
+    const q = state.search.trim().toLowerCase();
+    let list = state.students;
+    if (state.statusFilter) {
+      list = list.filter(s => {
+        const r = (s.Result || '').trim();
+        return state.statusFilter === 'Pending' ? !r : r === state.statusFilter;
+      });
+    }
+    if (!q) return list;
+    return list.filter(s =>
+      String(s.Enrollment_No || '').toLowerCase().includes(q) ||
+      String(s.Student_Name || '').toLowerCase().includes(q));
+  }
+
+  function renderBoardBody() {
+    const body = document.getElementById('boardBody');
+    const a = state.current;
+    if (isGD(a.Round_Type)) {
+      body.innerHTML = renderGDGroupsHtml();
+      wireGDHandlers();
+    } else {
+      body.innerHTML = renderFlatListHtml(filteredStudents());
+      wireCheckboxes(body);
+    }
+    updateBulkBar();
+  }
+
+  // Small colored ✓/✕ shown right before the student's name, matching the
+  // buttons below (amber Shortlisted, red Rejected, green Selected) — a
+  // quick visual cue without needing to look down at the button row.
+  function statusTickHtml(s) {
+    const r = (s.Result || '').trim();
+    if (r === 'Appeared') return '<span class="tick appeared" title="Appeared">●</span>';
+    if (r === 'Shortlisted') return '<span class="tick shortlisted" title="Shortlisted">✓</span>';
+    if (r === 'Rejected') return '<span class="tick rejected" title="Rejected">✕</span>';
+    if (r === 'Selected') return '<span class="tick selected" title="Selected">✓</span>';
+    return '';
+  }
+
+  // A tick box in front of every name for multi-select, instead of a
+  // Shortlist/Reject/Selected/Move-to-Group button on every row — those
+  // live once in the bulk bar above the list instead (see
+  // renderBulkBarHtml), so every row here is just the tick + name. The
+  // checkbox renders for every student while a marking/move pass is active
+  // (state.markMode set) — including already-decided ones, so a result can
+  // be corrected by just ticking them again under the right status and
+  // confirming.
+  function studentRowHtml(s) {
+    const en = String(s.Enrollment_No);
+    const checked = state.selected.has(en) ? 'checked' : '';
+    const showCheckbox = !!state.markMode;
+    const st = String(s.Result || '').trim().toLowerCase();
+    const stCls = ['appeared', 'shortlisted', 'rejected', 'selected'].indexOf(st) !== -1 ? ' st-' + st : '';
+    return `
+      <div class="student${stCls}">
+        ${showCheckbox
+          ? `<input type="checkbox" class="rowCheck" data-en="${escapeHtml(s.Enrollment_No)}" ${checked}>`
+          : `<span class="rowCheckSpacer"></span>`}
+        <div class="student-info">
+          <div class="name">${statusTickHtml(s)}${escapeHtml(s.Student_Name || '(no name)')}</div>
+          <div class="meta">${escapeHtml(s.Enrollment_No)} · ${escapeHtml(s.Branch || '')} ${s.College ? '· ' + escapeHtml(s.College) : ''}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderFlatListHtml(students) {
+    if (!students.length) return '<div class="stateMsg">No students found.</div>';
+    return '<div class="card" style="padding:6px 18px;">' + students.map(s => studentRowHtml(s)).join('') + '</div>';
+  }
+
+  function wireCheckboxes(scopeEl) {
+    scopeEl.querySelectorAll('.rowCheck').forEach(cb => {
+      cb.onchange = () => {
+        const en = cb.dataset.en;
+        if (cb.checked) state.selected.add(en); else state.selected.delete(en);
+        updateBulkBar();
+      };
+    });
+  }
+
+  // ---- GD groups ----
+
+  // A round's Assigned_Groups (set by the admin, comma-separated group
+  // numbers) restricts a volunteer to specific groups. Blank/absent means
+  // unrestricted — they manage the whole round, same as before.
+  function assignedGroupNumbers_(a) {
+    return String(a.Assigned_Groups || '').split(',')
+      .map(s => s.trim()).filter(Boolean).map(Number).filter(n => !isNaN(n));
+  }
+
+  function groupCardHtml_(g, members, size, managerLabel, filterActive, showDownload) {
+    // Closed by default (state.openGroups starts empty each time a round is
+    // opened) — the group name itself is the toggle button; tapping it
+    // expands/collapses that one group without touching the others.
+    // While a status filter or search is active, every rendered group
+    // (which by this point only includes groups with a match) opens
+    // automatically — otherwise tapping "Shortlisted" up top would compute
+    // the right students but hide them behind still-collapsed group cards.
+    const isOpen = !!filterActive || state.openGroups.has(g);
+    return `
+      <div class="groupCard">
+        <button type="button" class="groupToggle" data-toggle-group="${g}">
+          <div class="gname"><span class="chev">${isOpen ? '▾' : '▸'}</span>Group ${g}</div>
+          <div class="gcount">${members.length}/${size}</div>
+        </button>
+        <div class="groupBody" style="display:${isOpen ? 'block' : 'none'};">
+          <div class="groupManager">Managed by: ${managerLabel}</div>
+          ${members.map(s => studentRowHtml(s)).join('')}
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+            <button class="btn ghost sm" data-add-group="${g}">+ Add Student</button>
+            ${showDownload && members.length ? `
+            <button class="btn ghost sm" data-dl-group="${g}" data-dl-format="xlsx">⤓ Excel</button>
+            <button class="btn ghost sm" data-dl-group="${g}" data-dl-format="pdf">⤓ PDF</button>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderGDGroupsHtml() {
+    const a = state.current;
+    const size = Math.max(1, parseInt(a.GD_Group_Size, 10) || 5);
+    // Same gating as the header's "Download all groups" — Admin-role
+    // volunteers only. Per-group download reuses the exact same rule so a
+    // volunteer restricted to their own group(s) doesn't see a button that
+    // would fail on the server (exportFormattedFile itself has no
+    // permission check, so this is purely a UI-consistency choice).
+    const showDownload = isGD(a.Round_Type) && a.Role === 'Admin';
+    const grouped = {};
+    const ungrouped = [];
+    filteredStudents().forEach(s => {
+      const g = s.Group_No;
+      if (g === '' || g === null || g === undefined) { ungrouped.push(s); return; }
+      (grouped[g] = grouped[g] || []).push(s);
+    });
+    const groupNos = Object.keys(grouped).map(Number).sort((x, y) => x - y);
+    if (!groupNos.length) state.groupCount = Math.max(state.groupCount, Math.ceil(state.students.length / size) || 1);
+    const totalGroups = Math.max(state.groupCount, groupNos.length ? Math.max(...groupNos) : 0);
+
+    const myGroups = assignedGroupNumbers_(a);
+    const restricted = myGroups.length > 0;
+    const managerLabel = a.Volunteer_Name ? escapeHtml(a.Volunteer_Name) : 'you';
+
+    // A status filter (tapping Pending/Shortlisted/Rejected/Selected up top)
+    // or a search narrows down which students should be visible. When
+    // that's the case, groups with no matching student are skipped
+    // entirely (nothing useful to show), and every group that does have a
+    // match is passed filterActive=true so groupCardHtml_ opens it
+    // automatically instead of leaving the volunteer to hunt through
+    // collapsed cards for the students they just asked to see.
+    const filterActive = !!(state.statusFilter || state.search.trim());
+
+    let html = '';
+
+    if (restricted) {
+      // Only the group(s) this volunteer was assigned — everything else in
+      // this round belongs to another volunteer, so it's never rendered.
+      const allKnownGroupNos = new Set(groupNos.concat(myGroups));
+      const otherGroupNos = Array.from(allKnownGroupNos).filter(g => myGroups.indexOf(g) === -1);
+
+      html += `<div class="section-title">Your Groups</div>`;
+      const visibleMyGroups = myGroups.slice().sort((x, y) => x - y)
+        .filter(g => !filterActive || (grouped[g] || []).length > 0);
+      if (filterActive && !visibleMyGroups.length) {
+        html += `<div class="hint">No matching students in your groups right now.</div>`;
+      }
+      visibleMyGroups.forEach(g => {
+        html += groupCardHtml_(g, grouped[g] || [], size, managerLabel, filterActive, showDownload);
+      });
+
+      if (otherGroupNos.length) {
+        html += `<div class="tpoNote">${otherGroupNos.length} other group${otherGroupNos.length > 1 ? 's' : ''} in this round ${otherGroupNos.length > 1 ? 'are' : 'is'} managed by other volunteers. If you need to manage one of them, please contact your TPO.</div>`;
+      }
+    } else {
+      // Unrestricted — this volunteer manages the whole round, so every
+      // group (and the ungrouped pool) is theirs, same as before.
+      html += `
+        <div class="section-title">Groups</div>
+        <div class="hint" style="margin-bottom:12px;">Groups are set up by the admin. You're managing them here — tap "+ Add Student" on any group and type an enrollment number, or "Remove from group" to send them back to Ungrouped.</div>
+      `;
+      let anyShown = false;
+      for (let g = 1; g <= totalGroups; g++) {
+        const members = grouped[g] || [];
+        if (filterActive && !members.length) continue;
+        anyShown = true;
+        html += groupCardHtml_(g, members, size, managerLabel, filterActive, showDownload);
+      }
+      if (filterActive && !anyShown) {
+        html += `<div class="hint">No matching students in any group right now.</div>`;
+      }
+      html += `<button class="btn ghost" id="addGroupBtn" style="margin-bottom:18px;">+ Add Another Group</button>`;
+
+      html += `<div class="section-title">Ungrouped (${ungrouped.length})</div>`;
+      html += ungrouped.length
+        ? '<div class="card" style="padding:6px 18px;">' + ungrouped.map(s => studentRowHtml(s)).join('') + '</div>'
+        : '<div class="hint">Everyone has been placed into a group.</div>';
+    }
+
+    return html;
+  }
+
+  function wireGDHandlers() {
+    const body = document.getElementById('boardBody');
+    wireCheckboxes(body);
+    body.querySelectorAll('[data-toggle-group]').forEach(btn => {
+      btn.onclick = () => {
+        const g = Number(btn.getAttribute('data-toggle-group'));
+        if (state.openGroups.has(g)) state.openGroups.delete(g); else state.openGroups.add(g);
+        renderBoardBody();
+      };
+    });
+    body.querySelectorAll('[data-add-group]').forEach(btn => {
+      btn.onclick = () => {
+        const g = btn.getAttribute('data-add-group');
+        const en = prompt('Enter the student\'s enrollment number to add to Group ' + g + ':');
+        if (!en) return;
+        addStudentToGroup(en.trim(), g);
+      };
+    });
+    body.querySelectorAll('[data-dl-group]').forEach(btn => {
+      btn.onclick = () => {
+        const g = Number(btn.getAttribute('data-dl-group'));
+        const format = btn.getAttribute('data-dl-format');
+        downloadSingleGroupFromPortal(g, format, btn);
+      };
+    });
+    const addGroupBtn = document.getElementById('addGroupBtn');
+    if (addGroupBtn) addGroupBtn.onclick = () => { state.groupCount += 1; renderBoardBody(); };
+  }
+
+  // Downloads ONE group's list (Excel or PDF) — same look and same backend
+  // call (exportFormattedFile, already built to take a multi-line banner
+  // title) as downloadAllGroupsFromPortal above, just for a single group's
+  // members instead of every group in one workbook.
+  function downloadSingleGroupFromPortal(groupNo, format, btn, orientation) {
+    if (state.downloadingGroups) return;
+    if (format === 'pdf' && !orientation) { askPdfOrientation_(o => downloadSingleGroupFromPortal(groupNo, 'pdf', btn, o)); return; }
+    const a = state.current;
+    const members = state.students
+      .filter(s => Number(s.Group_No) === groupNo)
+      .slice().sort((x, y) => String(x.Student_Name || '').localeCompare(String(y.Student_Name || '')));
+    if (!members.length) { toast('This group has no students yet.'); return; }
+
+    const todayStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const fields = [
+      { key: 'Enrollment_No', label: 'Enrollment No' },
+      { key: 'Student_Name', label: 'Student Name' },
+      { key: 'Branch', label: 'Branch' },
+      { key: 'College', label: 'College' },
+      { key: 'Result', label: 'Result' }
+    ];
+    const title = [
+      'GYAN GANGA INSTITUTE OF TECHNOLOGY & SCIENCES, JABALPUR',
+      a.Company_Name || '',
+      'Group ' + groupNo + '   •   ' + todayStr
+    ];
+    const rows = members.map(s => ({
+      Enrollment_No: s.Enrollment_No, Student_Name: s.Student_Name,
+      Branch: s.Branch || '', College: s.College || '', Result: s.Result || 'Pending'
+    }));
+
+    state.downloadingGroups = true;
+    if (btn) btn.disabled = true;
+    toast('Preparing download…');
+
+    google.script.run
+      .withSuccessHandler(res => {
+        state.downloadingGroups = false;
+        if (btn) btn.disabled = false;
+        if (!res.success) { toast(res.message || 'Export failed'); return; }
+        const byteChars = atob(res.base64);
+        const byteNumbers = new Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+        const blob = new Blob([new Uint8Array(byteNumbers)], { type: res.mimeType });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url; link.download = res.fileName;
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      })
+      .withFailureHandler(err => {
+        state.downloadingGroups = false;
+        if (btn) btn.disabled = false;
+        toast('Error: ' + err.message);
+      })
+      .exportFormattedFile(title, fields, rows, format, format === 'pdf' ? orientation : '');
+  }
+
+  function addStudentToGroup(enrollmentNo, groupNo) {
+    const a = state.current;
+    const exists = state.students.some(s => String(s.Enrollment_No).toLowerCase() === enrollmentNo.toLowerCase());
+    if (!exists) { toast('Enrollment number not found in this round\'s list.'); return; }
+    google.script.run
+      .withSuccessHandler(res => {
+        if (!res.success) { toast(res.message || 'Could not add student.'); return; }
+        toast('Added to Group ' + groupNo + '.');
+        loadBoard(false);
+      })
+      .withFailureHandler(err => toast('Error: ' + err.message))
+      .setStudentGDGroup(a.Company_Name, a.Round_Name, enrollmentNo, Number(groupNo), null, a.Volunteer_Name, a.Volunteer_Mobile);
+  }
+
+  function escapeHtml(s) {
+    return String(s === undefined || s === null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  // ---- boot: restore the previous session if there is one ----
+  function bootRestore_() {
+    const sess = readSession_();
+    if (!sess.mobile) { renderLogin(); return; }
+    app.innerHTML = '<div class="stateMsg">Restoring your session…</div>';
+    google.script.run
+      .withSuccessHandler(res => {
+        if (!res || !res.success) { clearSession_(); renderLogin(); return; }
+        state.mobile = res.mobile;
+        state.assignments = res.assignments;
+        state.isPermanentAdmin = !!res.isPermanentAdmin;
+        const a = sess.company && state.assignments.find(x =>
+          x.Company_Name === sess.company && x.Round_Name === sess.round && !isAttendance(x));
+        if (!a) { renderAssignments(); return; }
+        // Reopen the company so Back returns to a sensible place, then the round itself.
+        state.openCompanies.add(a.Company_Name);
+        openRound(a);
+        if (sess.rollCall) openRollCall();
+      })
+      // Offline / server hiccup: keep the saved session and let them retry with a refresh.
+      .withFailureHandler(() => { renderLogin('Could not reach the server. Check your connection and refresh.'); })
+      .volunteerLogin(sess.mobile);
+  }
+  bootRestore_();
+</script>
+</body>
+</html>

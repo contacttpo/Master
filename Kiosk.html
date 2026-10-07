@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base target="_top">
+<script src="/gas-shim.js"></script>
+<meta charset="UTF-8">
+<title>Attendance Kiosk</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: #0f172a; color: #f1f5f9;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    padding: 24px;
+  }
+  .card { width: 100%; max-width: 460px; text-align: center; }
+  .brand { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: #818cf8; font-weight: 600; margin-bottom: 4px; }
+  .company { font-size: 28px; font-weight: 700; margin: 0 0 2px; line-height: 1.15; }
+  .session { font-size: 14px; color: #94a3b8; margin-bottom: 22px; }
+  .qr-wrap {
+    background: #fff; border-radius: 20px; padding: 20px; display: inline-block;
+    box-shadow: 0 10px 40px rgba(0,0,0,.35);
+  }
+  #qrcode { line-height: 0; }
+  #qrImg { display: block; margin: 0 auto; width: 260px; height: 260px; }
+  .fallback-link { display: block; margin-top: 10px; font-size: 11px; color: #94a3b8; word-break: break-all; }
+  .timer-row { margin-top: 18px; display: flex; align-items: center; gap: 10px; justify-content: center; }
+  .timer-track { flex: 1; max-width: 220px; height: 6px; background: #1e293b; border-radius: 999px; overflow: hidden; }
+  .timer-fill { height: 100%; background: #6366f1; border-radius: 999px; transition: width 1s linear; }
+  .timer-label { font-size: 12px; color: #64748b; min-width: 62px; text-align: left; }
+  .hint { margin-top: 20px; font-size: 13px; color: #64748b; }
+  .stats { margin-top: 22px; display: flex; gap: 10px; justify-content: center; }
+  .stat { background: #1e293b; border-radius: 12px; padding: 10px 18px; }
+  .stat .n { font-size: 22px; font-weight: 700; color: #34d399; }
+  .stat .l { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .04em; }
+  .state-msg { font-size: 16px; padding: 40px 20px; color: #fca5a5; white-space: pre-line; }
+  .pulse { animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
+
+  .gate-badge { width: 48px; height: 48px; border-radius: 12px; background: #4f46e5; color: #fff;
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; margin: 0 auto 14px; }
+  .gate-title { font-size: 20px; font-weight: 700; margin: 0 0 6px; }
+  .gate-sub { font-size: 13px; color: #94a3b8; margin-bottom: 22px; }
+  .gate-form input {
+    width: 100%; padding: 14px; font-size: 18px; text-align: center; letter-spacing: .02em;
+    border: 1px solid #334155; border-radius: 12px; margin-bottom: 14px; background: #1e293b; color: #f1f5f9;
+  }
+  .gate-form input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.25); }
+  .gate-form button {
+    width: 100%; padding: 14px; font-size: 16px; font-weight: 600; color: #fff;
+    background: #4f46e5; border: none; border-radius: 12px; cursor: pointer;
+  }
+  .gate-form button:disabled { opacity: .55; }
+  .gate-err { color: #f87171; font-size: 13px; margin: -6px 0 14px; }
+
+  .topBar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .backLink {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #1e293b; border: 1.5px solid #475569; color: #f1f5f9; font-size: 16px; font-weight: 700;
+    padding: 10px 16px; border-radius: 12px; line-height: 1; cursor: pointer;
+    text-decoration: none;
+    transition: transform .06s ease, background-color .06s ease;
+  }
+  .backLink:active { transform: translateY(2px); background: #334155; }
+  /* Dimmed only, never pointer-events:none — it must stay tappable so the
+     fallback click handler below can still fire while the real URL is
+     still loading. */
+  .backLink[aria-disabled="true"] { opacity: .6; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="topBar">
+      <a class="backLink" id="backToPortalBtn" href="#" aria-disabled="true" aria-label="Back to Volunteer Portal">‹ Back</a>
+      <div class="brand">Attendance Kiosk</div>
+    </div>
+
+    <!-- Volunteer gate: shown before anything else, until a declared
+         volunteer mobile is entered. Everything below this (loadingState /
+         errorState / liveState / fetchToken / renderLive / pollStatus) is
+         completely untouched — this only adds a screen in front of it. -->
+    <div id="gateState">
+      <div class="gate-badge">CP</div>
+      <h1 class="gate-title">Volunteer Check</h1>
+      <p class="gate-sub">Enter your mobile number to open this kiosk. Only numbers declared for this drive by the admin will work.</p>
+      <form id="gateForm" class="gate-form">
+        <input id="gateMobile" type="tel" inputmode="numeric" autocomplete="off" placeholder="Your mobile number" autofocus>
+        <div class="gate-err" id="gateErr" style="display:none;"></div>
+        <button type="submit" id="gateSubmitBtn">Open Kiosk</button>
+      </form>
+    </div>
+
+    <div id="loadingState" style="display:none;">
+      <div class="state-msg pulse">Loading session…</div>
+    </div>
+
+    <div id="errorState" style="display:none;">
+      <div class="state-msg" id="errorText"></div>
+    </div>
+
+    <div id="liveState" style="display:none;">
+      <h1 class="company" id="companyName"></h1>
+      <div class="session" id="sessionName"></div>
+      <div class="qr-wrap">
+        <div id="qrcode"><img id="qrImg" alt="Scan to check in"></div>
+        <a class="fallback-link" id="fallbackLink" href="#" target="_blank" rel="noopener">Can't see the code? Tap this link instead</a>
+      </div>
+      <div class="timer-row">
+        <div class="timer-track"><div class="timer-fill" id="timerFill"></div></div>
+        <div class="timer-label"><span id="timerSeconds">--</span>s left</div>
+      </div>
+      <div class="hint">Point your phone camera at this code to scan.<br>It refreshes automatically — no need to reload.</div>
+      <div class="stats">
+        <div class="stat"><div class="n" id="presentCount">0</div><div class="l">Present</div></div>
+        <div class="stat"><div class="n" id="registeredCount">0</div><div class="l">Registered</div></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const sessionId = PARAMS.session || '';
+  // Set only when this Kiosk link was opened from the Volunteer Portal's
+  // Attendance button (see openAttendance() in Volunteer.html) — lets that
+  // already-logged-in mobile number skip re-typing itself into the gate.
+  const prefillMobile = PARAMS.mobile || '';
+  let countdownTimer = null;
+  let statusTimer = null;
+  let rotationSeconds = 45;
+
+  function show(id) {
+    ['gateState', 'loadingState', 'errorState', 'liveState'].forEach(s => {
+      document.getElementById(s).style.display = (s === id) ? 'block' : 'none';
+    });
+  }
+
+  function showError(msg) {
+    document.getElementById('errorText').textContent = msg;
+    show('errorState');
+  }
+
+  // Once verified for this sessionId in this browser tab, don't ask again
+  // on a reload (e.g. the volunteer's phone auto-refreshing/backgrounding).
+  // Scoped to this one session — a new drive (new session id) always asks
+  // again, and it clears itself when the tab/browser closes.
+  const gateStorageKey = 'kioskVolunteerVerified:' + sessionId;
+
+  const gateForm = document.getElementById('gateForm');
+  const gateMobile = document.getElementById('gateMobile');
+  const gateErr = document.getElementById('gateErr');
+  const gateSubmitBtn = document.getElementById('gateSubmitBtn');
+
+  // Always available — takes the volunteer back to the one shared portal
+  // link, wherever they are in the kiosk (gate, loading, error, or live QR).
+  //
+  // This is a real <a href> (target="_top" comes from the <base> tag up in
+  // <head>), not a button whose click handler waits for a google.script.run
+  // round trip and then sets top.location.href. That older pattern is what
+  // was producing the blank page: the success handler only fires after a
+  // full network round trip, and by that point the tap no longer counts as
+  // a live user gesture to the browser, so the sandboxed Apps Script iframe
+  // isn't reliably allowed to navigate the real top-level tab any more —
+  // instead of the intended public URL, the tab was left on (or fell back
+  // to) this page's own sandboxed googleusercontent.com iframe address,
+  // which renders blank when opened directly.
+  //
+  // The fix: fetch the real portal URL once, up front, and set it as this
+  // link's href immediately. The actual navigation then happens as a plain
+  // browser click on a link with a known target, with no JS/network step
+  // in between — so the user gesture and the navigation happen together.
+  // The URL must still be built server-side (getVolunteerPortalUrl uses
+  // ScriptApp.getService().getUrl()) — this page's own location.href is
+  // just the sandboxed iframe's internal address, not the real public URL.
+  const backToPortalBtn = document.getElementById('backToPortalBtn');
+  google.script.run
+    .withSuccessHandler(url => {
+      backToPortalBtn.href = url;
+      backToPortalBtn.removeAttribute('aria-disabled');
+    })
+    .withFailureHandler(() => { /* leave the fallback click handler below to retry */ })
+    .getVolunteerPortalUrl();
+
+  backToPortalBtn.addEventListener('click', function (e) {
+    if (backToPortalBtn.getAttribute('aria-disabled') !== 'true') {
+      // href is already the real portal URL — let the browser navigate
+      // there natively, nothing else to do.
+      clearTimeout(countdownTimer);
+      clearInterval(statusTimer);
+      return;
+    }
+    // Fallback only: the URL hadn't come back from the server yet when
+    // tapped (slow network). Same async approach as before — rare, and
+    // still better than doing nothing.
+    e.preventDefault();
+    clearTimeout(countdownTimer);
+    clearInterval(statusTimer);
+    google.script.run
+      .withSuccessHandler(url => { top.location.href = url; })
+      .withFailureHandler(err => { alert('Error: ' + err.message); })
+      .getVolunteerPortalUrl();
+  });
+
+  if (!sessionId) {
+    show('errorState');
+    showError('No attendance session specified. Ask the admin for the correct kiosk link.');
+  } else if (sessionStorage.getItem(gateStorageKey) === '1') {
+    startKiosk();
+  } else if (prefillMobile) {
+    // Came here from the Volunteer Portal — try the number they already
+    // logged in with before ever showing the gate form.
+    autoVerify(prefillMobile);
+  } else {
+    show('gateState');
+    document.getElementById('gateMobile').focus();
+  }
+
+  // Verifying the mobile number and fetching the first QR token don't
+  // actually depend on each other, so they're fired at the same time
+  // instead of one after the other — this is what was making the kiosk
+  // feel slow to open when coming from the Volunteer Portal (two full
+  // server round trips back to back). If verification fails, the
+  // already-fetched token is just discarded and the gate is shown instead.
+  function autoVerify(mobile) {
+    show('loadingState');
+    const stallGuard = setTimeout(function () {
+      showError('This is taking longer than expected. Please refresh the page.');
+    }, 10000);
+
+    let verifyRes = null, tokenRes = null, tokenErr = null, pending = 2;
+    function settle() {
+      pending -= 1;
+      if (pending > 0) return;
+      clearTimeout(stallGuard);
+      if (!verifyRes || !verifyRes.success) {
+        show('gateState');
+        gateMobile.value = mobile;
+        gateErr.textContent = (verifyRes && verifyRes.message) || 'Could not verify this number automatically — please confirm it below.';
+        gateErr.style.display = 'block';
+        return;
+      }
+      sessionStorage.setItem(gateStorageKey, '1');
+      clearInterval(statusTimer);
+      statusTimer = setInterval(pollStatus, 5000);
+      if (tokenErr) { showError('Error: ' + tokenErr.message); return; }
+      applyToken(tokenRes);
+    }
+
+    google.script.run
+      .withSuccessHandler(res => { verifyRes = res; settle(); })
+      .withFailureHandler(err => { verifyRes = { success: false, message: 'Error: ' + err.message }; settle(); })
+      .verifyVolunteerMobile(sessionId, mobile);
+
+    google.script.run
+      .withSuccessHandler(res => { tokenRes = res; settle(); })
+      .withFailureHandler(err => { tokenErr = err; settle(); })
+      .getCurrentAttendanceToken(sessionId);
+  }
+
+  gateForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    gateErr.style.display = 'none';
+    const mobile = gateMobile.value.trim();
+    if (!mobile) {
+      gateErr.textContent = 'Please enter your mobile number.';
+      gateErr.style.display = 'block';
+      return;
+    }
+    gateSubmitBtn.disabled = true;
+    gateSubmitBtn.textContent = 'Checking…';
+    google.script.run
+      .withSuccessHandler(res => {
+        gateSubmitBtn.disabled = false;
+        gateSubmitBtn.textContent = 'Open Kiosk';
+        if (res.success) {
+          sessionStorage.setItem(gateStorageKey, '1');
+          startKiosk();
+        } else {
+          gateErr.textContent = res.message || 'This mobile number is not authorized for this drive.';
+          gateErr.style.display = 'block';
+        }
+      })
+      .withFailureHandler(err => {
+        gateSubmitBtn.disabled = false;
+        gateSubmitBtn.textContent = 'Open Kiosk';
+        gateErr.textContent = 'Error: ' + err.message;
+        gateErr.style.display = 'block';
+      })
+      .verifyVolunteerMobile(sessionId, mobile);
+  });
+
+  // Everything from here down is exactly what was already working for QR
+  // generation — untouched, just now called from startKiosk() instead of
+  // firing immediately on page load.
+  function startKiosk() {
+    show('loadingState');
+    const stallGuard = setTimeout(function () {
+      showError('This is taking longer than expected. Please refresh the page.');
+    }, 10000);
+    fetchToken(stallGuard);
+    clearInterval(statusTimer);
+    statusTimer = setInterval(pollStatus, 5000);
+  }
+
+  function fetchToken(stallGuard) {
+    google.script.run
+      .withSuccessHandler(res => {
+        if (stallGuard) clearTimeout(stallGuard);
+        applyToken(res);
+      })
+      .withFailureHandler(err => {
+        if (stallGuard) clearTimeout(stallGuard);
+        showError('Error: ' + err.message);
+      })
+      .getCurrentAttendanceToken(sessionId);
+  }
+
+  // Shared by both the normal fetchToken() polling loop and the parallel
+  // autoVerify() path above — renders the QR and arms the next refresh.
+  function applyToken(res) {
+    if (!res.success) {
+      if (res.ended) {
+        showError('This attendance session has ended.\nAsk the admin to start a new one if needed.');
+      } else {
+        showError(res.message || 'Could not load this session.');
+      }
+      return;
+    }
+    rotationSeconds = res.rotationSeconds || 45;
+    renderLive(res);
+    pollStatus();
+    clearTimeout(countdownTimer);
+    countdownTimer = setTimeout(fetchToken, res.secondsRemaining * 1000);
+    startCountdownBar(res.secondsRemaining);
+  }
+
+  function renderLive(res) {
+    show('liveState');
+    document.getElementById('companyName').textContent = res.session.Company_Name;
+    document.getElementById('sessionName').textContent = res.session.Session_Name || 'Attendance';
+
+    const qrImg = document.getElementById('qrImg');
+    const fallback = document.getElementById('fallbackLink');
+    const qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=0&data='
+      + encodeURIComponent(res.checkinUrl);
+
+    qrImg.onerror = function () {
+      console.error('QR image failed to load — showing fallback link instead.');
+      qrImg.style.display = 'none';
+      fallback.style.display = 'block';
+    };
+    qrImg.onload = function () {
+      fallback.style.display = 'none';
+    };
+    qrImg.src = qrApiUrl;
+    fallback.href = res.checkinUrl;
+    fallback.style.display = 'none';
+  }
+
+  function startCountdownBar(seconds) {
+    const fill = document.getElementById('timerFill');
+    const label = document.getElementById('timerSeconds');
+    let remaining = seconds;
+    fill.style.transition = 'none';
+    fill.style.width = (remaining / rotationSeconds * 100) + '%';
+    label.textContent = remaining;
+    void fill.offsetWidth;
+    fill.style.transition = 'width ' + remaining + 's linear';
+    fill.style.width = '0%';
+
+    clearInterval(fill._tick);
+    fill._tick = setInterval(() => {
+      remaining -= 1;
+      label.textContent = Math.max(remaining, 0);
+      if (remaining <= 0) clearInterval(fill._tick);
+    }, 1000);
+  }
+
+  function pollStatus() {
+    if (!sessionId) return;
+    google.script.run
+      .withSuccessHandler(res => {
+        if (!res.success) return;
+        document.getElementById('presentCount').textContent = res.presentCount;
+        document.getElementById('registeredCount').textContent = res.registeredCount;
+        if (res.status !== 'Open') {
+          clearTimeout(countdownTimer);
+          clearInterval(statusTimer);
+          showError('This attendance session has ended.\nAsk the admin to start a new one if needed.');
+        }
+      })
+      .withFailureHandler(() => {})
+      .getAttendanceSessionStatus(sessionId);
+  }
+</script>
+</body>
+</html>

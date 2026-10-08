@@ -1,10 +1,12 @@
-/* gas-shim.js v3 — drop-in replacement for google.script.run on Vercel.
+/* gas-shim.js v4 — drop-in replacement for google.script.run on Vercel.
  *
  * 1. Set API_URL below to your Apps Script web app URL (ends in /exec).
  * 2. Every HTML page loads this before its own scripts; existing
  *    google.script.run.withSuccessHandler(...).someFunction(...) code is unchanged.
  *
- * v3 adds:
+ * v4 adds a fast path (🚀 in the timing panel) for functions rewritten for Google Sheets, and reads your
+ * Apps Script address from Vercel's GAS_URL setting when API_URL below is left as the placeholder.
+ * v3 added:
  *  - INSTANT LOADS: the big read-only lists (dashboard, companies, master list...) are
  *    remembered on the device. Next time, the screen fills instantly from memory and is
  *    refreshed in the background a moment later. Any save/edit/delete you make clears it,
@@ -14,8 +16,26 @@
  *  - Up to 6 calls at a time (v2 allowed 4, which could slow screens that load many things).
  */
 (function () {
-  var API_URL = 'https://script.google.com/macros/s/AKfycbwf_pkbZKFh7ZSoI2KFT4jmnYk1ytiMBCkdeu5AoWLp_r5VNVZi1kF3LFUBq7QPAo7E/exec';
+  var API_URL = 'PASTE_YOUR_EXEC_URL_HERE';
   var MAX_PARALLEL = 6;
+
+  // Functions rewritten for the fast Google-Sheets path (served by /api/call on Vercel).
+  // If that path is not set up or fails, the call quietly goes to Apps Script as before.
+  var GATEWAY = { getDashboardData: 1, getCompanyList: 1 };
+
+  // If API_URL above is left as the placeholder, the address is read from the GAS_URL setting in
+  // Vercel (via /api/config) -- so this file never has to be edited again.
+  var urlPromise = null;
+  function apiUrl() {
+    if (API_URL.indexOf('PASTE_') !== 0) return Promise.resolve(API_URL);
+    if (!urlPromise) {
+      urlPromise = fetch('/api/config').then(function (r) { return r.json(); }).then(function (j) {
+        if (!j.gasUrl) { var e = new Error('App is not configured yet: add GAS_URL in Vercel > Settings > Environment Variables, then Redeploy.'); e.config = true; throw e; }
+        API_URL = j.gasUrl; return API_URL;
+      }).catch(function (e) { urlPromise = null; if (e.config) throw e; var e2 = new Error('Could not load app settings.'); e2.config = true; throw e2; });
+    }
+    return urlPromise;
+  }
 
   window.PARAMS = {};
   new URLSearchParams(location.search).forEach(function (v, k) { window.PARAMS[k] = v; });
@@ -70,7 +90,7 @@
     }
     panel.style.display = 'block';
     panel.textContent = 'tap to hide · ?debug=0 to turn off\n' + log.map(function (r) {
-      return (r.src === 'cache' ? '⚡' : '  ') + r.fn.slice(0, 28).padEnd(28) + String(r.total).padStart(6) + ' ms' +
+      return (r.src === 'cache' ? '⚡' : (r.src === 'gw' ? '🚀' : '  ')) + r.fn.slice(0, 28).padEnd(28) + String(r.total).padStart(6) + ' ms' +
         (r.queued > 150 ? '  (waited ' + r.queued + ')' : '') + (r.src === 'retry' ? '  retried' : '');
     }).join('\n');
   }
@@ -100,19 +120,33 @@
   }
 
   function attemptOnce(fn, args) {
-    return fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids a CORS preflight
-      body: JSON.stringify({ fn: fn, args: args })
+    return apiUrl().then(function (url) {
+      return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids a CORS preflight
+        body: JSON.stringify({ fn: fn, args: args })
+      });
     }).then(function (res) { return res.text(); }).then(function (text) {
       var out;
       try { out = JSON.parse(text); }
       catch (e) { var err = new Error(htmlReason(text)); err.transient = true; err.html = true; throw err; }
       if (!out.ok) throw new Error(out.error || 'Server error');
       return out.data;
-    }, function () {
+    }, function (e) {
+      if (e && e.config) throw e;
       var err = new Error('Could not reach the server (network or Google error). Please try again.');
       err.transient = true; err.network = true; throw err;
+    });
+  }
+
+  function viaGateway(fn, args) {
+    return fetch('/api/call', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fn: fn, args: args })
+    }).then(function (r) { return r.json(); }).then(function (out) {
+      if (out && out.ok) return out.data;
+      throw new Error('fallback');
     });
   }
 
@@ -131,7 +165,13 @@
           return sleep(600 * attempt * attempt).then(run);
         });
       }
-      return run().then(function (data) { return { data: data, ms: Date.now() - t0, queued: queued, retried: attempt > 0 }; });
+      function viaApps() {
+        return run().then(function (data) { return { data: data, ms: Date.now() - t0, queued: queued, retried: attempt > 0 }; });
+      }
+      if (!GATEWAY[fn]) return viaApps();
+      return viaGateway(fn, args).then(function (data) {
+        return { data: data, ms: Date.now() - t0, queued: queued, gw: true };
+      }, viaApps);
     });
   }
 
@@ -157,7 +197,7 @@
     }
 
     return network(fn, args).then(function (r) {
-      record(fn, r.ms + r.queued, r.queued, r.retried ? 'retry' : 'net');
+      record(fn, r.ms + r.queued, r.queued, r.gw ? 'gw' : (r.retried ? 'retry' : 'net'));
       if (instant) lsSet(key, JSON.stringify({ t: Date.now(), v: r.data }));
       else if (!READ_ONLY.test(fn)) purgeInstant();      // any save/edit/delete: next read is fresh
       if (fn === 'checkLogin') purgeInstant();

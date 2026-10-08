@@ -1,20 +1,26 @@
-# Deploy steps
+# Campus Placement Tracker - frontend + fast path
 
-## 1. Apps Script (backend)
-1. In the Apps Script project, replace Code.gs with apps-script/Code.gs and add apps-script/Api.gs as a NEW file. The other three .gs files are unchanged.
-2. Deploy > New deployment > Web app > Execute as: Me, Who has access: Anyone. Copy the /exec URL.
-3. Open <exec-url>?api=ping in a browser: you should see {"ok":true,"message":"API running"}.
+## What is in this folder (ALL of it goes to GitHub, except nothing is secret here)
+- 10 pages (*.html), manifest.json, sw.js, icon-*.png, vercel.json, package.json
+- gas-shim.js  (v4 - no longer needs editing)
+- api/call.js, api/config.js, api/status.js   <- Vercel functions (fast path)
+- lib/google.js, lib/ported.js                <- reads Google Sheets directly
 
-## 2. This folder (the only thing that goes to GitHub)
-- gas-shim.js: line 13, set API_URL to your /exec URL.
-- All 10 pages are already converted (shim added, <?= ?> values replaced with URL parameters).
-- Do NOT commit the .gs files (.gitignore already excludes them): Code.gs holds default admin passwords.
+## Vercel > Settings > Environment Variables (then Redeploy)
+| Name | Value |
+|---|---|
+| GAS_URL | your Apps Script web app address (ends in /exec) |
+| SHEET_ID | the long id in your Vikas MAster sheet's URL (between /d/ and /edit) |
+| GOOGLE_CREDENTIALS | the full contents of the service-account JSON key file |
 
-## 3. GitHub + Vercel
-git init && git add . && git commit -m "init" && git branch -M main
-git remote add origin <repo-url> && git push -u origin main
-Vercel > Add New > Project > import the repo > Framework Preset: Other > Deploy.
+Also: Vercel > Settings > Functions > Function Region: Asia Pacific (Mumbai) bom1.
 
-## 4. Connect the links
-Put the Vercel URL into FRONTEND_URL_ in Api.gs, then Deploy > Manage deployments > Edit > New version.
-Existing is.gd short kiosk links still point at the old Apps Script URL: clear the Short_Kiosk_Url cells of open sessions or create new sessions.
+## Check it
+- mastertpo.vercel.app/api/status             -> shows what is connected
+- mastertpo.vercel.app/api/status?compare=1   -> runs each fast function on the new path AND on Apps Script,
+                                                 says whether the answers are identical and how long each took
+- mastertpo.vercel.app/?debug=1               -> timing panel (🚀 = fast path, ⚡ = instant from device)
+
+## Safety
+If any setting is missing or the fast path errors, the page automatically uses Apps Script as before.
+Never commit the .gs files or the JSON key.

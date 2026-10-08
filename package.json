@@ -1,0 +1,1 @@
+{ "name": "placement-app", "private": true, "engines": { "node": "20.x" } }

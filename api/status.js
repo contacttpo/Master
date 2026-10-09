@@ -40,7 +40,9 @@ async function viaGas(fn, args) {
 
 // Test cases: every function with no inputs, plus per-company ones for the first few companies.
 async function buildCases(n) {
-  const cases = [['getDashboardData', []], ['getCompanyList', []], ['getBranchAndCollegeLists', []]];
+  const cases = [['getDashboardData', []], ['getCompanyList', []], ['getBranchAndCollegeLists', []],
+    ['getBranchViewFilters', []], ['getTopPackageStudents', []], ['getPlacementRate', []], ['getPackageAnalytics', []],
+    ['getGlobalSelectionSummary', []], ['getAllStudentsMaster', []]];
   const dash = await ported.getDashboardData();
   const names = dash.data.map(c => c.Company_Name).filter(Boolean).slice(0, n);
   const rounds = toObjects((await google.getSheets(['Process_Tracking']))['Process_Tracking']);
@@ -91,7 +93,7 @@ module.exports = async (req, res) => {
     const bad = Object.keys(byFn).filter(f => !byFn[f]);
     report.safe_to_enable = ok.join(',');
     report.NOT_identical = bad.join(',') || 'none';
-    report.how_to_enable = 'In Vercel > Settings > Environment Variables set FAST_EXTRA = ' + (ok.filter(f => ['getBranchAndCollegeLists', 'getRegisteredStudents', 'getRoundStudents', 'getRoundCounts', 'getCompanyDetails'].indexOf(f) !== -1).join(',') || '(nothing yet)') + ' then Redeploy.';
+    report.how_to_enable = 'In Vercel > Settings > Environment Variables set FAST_EXTRA = ' + (ok.filter(f => ['getBranchAndCollegeLists', 'getRegisteredStudents', 'getRoundStudents', 'getRoundCounts', 'getCompanyDetails', 'getBranchViewFilters', 'getTopPackageStudents', 'getPlacementRate', 'getPackageAnalytics', 'getGlobalSelectionSummary', 'getAllStudentsMaster'].indexOf(f) !== -1).join(',') || '(nothing yet)') + ' then Redeploy.';
   }
   res.status(200).json(report);
 };

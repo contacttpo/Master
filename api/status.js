@@ -46,6 +46,7 @@ async function buildCases(n) {
   const rounds = toObjects((await google.getSheets(['Process_Tracking']))['Process_Tracking']);
   names.forEach(co => {
     cases.push(['getRegisteredStudents', [co]]);
+    cases.push(['getRoundCounts', [co]]);
     const first = rounds.filter(r => String(r.Company_Name).trim() === String(co).trim())[0];
     if (first) cases.push(['getRoundStudents', [co, first.Round_Name]]);
   });
@@ -89,7 +90,7 @@ module.exports = async (req, res) => {
     const bad = Object.keys(byFn).filter(f => !byFn[f]);
     report.safe_to_enable = ok.join(',');
     report.NOT_identical = bad.join(',') || 'none';
-    report.how_to_enable = 'In Vercel > Settings > Environment Variables set FAST_EXTRA = ' + (ok.filter(f => ['getBranchAndCollegeLists', 'getRegisteredStudents', 'getRoundStudents'].indexOf(f) !== -1).join(',') || '(nothing yet)') + ' then Redeploy.';
+    report.how_to_enable = 'In Vercel > Settings > Environment Variables set FAST_EXTRA = ' + (ok.filter(f => ['getBranchAndCollegeLists', 'getRegisteredStudents', 'getRoundStudents', 'getRoundCounts'].indexOf(f) !== -1).join(',') || '(nothing yet)') + ' then Redeploy.';
   }
   res.status(200).json(report);
 };

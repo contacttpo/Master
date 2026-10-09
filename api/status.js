@@ -3,6 +3,7 @@
 // Apps Script (old), check the answers are identical, and see how long each took.
 const google = require('../lib/google');
 const ported = require('../lib/ported');
+const { toObjects } = require('../lib/google');
 
 function stable(v) {
   if (Array.isArray(v)) return '[' + v.map(stable).join(',') + ']';
@@ -28,43 +29,67 @@ function firstDiffs(a, b) {
   return out;
 }
 
-async function viaGas(fn) {
+async function viaGas(fn, args) {
   const t0 = Date.now();
-  const r = await fetch(process.env.GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: fn, args: [] }) });
+  const r = await fetch(process.env.GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: fn, args: args || [] }) });
   const text = await r.text();
   let out; try { out = JSON.parse(text); } catch (e) { throw new Error('Apps Script returned a web page, not data'); }
   if (!out.ok) throw new Error(out.error);
   return { v: out.data, ms: Date.now() - t0 };
 }
 
+// Test cases: every function with no inputs, plus per-company ones for the first few companies.
+async function buildCases(n) {
+  const cases = [['getDashboardData', []], ['getCompanyList', []], ['getBranchAndCollegeLists', []]];
+  const dash = await ported.getDashboardData();
+  const names = dash.data.map(c => c.Company_Name).filter(Boolean).slice(0, n);
+  const rounds = toObjects((await google.getSheets(['Process_Tracking']))['Process_Tracking']);
+  names.forEach(co => {
+    cases.push(['getRegisteredStudents', [co]]);
+    const first = rounds.filter(r => String(r.Company_Name).trim() === String(co).trim())[0];
+    if (first) cases.push(['getRoundStudents', [co, first.Round_Name]]);
+  });
+  return cases;
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
+  const q = req.query || {};
   const report = {
     GAS_URL_set: !!process.env.GAS_URL,
     SHEET_ID_set: !!process.env.SHEET_ID,
     GOOGLE_CREDENTIALS_set: !!process.env.GOOGLE_CREDENTIALS,
+    FAST_EXTRA_now: process.env.FAST_EXTRA || '(empty)',
     ready: google.isConfigured()
   };
   if (!google.isConfigured()) report.next = 'Add SHEET_ID and GOOGLE_CREDENTIALS in Vercel > Settings > Environment Variables, then Redeploy.';
   else if (!process.env.GAS_URL) report.next = 'Add GAS_URL (your Apps Script /exec address) in Vercel > Settings > Environment Variables, then Redeploy.';
 
-  if (req.query && req.query.compare === '1' && google.isConfigured()) {
-    report.compare = {};
-    for (const fn of Object.keys(ported)) {
+  if (q.compare === '1' && google.isConfigured() && process.env.GAS_URL) {
+    const n = Math.max(1, Math.min(4, parseInt(q.n || '2', 10) || 2));
+    let cases;
+    try { cases = await buildCases(n); } catch (err) { report.error = String(err.message); return res.status(200).json(report); }
+    const results = await Promise.all(cases.map(async ([fn, args]) => {
+      const row = { fn: fn, args: args };
       try {
         const t0 = Date.now();
-        const mine = await ported[fn]();
-        const msNew = Date.now() - t0;
-        const row = { new_ms: msNew };
-        if (process.env.GAS_URL) {
-          const old = await viaGas(fn);
-          row.old_ms = old.ms;
-          row.identical = stable(mine) === stable(old.v);
-          if (!row.identical) row.differences = firstDiffs(mine, old.v);
-        }
-        report.compare[fn] = row;
-      } catch (err) { report.compare[fn] = { error: String(err.message) }; }
-    }
+        const mine = await ported[fn].apply(null, args);
+        row.new_ms = Date.now() - t0;
+        const old = await viaGas(fn, args);
+        row.old_ms = old.ms;
+        row.identical = stable(mine) === stable(old.v);
+        if (!row.identical) row.differences = firstDiffs(mine, old.v);
+      } catch (err) { row.error = String(err.message); }
+      return row;
+    }));
+    report.compare = results;
+    const byFn = {};
+    results.forEach(r => { byFn[r.fn] = (byFn[r.fn] === false) ? false : (r.identical === true); });
+    const ok = Object.keys(byFn).filter(f => byFn[f]);
+    const bad = Object.keys(byFn).filter(f => !byFn[f]);
+    report.safe_to_enable = ok.join(',');
+    report.NOT_identical = bad.join(',') || 'none';
+    report.how_to_enable = 'In Vercel > Settings > Environment Variables set FAST_EXTRA = ' + (ok.filter(f => ['getBranchAndCollegeLists', 'getRegisteredStudents', 'getRoundStudents'].indexOf(f) !== -1).join(',') || '(nothing yet)') + ' then Redeploy.';
   }
   res.status(200).json(report);
 };

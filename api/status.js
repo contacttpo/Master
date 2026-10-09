@@ -50,6 +50,8 @@ async function buildCases(n) {
     cases.push(['getRegisteredStudents', [co]]);
     cases.push(['getRoundCounts', [co]]);
     cases.push(['getCompanyDetails', [co]]);
+    cases.push(['getRegisteredStudentDownloadFields', [co]]);
+    cases.push(['getRegisteredStudentEditFields', [co]]);
     const first = rounds.filter(r => String(r.Company_Name).trim() === String(co).trim())[0];
     if (first) cases.push(['getRoundStudents', [co, first.Round_Name]]);
   });
@@ -60,7 +62,7 @@ module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const q = req.query || {};
   const report = {
-    version: 'v9-shared-reads-and-retry',
+    version: 'v11-form-fields',
     GAS_URL_set: !!process.env.GAS_URL,
     SHEET_ID_set: !!process.env.SHEET_ID,
     GOOGLE_CREDENTIALS_set: !!process.env.GOOGLE_CREDENTIALS,
@@ -94,7 +96,7 @@ module.exports = async (req, res) => {
     const bad = Object.keys(byFn).filter(f => !byFn[f]);
     report.safe_to_enable = ok.join(',');
     report.NOT_identical = bad.join(',') || 'none';
-    report.how_to_enable = 'In Vercel > Settings > Environment Variables set FAST_EXTRA = ' + (ok.filter(f => ['getBranchAndCollegeLists', 'getRegisteredStudents', 'getRoundStudents', 'getRoundCounts', 'getCompanyDetails', 'getBranchViewFilters', 'getTopPackageStudents', 'getPlacementRate', 'getPackageAnalytics', 'getGlobalSelectionSummary', 'getAllStudentsMaster'].indexOf(f) !== -1).join(',') || '(nothing yet)') + ' then Redeploy.';
+    report.how_to_enable = q.only ? 'You tested only ' + q.only + '. Do NOT copy a list from this page. Run /api/status?compare=1&n=1 (without only) and use that, or set FAST_EXTRA to the single word  all  once every function says identical.' : 'In Vercel > Settings > Environment Variables set FAST_EXTRA = ' + (ok.filter(f => ['getBranchAndCollegeLists', 'getRegisteredStudents', 'getRoundStudents', 'getRoundCounts', 'getCompanyDetails', 'getBranchViewFilters', 'getTopPackageStudents', 'getPlacementRate', 'getPackageAnalytics', 'getGlobalSelectionSummary', 'getAllStudentsMaster', 'getRegisteredStudentDownloadFields', 'getRegisteredStudentEditFields'].indexOf(f) !== -1).join(',') || '(nothing yet)') + ' then Redeploy.';
   }
   res.status(200).json(report);
 };

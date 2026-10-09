@@ -47,6 +47,7 @@ async function buildCases(n) {
   names.forEach(co => {
     cases.push(['getRegisteredStudents', [co]]);
     cases.push(['getRoundCounts', [co]]);
+    cases.push(['getCompanyDetails', [co]]);
     const first = rounds.filter(r => String(r.Company_Name).trim() === String(co).trim())[0];
     if (first) cases.push(['getRoundStudents', [co, first.Round_Name]]);
   });
@@ -69,7 +70,7 @@ module.exports = async (req, res) => {
   if (q.compare === '1' && google.isConfigured() && process.env.GAS_URL) {
     const n = Math.max(1, Math.min(4, parseInt(q.n || '2', 10) || 2));
     let cases;
-    try { cases = await buildCases(n); } catch (err) { report.error = String(err.message); return res.status(200).json(report); }
+    try { cases = await buildCases(n); if (q.only) cases = cases.filter(c => c[0] === q.only); } catch (err) { report.error = String(err.message); return res.status(200).json(report); }
     const results = await Promise.all(cases.map(async ([fn, args]) => {
       const row = { fn: fn, args: args };
       try {
@@ -90,7 +91,7 @@ module.exports = async (req, res) => {
     const bad = Object.keys(byFn).filter(f => !byFn[f]);
     report.safe_to_enable = ok.join(',');
     report.NOT_identical = bad.join(',') || 'none';
-    report.how_to_enable = 'In Vercel > Settings > Environment Variables set FAST_EXTRA = ' + (ok.filter(f => ['getBranchAndCollegeLists', 'getRegisteredStudents', 'getRoundStudents', 'getRoundCounts'].indexOf(f) !== -1).join(',') || '(nothing yet)') + ' then Redeploy.';
+    report.how_to_enable = 'In Vercel > Settings > Environment Variables set FAST_EXTRA = ' + (ok.filter(f => ['getBranchAndCollegeLists', 'getRegisteredStudents', 'getRoundStudents', 'getRoundCounts', 'getCompanyDetails'].indexOf(f) !== -1).join(',') || '(nothing yet)') + ' then Redeploy.';
   }
   res.status(200).json(report);
 };

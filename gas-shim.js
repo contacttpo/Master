@@ -77,8 +77,8 @@
   // ---- timing panel ----
   var log = [];
   var panel = null;
-  function record(fn, total, queued, src) {
-    log.unshift({ fn: fn, total: total, queued: queued, src: src });
+  function record(fn, total, queued, src, reason) {
+    log.unshift({ fn: fn, total: total, queued: queued, src: src, reason: reason });
     if (log.length > 25) log.pop();
     if (DEBUG) drawPanel();
   }
@@ -94,7 +94,7 @@
     panel.style.display = 'block';
     panel.textContent = 'tap to hide · ?debug=0 to turn off\n' + log.map(function (r) {
       return (r.src === 'cache' ? '⚡' : (r.src === 'gw' ? '🚀' : '  ')) + r.fn.slice(0, 28).padEnd(28) + String(r.total).padStart(6) + ' ms' +
-        (r.queued > 150 ? '  (waited ' + r.queued + ')' : '') + (r.src === 'retry' ? '  retried' : '');
+        (r.queued > 150 ? '  (waited ' + r.queued + ')' : '') + (r.src === 'retry' ? '  retried' : '') + (r.reason ? '\n      ↩ ' + String(r.reason).slice(0, 70) : '');
     }).join('\n');
   }
 
@@ -149,7 +149,7 @@
       body: JSON.stringify({ fn: fn, args: args })
     }).then(function (r) { return r.json(); }).then(function (out) {
       if (out && out.ok) return out.data;
-      throw new Error('fallback');
+      throw new Error((out && out.error) || 'fallback');
     });
   }
 
@@ -174,8 +174,16 @@
       if (!GATEWAY[fn]) return viaApps();
       return viaGateway(fn, args).then(function (data) {
         return { data: data, ms: Date.now() - t0, queued: queued, gw: true };
-      }, viaApps);
+      }, function (why) {
+        return viaApps().then(function (r) { r.reason = why && why.message; return r; });
+      });
     });
+  }
+
+  // After any save/edit/delete, tell the fast route to forget what it just read, so the next screen is fresh.
+  function purgeServer() {
+    return fetch('/api/call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fn: '__purge', args: [] }) })
+      .then(function () {}, function () {});
   }
 
   function call(fn, args, onData) {
@@ -200,13 +208,16 @@
     }
 
     return network(fn, args).then(function (r) {
-      record(fn, r.ms + r.queued, r.queued, r.gw ? 'gw' : (r.retried ? 'retry' : 'net'));
+      record(fn, r.ms + r.queued, r.queued, r.gw ? 'gw' : (r.reason ? 'fb' : (r.retried ? 'retry' : 'net')), r.reason);
+      var wrote = !instant && !READ_ONLY.test(fn);
       if (instant) lsSet(key, JSON.stringify({ t: Date.now(), v: r.data }));
-      else if (!READ_ONLY.test(fn)) purgeInstant();      // any save/edit/delete: next read is fresh
+      else if (wrote) purgeInstant();      // any save/edit/delete: next read is fresh
       if (fn === 'checkLogin') purgeInstant();
-      // already showed the stored copy: only call again if the fresh data is actually different
-      if (shownFromCache && JSON.stringify(r.data) === cachedRaw) return;
-      onData(r.data);
+      return (wrote ? purgeServer() : Promise.resolve()).then(function () {
+        // already showed the stored copy: only call again if the fresh data is actually different
+        if (shownFromCache && JSON.stringify(r.data) === cachedRaw) return;
+        onData(r.data);
+      });
     }, function (err) {
       if (shownFromCache) return; // stored copy is already on screen; stay quiet
       throw err;

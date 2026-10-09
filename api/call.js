@@ -9,7 +9,7 @@ const ported = require('../lib/ported');
 const TTL_MS = { getBranchAndCollegeLists: 60000 };
 // Newer rewrites are switched on only after /api/status?compare=1 proves them identical:
 // add their names (comma separated) to the FAST_EXTRA setting in Vercel.
-const NEEDS_APPROVAL = ['getBranchAndCollegeLists', 'getRegisteredStudents', 'getRoundStudents', 'getRoundCounts'];
+const NEEDS_APPROVAL = ['getBranchAndCollegeLists', 'getRegisteredStudents', 'getRoundStudents', 'getRoundCounts', 'getCompanyDetails'];
 function enabled(fn) {
   if (NEEDS_APPROVAL.indexOf(fn) === -1) return true;
   return String(process.env.FAST_EXTRA || '').split(',').map(x => x.trim()).indexOf(fn) !== -1;

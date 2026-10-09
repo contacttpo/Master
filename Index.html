@@ -8442,7 +8442,7 @@ function app() {
             this.showToast('Could not auto-pull Present students: ' + err.message, 'error');
             this.loadRoundStudents();
           })
-          .pullPresentStudentsIntoRound(this.detail.company.Company_Name, roundName, this.adminToken);
+          .pullPresentStudentsIntoRoundFast(this.detail.company.Company_Name, roundName, this.adminToken);
       } else {
         this.loadRoundStudents();
       }
@@ -8632,7 +8632,7 @@ function app() {
         google.script.run
           .withSuccessHandler(handleResult)
           .withFailureHandler(err => { this.roundPulling = false; this.showToast('Error: ' + err.message, 'error'); })
-          .pullPresentStudentsIntoRound(company, this.activeRoundName, this.adminToken);
+          .pullPresentStudentsIntoRoundFast(company, this.activeRoundName, this.adminToken);
       } else {
         google.script.run
           .withSuccessHandler(handleResult)

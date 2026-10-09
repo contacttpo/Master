@@ -21,7 +21,7 @@
 
   // Functions rewritten for the fast Google-Sheets path (served by /api/call on Vercel).
   // If that path is not set up or fails, the call quietly goes to Apps Script as before.
-  var GATEWAY = { getDashboardData: 1, getCompanyList: 1, getBranchAndCollegeLists: 1, getRegisteredStudents: 1, getRoundStudents: 1 };
+  var GATEWAY = { getDashboardData: 1, getCompanyList: 1, getBranchAndCollegeLists: 1, getRegisteredStudents: 1, getRoundStudents: 1, getRoundCounts: 1 };
 
   // If API_URL above is left as the placeholder, the address is read from the GAS_URL setting in
   // Vercel (via /api/config) -- so this file never has to be edited again.
@@ -55,7 +55,8 @@
   var INSTANT = {
     getDashboardData: 1, getCompanyList: 1, getAllStudentsMaster: 1, getBranchAndCollegeLists: 1,
     getBranchViewFilters: 1, getGlobalSelectionSummary: 1, getPlacementRate: 1,
-    getPackageAnalytics: 1, getTopPackageStudents: 1
+    getPackageAnalytics: 1, getTopPackageStudents: 1,
+    getRegisteredStudentEditFields: 1   // read on every Students window (3-6 s each); the form fields rarely change
   };
   var INSTANT_MAX_AGE = 24 * 3600 * 1000;
 

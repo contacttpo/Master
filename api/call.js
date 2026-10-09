@@ -5,20 +5,29 @@
 const google = require('../lib/google');
 const ported = require('../lib/ported');
 
-const TTL_MS = 20000;               // how long one answer is reused
+// Answers are NOT kept between requests (so an edit you just made always shows), except rarely-changing lists.
+const TTL_MS = { getBranchAndCollegeLists: 60000 };
+// Newer rewrites are switched on only after /api/status?compare=1 proves them identical:
+// add their names (comma separated) to the FAST_EXTRA setting in Vercel.
+const NEEDS_APPROVAL = ['getBranchAndCollegeLists', 'getRegisteredStudents', 'getRoundStudents'];
+function enabled(fn) {
+  if (NEEDS_APPROVAL.indexOf(fn) === -1) return true;
+  return String(process.env.FAST_EXTRA || '').split(',').map(x => x.trim()).indexOf(fn) !== -1;
+}
 const cache = new Map();            // key -> { t, v }
 const inflight = new Map();         // key -> Promise (identical simultaneous calls share one read)
 
 async function fast(fn, args) {
   const key = fn + JSON.stringify(args);
-  const hit = cache.get(key);
-  if (hit && Date.now() - hit.t < TTL_MS) return { v: hit.v, src: 'memory' };
+  const ttl = TTL_MS[fn] || 0;
+  const hit = ttl ? cache.get(key) : null;
+  if (hit && Date.now() - hit.t < ttl) return { v: hit.v, src: 'memory' };
   if (inflight.has(key)) return { v: await inflight.get(key), src: 'shared' };
   const p = ported[fn].apply(null, args);
   inflight.set(key, p);
   try {
     const v = await p;
-    cache.set(key, { t: Date.now(), v: v });
+    if (ttl) cache.set(key, { t: Date.now(), v: v });
     return { v: v, src: 'sheets' };
   } finally { inflight.delete(key); }
 }
@@ -33,6 +42,7 @@ module.exports = async (req, res) => {
   const args = Array.isArray(body.args) ? body.args : [];
 
   if (!Object.prototype.hasOwnProperty.call(ported, fn)) return res.status(200).json({ ok: false, fallback: true, error: 'not ported' });
+  if (!enabled(fn)) return res.status(200).json({ ok: false, fallback: true, error: 'not enabled yet' });
   if (!google.isConfigured()) return res.status(200).json({ ok: false, fallback: true, error: 'gateway not configured' });
 
   const t0 = Date.now();

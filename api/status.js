@@ -60,7 +60,7 @@ module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const q = req.query || {};
   const report = {
-    version: 'v8-error-cells-fix',
+    version: 'v9-shared-reads-and-retry',
     GAS_URL_set: !!process.env.GAS_URL,
     SHEET_ID_set: !!process.env.SHEET_ID,
     GOOGLE_CREDENTIALS_set: !!process.env.GOOGLE_CREDENTIALS,

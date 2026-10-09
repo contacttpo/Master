@@ -42,6 +42,10 @@ module.exports = async (req, res) => {
   const fn = String(body.fn || '');
   const args = Array.isArray(body.args) ? body.args : [];
 
+  if (fn === '__purge') {            // sent by the page right after any save, so the next read is fresh
+    google.purgeReads(); cache.clear();
+    return res.status(200).json({ ok: true, data: null });
+  }
   if (!Object.prototype.hasOwnProperty.call(ported, fn)) return res.status(200).json({ ok: false, fallback: true, error: 'not ported' });
   if (!enabled(fn)) return res.status(200).json({ ok: false, fallback: true, error: 'not enabled yet' });
   if (!google.isConfigured()) return res.status(200).json({ ok: false, fallback: true, error: 'gateway not configured' });

@@ -23,7 +23,8 @@
   // If that path is not set up or fails, the call quietly goes to Apps Script as before.
   var GATEWAY = { getDashboardData: 1, getCompanyList: 1, getBranchAndCollegeLists: 1, getRegisteredStudents: 1, getRoundStudents: 1, getRoundCounts: 1, getCompanyDetails: 1,
     getBranchViewFilters: 1, getTopPackageStudents: 1, getPlacementRate: 1, getPackageAnalytics: 1,
-    getGlobalSelectionSummary: 1, getAllStudentsMaster: 1 };
+    getGlobalSelectionSummary: 1, getAllStudentsMaster: 1,
+    getRegisteredStudentDownloadFields: 1, getRegisteredStudentEditFields: 1 };
 
   // If API_URL above is left as the placeholder, the address is read from the GAS_URL setting in
   // Vercel (via /api/config) -- so this file never has to be edited again.
@@ -186,6 +187,8 @@
       .then(function () {}, function () {});
   }
 
+  var sharedReads = {};
+
   function call(fn, args, onData) {
     var started = Date.now();
     var instant = INSTANT[fn] === 1;
@@ -207,7 +210,22 @@
       }
     }
 
-    return network(fn, args).then(function (r) {
+    // Identical read requests already waiting or running share ONE request (the page repeats some reads).
+    // Any save clears this, so a read started after a save is never answered with data from before it.
+    var readOnlyCall = READ_ONLY.test(fn);
+    var dkey = readOnlyCall ? fn + ':' + JSON.stringify(args) : null;
+    if (!readOnlyCall) sharedReads = {};
+    var net;
+    if (dkey && sharedReads[dkey]) net = sharedReads[dkey];
+    else {
+      net = network(fn, args);
+      if (dkey) {
+        sharedReads[dkey] = net;
+        var forget = function () { if (sharedReads[dkey] === net) delete sharedReads[dkey]; };
+        net.then(forget, forget);
+      }
+    }
+    return net.then(function (r) {
       record(fn, r.ms + r.queued, r.queued, r.gw ? 'gw' : (r.reason ? 'fb' : (r.retried ? 'retry' : 'net')), r.reason);
       var wrote = !instant && !READ_ONLY.test(fn);
       if (instant) lsSet(key, JSON.stringify({ t: Date.now(), v: r.data }));

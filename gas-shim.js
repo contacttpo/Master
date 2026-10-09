@@ -94,7 +94,7 @@
     }
     panel.style.display = 'block';
     panel.textContent = 'tap to hide · ?debug=0 to turn off\n' + log.map(function (r) {
-      return (r.src === 'cache' ? '⚡' : (r.src === 'gw' ? '🚀' : '  ')) + r.fn.slice(0, 28).padEnd(28) + String(r.total).padStart(6) + ' ms' +
+      return (r.src === 'cache' ? '⚡' : (r.src === 'gw' ? '🚀' : '  ')) + r.fn.slice(0, 36).padEnd(36) + String(r.total).padStart(6) + ' ms' +
         (r.queued > 150 ? '  (waited ' + r.queued + ')' : '') + (r.src === 'retry' ? '  retried' : '') + (r.reason ? '\n      ↩ ' + String(r.reason).slice(0, 70) : '');
     }).join('\n');
   }

@@ -12,10 +12,13 @@ const TTL_MS = { getBranchAndCollegeLists: 60000 };
 const NEEDS_APPROVAL = ['getBranchAndCollegeLists', 'getRegisteredStudents', 'getRoundStudents', 'getRoundCounts', 'getCompanyDetails',
   'getBranchViewFilters', 'getTopPackageStudents', 'getPlacementRate', 'getPackageAnalytics', 'getGlobalSelectionSummary', 'getAllStudentsMaster',
   'getRegisteredStudentDownloadFields', 'getRegisteredStudentEditFields',
-  'getGDRollCallCounts', 'getGDRollCallState', 'getVolunteerRoundBoard'];
+  'getGDRollCallCounts', 'getGDRollCallState', 'getVolunteerRoundBoard', 'volunteerLogin', 'syncVolunteerRoundOnOpen', 'exportFormattedFile'];
+// These look different when opened, so a script cannot prove them identical: even FAST_EXTRA=all does not switch them on.
+const MANUAL_ONLY = ['exportFormattedFile'];
 function enabled(fn) {
   if (NEEDS_APPROVAL.indexOf(fn) === -1) return true;
   const list = String(process.env.FAST_EXTRA || '').split(',').map(x => x.trim().toLowerCase());
+  if (MANUAL_ONLY.indexOf(fn) !== -1) return list.indexOf(fn.toLowerCase()) !== -1;
   return list.indexOf('all') !== -1 || list.indexOf(fn.toLowerCase()) !== -1;
 }
 const cache = new Map();            // key -> { t, v }

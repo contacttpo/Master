@@ -11,7 +11,8 @@ const TTL_MS = { getBranchAndCollegeLists: 60000 };
 // add their names (comma separated) to the FAST_EXTRA setting in Vercel.
 const NEEDS_APPROVAL = ['getBranchAndCollegeLists', 'getRegisteredStudents', 'getRoundStudents', 'getRoundCounts', 'getCompanyDetails',
   'getBranchViewFilters', 'getTopPackageStudents', 'getPlacementRate', 'getPackageAnalytics', 'getGlobalSelectionSummary', 'getAllStudentsMaster',
-  'getRegisteredStudentDownloadFields', 'getRegisteredStudentEditFields'];
+  'getRegisteredStudentDownloadFields', 'getRegisteredStudentEditFields',
+  'getGDRollCallCounts', 'getGDRollCallState', 'getVolunteerRoundBoard'];
 function enabled(fn) {
   if (NEEDS_APPROVAL.indexOf(fn) === -1) return true;
   const list = String(process.env.FAST_EXTRA || '').split(',').map(x => x.trim().toLowerCase());

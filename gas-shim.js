@@ -24,7 +24,18 @@
   var GATEWAY = { getDashboardData: 1, getCompanyList: 1, getBranchAndCollegeLists: 1, getRegisteredStudents: 1, getRoundStudents: 1, getRoundCounts: 1, getCompanyDetails: 1,
     getBranchViewFilters: 1, getTopPackageStudents: 1, getPlacementRate: 1, getPackageAnalytics: 1,
     getGlobalSelectionSummary: 1, getAllStudentsMaster: 1,
-    getRegisteredStudentDownloadFields: 1, getRegisteredStudentEditFields: 1 };
+    getRegisteredStudentDownloadFields: 1, getRegisteredStudentEditFields: 1,
+    getGDRollCallCounts: 1, getGDRollCallState: 1, getVolunteerRoundBoard: 1 };
+
+  // Link builders that only join text together (they took ~2 s each through Apps Script). Done right here, instantly.
+  var LOCAL = {
+    getKioskUrl: function (sessionId) { return location.origin + '/?page=kiosk&session=' + encodeURIComponent(sessionId); },
+    getVolunteerPortalUrl: function () { return location.origin + '/?page=volunteer'; },
+    getRegistrationFormUrl: function (company) { return location.origin + '/?page=register&company=' + encodeURIComponent(company); },
+    getTestUrl: function (company) { return location.origin + '/?page=test&company=' + encodeURIComponent(company); },
+    getFeedbackFormUrl: function (company) { return location.origin + '/?page=feedback&company=' + encodeURIComponent(company); },
+    getAdminAppUrl: function () { return location.origin + '/'; }
+  };
 
   // If API_URL above is left as the placeholder, the address is read from the GAS_URL setting in
   // Vercel (via /api/config) -- so this file never has to be edited again.
@@ -191,6 +202,11 @@
 
   function call(fn, args, onData) {
     var started = Date.now();
+    if (Object.prototype.hasOwnProperty.call(LOCAL, fn)) {
+      var localValue = LOCAL[fn].apply(null, args);
+      record(fn, 0, 0, 'cache');
+      return Promise.resolve().then(function () { onData(localValue); });
+    }
     var instant = INSTANT[fn] === 1;
     var key = instant ? cacheKey(fn, args) : null;
     var shownFromCache = false, cachedRaw = null;

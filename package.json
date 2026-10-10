@@ -1,1 +1,10 @@
-{ "name": "placement-app", "private": true, "engines": { "node": "24.x" } }
+{
+  "name": "placement-app",
+  "private": true,
+  "engines": {
+    "node": "24.x"
+  },
+  "dependencies": {
+    "exceljs": "4.4.0"
+  }
+}

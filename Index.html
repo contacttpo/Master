@@ -4918,7 +4918,7 @@ function app() {
     // falls back to the round's own name, same as the backend already
     // does when an assignment was saved before Round_Type existed.
     driveBoard: null, driveBoardStudents: [], driveBoardSearch: '',
-    driveBoardTimer: null, driveBoardLoading: false, driveLastWrite: 0, driveBoardSig: '',
+    driveBoardTimer: null, driveBoardLoading: false, driveLastWrite: 0, drivePending: 0, driveBoardSig: '',
     driveBoardGroupSizeInput: 5, driveBoardDownloadingAllGroups: false,
     pdfOrient: { show: false, run: null },
     driveBoardOpenGroups: {}, driveBoardSelected: {}, driveBoardGroupingLeftovers: false,
@@ -5689,7 +5689,7 @@ function app() {
     // is mid-flight would otherwise be overwritten with stale data.
     driveBoardPoll() {
       if (!this.driveBoard) { clearInterval(this.driveBoardTimer); this.driveBoardTimer = null; return; }
-      if (document.hidden || this.driveBoardLoading || this.rollCall.busy ||
+      if (document.hidden || this.driveBoardLoading || this.rollCall.busy || this.drivePending > 0 ||
           this.driveBoardGroupingLeftovers || this.driveBoardCsvUploading) return;
       this.loadDriveBoard(true);
     },
@@ -5706,7 +5706,7 @@ function app() {
           // A write started or finished after this request went out: its
           // answer may be older than the write, so drop it — the next 5s
           // tick catches up.
-          if (silent && this.driveLastWrite >= startedAt) return;
+          if (silent && (this.driveLastWrite >= startedAt || this.drivePending > 0)) return;
           const data = res.data || [];
           // Only touch the reactive list when something actually changed, so
           // an unchanged board doesn't re-render (and jump) every 5 seconds.
@@ -5767,25 +5767,42 @@ function app() {
       const ens = Object.keys(this.driveBoardSelected);
       if (!ens.length) { alert('Tick at least one student first.'); return; }
       if (!confirm('Mark ' + ens.length + ' student' + (ens.length > 1 ? 's' : '') + ' as ' + status + '?')) return;
+      // Show the new status straight away; the server catches up in the background (put back if it fails).
+      const before = {};
+      ens.forEach(en => {
+        const s = this.driveBoardStudents.find(x => String(x.Enrollment_No) === String(en));
+        if (s) { before[en] = s.Result; s.Result = status; }
+      });
+      const revert = () => Object.keys(before).forEach(en => {
+        const s = this.driveBoardStudents.find(x => String(x.Enrollment_No) === String(en));
+        if (s) s.Result = before[en];
+      });
+      this.driveBoardSelected = {};
+      this.drivePending++;
       google.script.run
         .withSuccessHandler(res => {
-          if (!res.success) { alert(res.message); return; }
-          this.driveBoardSelected = {};
+          this.drivePending--;
+          this.driveLastWrite = Date.now();
+          if (!res.success) { revert(); alert(res.message); return; }
           this.loadDriveBoard();
         })
-        .withFailureHandler(err => alert('Error: ' + err.message))
+        .withFailureHandler(err => { this.drivePending--; revert(); alert('Error: ' + err.message); })
         .bulkSetRoundStatus(this.driveBoard.Company_Name, this.driveBoard.Round_Name, ens, status, this.adminToken);
     },
     setDriveStatus(enrollmentNo, status) {
       this.driveLastWrite = Date.now();
+      const s = this.driveBoardStudents.find(x => String(x.Enrollment_No) === String(enrollmentNo));
+      const prev = s ? s.Result : undefined;
+      if (s) s.Result = status;                       // instant; put back if the server refuses
+      const revert = () => { if (s) s.Result = prev; };
+      this.drivePending++;
       google.script.run
         .withSuccessHandler(res => {
-          if (!res.success) { alert(res.message); return; }
-          const s = this.driveBoardStudents.find(x => String(x.Enrollment_No) === String(enrollmentNo));
-          if (s) s.Result = status;
+          this.drivePending--;
           this.driveLastWrite = Date.now();
+          if (!res.success) { revert(); alert(res.message); return; }
         })
-        .withFailureHandler(err => alert('Error: ' + err.message))
+        .withFailureHandler(err => { this.drivePending--; revert(); alert('Error: ' + err.message); })
         .setRoundStudentStatus(this.driveBoard.Company_Name, this.driveBoard.Round_Name, enrollmentNo, status, false, this.adminToken);
     },
     markAllDriveAppeared() {
@@ -5793,9 +5810,18 @@ function app() {
       const ens = this.driveBoardStudents.map(s => s.Enrollment_No).filter(Boolean);
       if (!ens.length) { alert('No students in this round yet.'); return; }
       if (!confirm('Mark all ' + ens.length + ' students as Appeared?')) return;
+      const before = {};
+      this.driveBoardStudents.forEach(s => { if (s.Enrollment_No) { before[s.Enrollment_No] = s.Result; s.Result = 'Appeared'; } });
+      const revert = () => this.driveBoardStudents.forEach(s => { if (s.Enrollment_No in before) s.Result = before[s.Enrollment_No]; });
+      this.drivePending++;
       google.script.run
-        .withSuccessHandler(() => this.loadDriveBoard())
-        .withFailureHandler(err => alert('Error: ' + err.message))
+        .withSuccessHandler(res => {
+          this.drivePending--;
+          this.driveLastWrite = Date.now();
+          if (res && res.success === false) { revert(); alert(res.message || 'Could not update.'); return; }
+          this.loadDriveBoard();
+        })
+        .withFailureHandler(err => { this.drivePending--; revert(); alert('Error: ' + err.message); })
         .bulkSetRoundStatus(this.driveBoard.Company_Name, this.driveBoard.Round_Name, ens, 'Appeared', this.adminToken);
     },
     randomizeDriveGroups() {

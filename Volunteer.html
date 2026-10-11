@@ -1156,7 +1156,7 @@
     state.rollCallActive = true;
     writeSession_({ rollCall: true });
     state.rollCall = { groupNo: 1, size: 20, counts: {}, search: '', busy: false, lastAdded: null, error: '', pollTimer: null,
-      queue: [], pending: 0, draining: false };
+      queue: [], pending: 0, draining: false, inFlight: 0, noBatch: false };
     window.onbeforeunload = function () { return (state.rollCall && state.rollCall.pending > 0) ? 'Some students are still being saved.' : undefined; };
     app.innerHTML = `<div class="stateMsg">Loading Roll Call…</div>`;
     google.script.run
@@ -1202,7 +1202,7 @@
   // the full round board every few seconds from several screens at once
   // was part of what was slowing the whole spreadsheet down.
   function rollCallPoll() {
-    if (document.hidden || state.rollCall.pollBusy) return;
+    if (document.hidden || state.rollCall.pollBusy || state.rollCall.pending > 0) return;
     state.rollCall.pollBusy = true;
     google.script.run
       .withSuccessHandler(res => { state.rollCall.pollBusy = false; if (res.success && !state.rollCall.busy && state.rollCall.pending === 0) { state.rollCall.counts = res.counts || {}; updateRollCallCountDisplay(); } })
@@ -1400,18 +1400,58 @@
     rollCallDrain_();
   }
 
+  // Everything waiting (up to 10 students) goes to the server in ONE request. If the server does not know the batch
+  // function yet (older Apps Script deployment), it quietly falls back to saving one student at a time.
   function rollCallDrain_() {
     const rc = state.rollCall;
     if (!rc || rc.draining || !rc.queue.length) return;
+    if (rc.noBatch) { rollCallDrainSingle_(); return; }
     rc.draining = true;
+    const jobs = rc.queue.slice(0, 10);
+    rc.inFlight = jobs.length;
+    const a = state.current;
+    const done = () => { rc.queue.splice(0, jobs.length); rc.pending = Math.max(0, rc.pending - jobs.length); rc.draining = false; rc.inFlight = 0; };
+    const items = jobs.map(j => ({ enrollmentNo: j.student.Enrollment_No, groupNo: j.groupNo, groupSize: j.size }));
+    google.script.run
+      .withSuccessHandler(res => {
+        done();
+        if (!res || !res.success || !res.results) {
+          jobs.forEach(j => rollCallRevert_(j, (res && !res.success) ? res : null, 'Could not save.'));   // whole batch refused (access paused, server busy...)
+        } else {
+          jobs.forEach((j, i) => {
+            const r = res.results[i];
+            if (!r || !r.success) rollCallRevert_(j, r, '');
+            else if (!rc.queue.some(q => q.groupNo === r.groupNo)) rc.counts[r.groupNo] = r.count;  // nothing else waiting for that group: use the true count
+          });
+        }
+        patchRollCallUI();
+        rollCallDrain_();
+      })
+      .withFailureHandler(err => {
+        if (err && /Unknown function/i.test(err.message || '')) {   // server not updated yet: use the one-by-one save instead
+          rc.noBatch = true; rc.draining = false; rc.inFlight = 0; rollCallDrain_(); return;
+        }
+        done();
+        jobs.forEach(j => rollCallRevert_(j, null, 'Error: ' + (err && err.message)));
+        patchRollCallUI();
+        rollCallDrain_();
+      })
+      .rollCallAssignStudentsBatch(a.Company_Name, a.Round_Name, items, null, a.Volunteer_Name, a.Volunteer_Mobile);
+  }
+
+  function rollCallDrainSingle_() {
+    const rc = state.rollCall;
+    if (!rc || rc.draining || !rc.queue.length) return;
+    rc.draining = true;
+    rc.inFlight = 1;
     const job = rc.queue[0];
     const a = state.current;
-    const finish = () => { rc.queue.shift(); rc.pending = Math.max(0, rc.pending - 1); rc.draining = false; };
+    const finish = () => { rc.queue.shift(); rc.pending = Math.max(0, rc.pending - 1); rc.draining = false; rc.inFlight = 0; };
     google.script.run
       .withSuccessHandler(res => {
         finish();
         if (!res || !res.success) rollCallRevert_(job, res, '');
-        else if (!rc.queue.some(j => j.groupNo === res.groupNo)) rc.counts[res.groupNo] = res.count; // nothing else waiting: use the server's true count
+        else if (!rc.queue.some(j => j.groupNo === res.groupNo)) rc.counts[res.groupNo] = res.count;
         patchRollCallUI();
         rollCallDrain_();
       })
@@ -1444,7 +1484,7 @@
     const undone = rc.lastAdded;
     // Still waiting in the queue (not sent yet)? Just take it back, nothing to tell the server.
     const qi = rc.queue.findIndex(j => String(j.student.Enrollment_No) === String(undone.enrollmentNo));
-    if (qi > 0 || (qi === 0 && !rc.draining)) {
+    if (qi >= rc.inFlight) {
       const job = rc.queue.splice(qi, 1)[0];
       rc.pending = Math.max(0, rc.pending - 1);
       rollCallRevert_(job, null, '');
@@ -1452,7 +1492,7 @@
       patchRollCallUI();
       return;
     }
-    if (qi === 0) { showRollCallError('Saving that student right now - tap Undo again in a moment.'); return; }
+    if (qi >= 0) { showRollCallError('Saving that student right now - tap Undo again in a moment.'); return; }
     const a = state.current;
     rc.busy = true;
     google.script.run

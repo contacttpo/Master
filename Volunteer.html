@@ -1155,7 +1155,9 @@
     state.pollTimer = null;
     state.rollCallActive = true;
     writeSession_({ rollCall: true });
-    state.rollCall = { groupNo: 1, size: 20, counts: {}, search: '', busy: false, lastAdded: null, error: '', pollTimer: null };
+    state.rollCall = { groupNo: 1, size: 20, counts: {}, search: '', busy: false, lastAdded: null, error: '', pollTimer: null,
+      queue: [], pending: 0, draining: false };
+    window.onbeforeunload = function () { return (state.rollCall && state.rollCall.pending > 0) ? 'Some students are still being saved.' : undefined; };
     app.innerHTML = `<div class="stateMsg">Loading Roll Call…</div>`;
     google.script.run
       .withSuccessHandler(res => {
@@ -1177,6 +1179,8 @@
   }
 
   function closeRollCall() {
+    const rcNow = state.rollCall;
+    if (rcNow && rcNow.pending > 0) { toast('Still saving ' + rcNow.pending + ' student(s) - one moment, then go back.'); return; }
     exitRollCallToBoard_();
   }
 
@@ -1201,7 +1205,7 @@
     if (document.hidden || state.rollCall.pollBusy) return;
     state.rollCall.pollBusy = true;
     google.script.run
-      .withSuccessHandler(res => { state.rollCall.pollBusy = false; if (res.success && !state.rollCall.busy) { state.rollCall.counts = res.counts || {}; updateRollCallCountDisplay(); } })
+      .withSuccessHandler(res => { state.rollCall.pollBusy = false; if (res.success && !state.rollCall.busy && state.rollCall.pending === 0) { state.rollCall.counts = res.counts || {}; updateRollCallCountDisplay(); } })
       .withFailureHandler(() => { state.rollCall.pollBusy = false; })
       .getGDRollCallCounts(state.current.Company_Name, state.current.Round_Name);
   }
@@ -1343,14 +1347,17 @@
     const el = document.getElementById('rcLastAdded');
     if (!el) return;
     const la = state.rollCall.lastAdded;
-    if (!la) { el.innerHTML = ''; return; }
-    el.innerHTML = `
+    const pend = state.rollCall.pending || 0;
+    if (!la && !pend) { el.innerHTML = ''; return; }
+    const saving = pend > 0 ? ' <span style="opacity:.7">· saving ' + pend + '…</span>' : '';
+    el.innerHTML = la ? `
       <div class="rcLastAddedBar">
-        <span>✓ Added <b>${escapeHtml(la.name)}</b> to Group ${la.groupNo}</span>
+        <span>✓ Added <b>${escapeHtml(la.name)}</b> to Group ${la.groupNo}${saving}</span>
         <button class="rcUndo" id="rcUndoBtn">Undo</button>
       </div>
-    `;
-    document.getElementById('rcUndoBtn').onclick = rollCallUndo;
+    ` : `<div class="rcLastAddedBar"><span>Saving ${pend}…</span></div>`;
+    const undoBtn = document.getElementById('rcUndoBtn');
+    if (undoBtn) undoBtn.onclick = rollCallUndo;
   }
 
   function showRollCallError(msg) {
@@ -1371,43 +1378,81 @@
     if (fullTag) fullTag.style.display = count >= rc.size ? '' : 'none';
   }
 
+  // The tap updates the screen at once; the save then runs in the background, one at a time and in tap order.
+  // The server still checks the real headcount under its lock, so a group can never be overfilled. If it
+  // refuses (group just filled, student already grouped by someone else, access paused...) that one student
+  // is put back on screen and the reason is shown.
   function rollCallAdd(student) {
     const rc = state.rollCall;
-    if (rc.busy) return;
-    rc.busy = true;
+    const g = rc.groupNo;
+    if ((rc.counts[g] || 0) >= rc.size) { showRollCallError('Group ' + g + ' is full - pick another group.'); return; }
+    const s = state.students.find(x => String(x.Enrollment_No) === String(student.Enrollment_No));
+    if (!s || !(s.Group_No === '' || s.Group_No === null || s.Group_No === undefined)) return;
     showRollCallError('');
+    s.Group_No = g;                                            // on screen straight away
+    rc.counts[g] = (rc.counts[g] || 0) + 1;
+    rc.lastAdded = { enrollmentNo: student.Enrollment_No, name: student.Student_Name, groupNo: g };
+    rc.search = '';
+    if (rc.counts[g] >= rc.size) rc.groupNo = g + 1;           // auto-advance, same as before
+    rc.queue.push({ student: student, groupNo: g, size: rc.size });
+    rc.pending++;
+    patchRollCallUI();
+    rollCallDrain_();
+  }
+
+  function rollCallDrain_() {
+    const rc = state.rollCall;
+    if (!rc || rc.draining || !rc.queue.length) return;
+    rc.draining = true;
+    const job = rc.queue[0];
     const a = state.current;
+    const finish = () => { rc.queue.shift(); rc.pending = Math.max(0, rc.pending - 1); rc.draining = false; };
     google.script.run
       .withSuccessHandler(res => {
-        rc.busy = false;
-        if (!res.success) {
-          showRollCallError(res.message);
-          // The group filled (possibly from someone else's device) between
-          // this screen's last count and this tap — move on automatically
-          // instead of leaving the volunteer stuck retrying a full group.
-          if (res.groupFull) {
-            rc.counts[res.groupNo] = res.count;
-            rc.groupNo = res.groupNo + 1;
-            patchRollCallUI();
-          }
-          return;
-        }
-        const s = state.students.find(x => String(x.Enrollment_No) === String(student.Enrollment_No));
-        if (s) s.Group_No = res.groupNo;
-        rc.counts[res.groupNo] = res.count;
-        rc.lastAdded = { enrollmentNo: res.enrollmentNo, name: res.studentName, groupNo: res.groupNo };
-        rc.search = '';
-        if (res.groupFull) rc.groupNo = res.groupNo + 1; // auto-advance
+        finish();
+        if (!res || !res.success) rollCallRevert_(job, res, '');
+        else if (!rc.queue.some(j => j.groupNo === res.groupNo)) rc.counts[res.groupNo] = res.count; // nothing else waiting: use the server's true count
         patchRollCallUI();
+        rollCallDrain_();
       })
-      .withFailureHandler(err => { rc.busy = false; showRollCallError('Error: ' + err.message); })
-      .rollCallAssignStudent(a.Company_Name, a.Round_Name, student.Enrollment_No, rc.groupNo, rc.size, null, a.Volunteer_Name, a.Volunteer_Mobile);
+      .withFailureHandler(err => {
+        finish();
+        rollCallRevert_(job, null, 'Error: ' + (err && err.message));
+        patchRollCallUI();
+        rollCallDrain_();
+      })
+      .rollCallAssignStudent(a.Company_Name, a.Round_Name, job.student.Enrollment_No, job.groupNo, job.size, null, a.Volunteer_Name, a.Volunteer_Mobile);
+  }
+
+  // Take one optimistic add back out of the screen state.
+  function rollCallRevert_(job, res, errText) {
+    const rc = state.rollCall;
+    const s = state.students.find(x => String(x.Enrollment_No) === String(job.student.Enrollment_No));
+    if (s) s.Group_No = (res && res.alreadyGrouped) ? res.groupNo : '';   // already in another group: show where
+    rc.counts[job.groupNo] = Math.max(0, (rc.counts[job.groupNo] || 1) - 1);
+    if (res && res.groupFull) {
+      rc.counts[res.groupNo] = res.count;
+      if (rc.groupNo <= res.groupNo) rc.groupNo = res.groupNo + 1;
+    }
+    if (rc.lastAdded && String(rc.lastAdded.enrollmentNo) === String(job.student.Enrollment_No)) rc.lastAdded = null;
+    showRollCallError((res && res.message) || errText || 'Could not save ' + (job.student.Student_Name || 'this student') + '.');
   }
 
   function rollCallUndo() {
     const rc = state.rollCall;
     if (!rc.lastAdded || rc.busy) return;
     const undone = rc.lastAdded;
+    // Still waiting in the queue (not sent yet)? Just take it back, nothing to tell the server.
+    const qi = rc.queue.findIndex(j => String(j.student.Enrollment_No) === String(undone.enrollmentNo));
+    if (qi > 0 || (qi === 0 && !rc.draining)) {
+      const job = rc.queue.splice(qi, 1)[0];
+      rc.pending = Math.max(0, rc.pending - 1);
+      rollCallRevert_(job, null, '');
+      showRollCallError('');
+      patchRollCallUI();
+      return;
+    }
+    if (qi === 0) { showRollCallError('Saving that student right now - tap Undo again in a moment.'); return; }
     const a = state.current;
     rc.busy = true;
     google.script.run

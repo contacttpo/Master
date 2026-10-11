@@ -24,7 +24,7 @@
 // check-in, volunteer portal, employer feedback, photo upload) are built
 // from this by getWebAppUrl_() in Code.gs. Leave '' to keep the old
 // Apps Script links.
-const FRONTEND_URL_ = '';
+const FRONTEND_URL_ = 'https://mastertpo.vercel.app';
 
 const API_GLOBAL_ = (typeof globalThis !== 'undefined') ? globalThis : this;
 
@@ -123,6 +123,185 @@ function getSelectedStudentsForCompany(companyName) {
     const d = getCompanyDetails(companyName);
     if (!d || !d.success) return d || { success: false, message: 'Could not load selected students.' };
     return { success: true, students: d.students || [] };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+}
+
+// ===================================================================
+// FASTER "PULL PRESENT STUDENTS INTO ROUND"
+// Same behaviour as pullPresentStudentsIntoRound in Code.gs (which is left untouched, so this can be
+// switched back at any time). The original reads the round tab's header row three separate times and
+// the rows once more; this reads the tab ONCE and reuses it. Fewer round trips to the sheet = faster.
+// ===================================================================
+function pullPresentStudentsIntoRoundFast(companyName, roundName, adminToken) {
+  try {
+    if (!companyName || !roundName) return { success: false, message: 'Company and round are required.' };
+    const guard = requireRoundEditable_(companyName, roundName, adminToken);
+    if (guard) return guard;
+    const regSheet = getExistingRegisteredSheetForCompany_(companyName);
+    const allRegistered = sheetObjectsFrom_(regSheet);
+    const presentStudents = allRegistered.filter(r => normalizeStr_(r.Attendance).toUpperCase() === 'PRESENT');
+    const skippedNoEnrollment = presentStudents.filter(s => !normalizeEnrollmentNo_(s.Enrollment_No)).length;
+    const eligiblePresentStudents = presentStudents.filter(s => normalizeEnrollmentNo_(s.Enrollment_No));
+    const roundSheet = getRoundSheetForCompany_(companyName);
+    const addedCount = copyStudentsIntoRoundFast_(eligiblePresentStudents, roundSheet, companyName, roundName);
+    return {
+      success: true, count: addedCount, totalPresent: presentStudents.length,
+      skippedNoEnrollment: skippedNoEnrollment
+    };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+}
+
+function copyStudentsIntoRoundFast_(sourceRows, roundSheet, companyName, roundName) {
+  if (!sourceRows || !sourceRows.length) return 0;
+  const EXCLUDE_KEYS = { Company_Name: true, Round_Name: true, Result: true, Attendance: true, Check_In_Time: true };
+  const extraKeys = {};
+  sourceRows.forEach(r => Object.keys(r).forEach(k => { if (!EXCLUDE_KEYS[k]) extraKeys[k] = true; }));
+  const expected = ROUND_STUDENTS_HEADERS.concat(
+    Object.keys(extraKeys).filter(k => ROUND_STUDENTS_HEADERS.indexOf(k) === -1)
+  );
+
+  // ONE read of the whole tab: header row + existing rows.
+  const lastRow = Math.max(roundSheet.getLastRow(), 1);
+  const lastCol = Math.max(roundSheet.getLastColumn(), 1);
+  const data = roundSheet.getRange(1, 1, lastRow, lastCol).getValues();
+  const liveHeaders = data[0].slice();
+
+  // Add any missing columns (same rule as ensureHeaders_, without re-reading the header row).
+  const existingSet = {};
+  liveHeaders.forEach(h => { if (h) existingSet[headerKey_(h)] = true; });
+  const photoAliasOf = {};
+  Object.keys(PHOTO_FIELD_ALIASES_).forEach(f => PHOTO_FIELD_ALIASES_[f].forEach(a => { photoAliasOf[a] = f; }));
+  const hasAlias = h => Object.keys(existingSet).some(k => photoAliasOf[k] === h);
+  const missing = expected.filter(h => !existingSet[headerKey_(h)] && !hasAlias(h));
+  if (missing.length) {
+    roundSheet.getRange(1, lastCol + 1, 1, missing.length).setValues([missing]).setFontWeight('bold');
+    missing.forEach(h => liveHeaders.push(h));
+  }
+
+  // Who is already in this round (first column named Round_Name / Enrollment_No wins, as before).
+  const rnIdx = liveHeaders.indexOf('Round_Name');
+  const enIdx = liveHeaders.indexOf('Enrollment_No');
+  const existingEnrollments = {};
+  if (rnIdx !== -1 && enIdx !== -1) {
+    data.slice(1).forEach(row => {
+      if (normalizeStr_(row[rnIdx]) === normalizeStr_(roundName)) {
+        existingEnrollments[normalizeEnrollmentNo_(row[enIdx])] = true;
+      }
+    });
+  }
+
+  const seenThisPull = {};
+  const rowsToAdd = [];
+  sourceRows.forEach(s => {
+    const key = normalizeEnrollmentNo_(s.Enrollment_No);
+    if (!key || existingEnrollments[key] || seenThisPull[key]) return;
+    seenThisPull[key] = true;
+    const dataObject = Object.assign({}, s, { Company_Name: companyName, Round_Name: roundName, Result: '' });
+    rowsToAdd.push(liveHeaders.map(h => (dataObject[h] !== undefined ? dataObject[h] : '')));
+  });
+  if (rowsToAdd.length > 0) {
+    roundSheet.getRange(lastRow + 1, 1, rowsToAdd.length, liveHeaders.length).setValues(rowsToAdd);
+  }
+  return rowsToAdd.length;
+}
+
+// ===================================================================
+// ROLL CALL: SAVE SEVERAL STUDENTS IN ONE REQUEST
+// Same rules and same messages as rollCallAssignStudent (which stays as it is), applied to each student in
+// order. One access check, one read of the round tab, one lock, one write and one audit write for the whole
+// batch, instead of all of that once per student. Returns { success:true, results:[ ...one per student ] }, where
+// each entry looks exactly like what rollCallAssignStudent returns for that student.
+// items: [{ enrollmentNo, groupNo, groupSize }]
+// ===================================================================
+function rollCallAssignStudentsBatch(companyName, roundName, items, adminToken, volunteerName, volunteerMobile) {
+  try {
+    if (!items || !items.length) return { success: true, results: [] };
+    const blocked = assertVolunteerRoundAccess_(companyName, roundName, volunteerMobile);
+    if (blocked) return blocked;
+    const sheet = getExistingRoundSheetForCompany_(companyName);
+    if (!sheet) return { success: false, message: 'No student list found for this round yet.' };
+
+    const lock = LockService.getScriptLock();
+    try { lock.waitLock(8000); } catch (e) {
+      return { success: false, message: 'Server is busy right now — please try again in a moment.' };
+    }
+    try {
+      const data = sheet.getDataRange().getValues();
+      const headers = data[0];
+      const roundCol = headers.indexOf('Round_Name');
+      const enrollCol = headers.indexOf('Enrollment_No');
+      const groupCol = headers.indexOf('Group_No');
+      const nameCol = headers.indexOf('Student_Name');
+      const wantedRound = normalizeStr_(roundName);
+
+      // this round's rows: last row per enrollment wins (as in the single version); live group per row; headcount per group
+      const rowOfEnrollment = {};
+      const groupAtRow = {};
+      const counts = {};
+      for (let i = 1; i < data.length; i++) {
+        if (normalizeStr_(data[i][roundCol]) !== wantedRound) continue;
+        rowOfEnrollment[normalizeEnrollmentNo_(data[i][enrollCol])] = i;
+        const g = data[i][groupCol];
+        groupAtRow[i] = g;
+        if (g !== '' && g !== null && g !== undefined) counts[Number(g)] = (counts[Number(g)] || 0) + 1;
+      }
+
+      const results = [];
+      const assigned = [];   // { row, group, enrollmentNo }
+      items.forEach(item => {
+        const size = Math.max(1, parseInt(item.groupSize, 10) || 20);
+        const targetGroup = Math.max(1, parseInt(item.groupNo, 10) || 1);
+        const rowIdx = rowOfEnrollment[normalizeEnrollmentNo_(item.enrollmentNo)];
+        if (rowIdx === undefined) { results.push({ success: false, message: 'That enrollment number is not in this round\'s list.' }); return; }
+        const existing = groupAtRow[rowIdx];
+        if (existing !== '' && existing !== null && existing !== undefined) {
+          results.push({ success: false, message: (data[rowIdx][nameCol] || 'This student') + ' is already in Group ' + existing + '.', alreadyGrouped: true, groupNo: Number(existing) });
+          return;
+        }
+        const count = counts[targetGroup] || 0;
+        if (count >= size) { results.push({ success: false, message: 'Group ' + targetGroup + ' just filled up.', groupFull: true, groupNo: targetGroup, count: count }); return; }
+        groupAtRow[rowIdx] = targetGroup;
+        counts[targetGroup] = count + 1;
+        assigned.push({ row: rowIdx, group: targetGroup, enrollmentNo: item.enrollmentNo });
+        results.push({
+          success: true, studentName: data[rowIdx][nameCol] || '', enrollmentNo: data[rowIdx][enrollCol],
+          groupNo: targetGroup, count: count + 1, groupFull: count + 1 >= size
+        });
+      });
+
+      if (assigned.length) {
+        const rows = assigned.map(a => a.row);
+        const minRow = Math.min.apply(null, rows), maxRow = Math.max.apply(null, rows);
+        const block = [];
+        for (let r = minRow; r <= maxRow; r++) block.push([data[r][groupCol]]);   // untouched rows keep their value
+        assigned.forEach(a => { block[a.row - minRow][0] = a.group; });
+        sheet.getRange(minRow + 1, groupCol + 1, block.length, 1).setValues(block);
+
+        // audit: one row per student, exactly like the single version, written in one go
+        try {
+          const admin = getAdminFromToken_(adminToken);
+          const who = admin
+            ? [admin.name, admin.email, 'Admin']
+            : (volunteerMobile ? [volunteerName || 'Unknown Volunteer', normalizeMobileDigits_(volunteerMobile), 'Volunteer'] : ['Unknown', '', 'System']);
+          const stamp = formatIstTimestamp_(new Date());
+          const auditRows = assigned.map(a => [stamp, who[0] || 'Unknown', who[1] || '', who[2] || 'System', 'UPDATE', roundName,
+            a.enrollmentNo || '', a.enrollmentNo + ' -> Group ' + a.group + ' (Roll Call)']);
+          const audit = getAuditLogSheet_();
+          audit.getRange(audit.getLastRow() + 1, 1, auditRows.length, auditRows[0].length).setValues(auditRows);
+        } catch (auditErr) {
+          Logger.log('batch audit failed: ' + auditErr.message);
+        }
+      }
+      return { success: true, results: results };
+    } catch (err) {
+      return { success: false, message: err.message };
+    } finally {
+      lock.releaseLock();
+    }
   } catch (err) {
     return { success: false, message: err.message };
   }

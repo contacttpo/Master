@@ -1156,7 +1156,7 @@
     state.rollCallActive = true;
     writeSession_({ rollCall: true });
     state.rollCall = { groupNo: 1, size: 20, counts: {}, search: '', busy: false, lastAdded: null, error: '', pollTimer: null,
-      queue: [], pending: 0, draining: false, inFlight: 0, noBatch: false };
+      queue: [], pending: 0, draining: false, inFlight: 0, noBatch: false, addSeq: 0, pollCount: 0, listBusy: false };
     window.onbeforeunload = function () { return (state.rollCall && state.rollCall.pending > 0) ? 'Some students are still being saved.' : undefined; };
     app.innerHTML = `<div class="stateMsg">Loading Roll Call…</div>`;
     google.script.run
@@ -1208,6 +1208,32 @@
       .withSuccessHandler(res => { state.rollCall.pollBusy = false; if (res.success && !state.rollCall.busy && state.rollCall.pending === 0) { state.rollCall.counts = res.counts || {}; updateRollCallCountDisplay(); } })
       .withFailureHandler(() => { state.rollCall.pollBusy = false; })
       .getGDRollCallCounts(state.current.Company_Name, state.current.Round_Name);
+    state.rollCall.pollCount = (state.rollCall.pollCount || 0) + 1;
+    if (state.rollCall.pollCount % 3 === 0) rollCallRefreshGrouped_();
+  }
+
+  // Students grouped by someone else (another phone or the admin) stop being suggested here.
+  // Only ever ADDS groups to students shown as ungrouped; anything this phone is saving is left alone.
+  function rollCallRefreshGrouped_() {
+    const rc = state.rollCall;
+    if (!rc || rc.listBusy || rc.pending > 0 || rc.busy) return;
+    rc.listBusy = true;
+    const seq = rc.addSeq;
+    google.script.run
+      .withSuccessHandler(res => {
+        rc.listBusy = false;
+        if (!res || !res.success || !state.rollCall || state.rollCall !== rc) return;
+        if (rc.pending > 0 || rc.addSeq !== seq) return;          // a tap happened meanwhile: this answer may be older
+        let changed = false;
+        (res.data || []).forEach(row => {
+          if (row.Group_No === '' || row.Group_No === null || row.Group_No === undefined) return;
+          const s = state.students.find(x => String(x.Enrollment_No) === String(row.Enrollment_No));
+          if (s && (s.Group_No === '' || s.Group_No === null || s.Group_No === undefined)) { s.Group_No = row.Group_No; changed = true; }
+        });
+        if (changed) patchRollCallUI();
+      })
+      .withFailureHandler(() => { rc.listBusy = false; })
+      .getVolunteerRoundBoard(state.current.Company_Name, state.current.Round_Name, false, state.mobile);
   }
 
   function rollCallGoTo(n) {
@@ -1389,6 +1415,7 @@
     const s = state.students.find(x => String(x.Enrollment_No) === String(student.Enrollment_No));
     if (!s || !(s.Group_No === '' || s.Group_No === null || s.Group_No === undefined)) return;
     showRollCallError('');
+    rc.addSeq++;
     s.Group_No = g;                                            // on screen straight away
     rc.counts[g] = (rc.counts[g] || 0) + 1;
     rc.lastAdded = { enrollmentNo: student.Enrollment_No, name: student.Student_Name, groupNo: g };

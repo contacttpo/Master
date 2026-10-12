@@ -1942,6 +1942,7 @@
           <span class="text-sm text-slate-600">
             ✓ Added <span class="font-semibold" x-text="rollCall.lastAdded ? rollCall.lastAdded.name : ''"></span>
             to Group <span x-text="rollCall.lastAdded ? rollCall.lastAdded.groupNo : ''"></span>
+            <span x-show="rollCall.pending > 0" class="text-slate-400">· saving <span x-text="rollCall.pending"></span>…</span>
           </span>
           <button @click="rollCallUndo()" :disabled="rollCall.busy" class="text-xs font-semibold text-red-600 hover:underline disabled:opacity-50">Undo</button>
         </div>
@@ -4929,7 +4930,8 @@ function app() {
     // rollCallPoll — so two people running Roll Call on the same round at
     // once both stay in sync); lastAdded remembers only the most recent
     // add, for a single-step Undo. ----
-    rollCall: { active: false, groupNo: 1, size: 20, counts: {}, search: '', busy: false, lastAdded: null, error: '', pollTimer: null },
+    rollCall: { active: false, groupNo: 1, size: 20, counts: {}, search: '', busy: false, lastAdded: null, error: '', pollTimer: null,
+      queue: [], pending: 0, draining: false, inFlight: 0, noBatch: false, addSeq: 0, pollCount: 0, listBusy: false },
     // Dashboard card "Quick View" popup — separate, lightweight state from
     // `detail` above (which backs the full company page). Deliberately not
     // cached like companyDetailCache: this is a quick glance, opened rarely
@@ -5689,7 +5691,7 @@ function app() {
     // is mid-flight would otherwise be overwritten with stale data.
     driveBoardPoll() {
       if (!this.driveBoard) { clearInterval(this.driveBoardTimer); this.driveBoardTimer = null; return; }
-      if (document.hidden || this.driveBoardLoading || this.rollCall.busy || this.drivePending > 0 ||
+      if (document.hidden || this.driveBoardLoading || this.rollCall.busy || this.rollCall.pending > 0 || this.drivePending > 0 ||
           this.driveBoardGroupingLeftovers || this.driveBoardCsvUploading) return;
       this.loadDriveBoard(true);
     },
@@ -5706,7 +5708,7 @@ function app() {
           // A write started or finished after this request went out: its
           // answer may be older than the write, so drop it — the next 5s
           // tick catches up.
-          if (silent && (this.driveLastWrite >= startedAt || this.drivePending > 0)) return;
+          if (silent && (this.driveLastWrite >= startedAt || this.drivePending > 0 || this.rollCall.pending > 0)) return;
           const data = res.data || [];
           // Only touch the reactive list when something actually changed, so
           // an unchanged board doesn't re-render (and jump) every 5 seconds.
@@ -5861,6 +5863,8 @@ function app() {
           this.rollCall.groupNo = g;
           this.rollCall.search = ''; this.rollCall.lastAdded = null; this.rollCall.error = '';
           this.rollCall.active = true;
+          this.rollCall.queue = []; this.rollCall.pending = 0; this.rollCall.draining = false; this.rollCall.inFlight = 0; this.rollCall.pollCount = 0;
+          window.onbeforeunload = () => (this.rollCall.pending > 0 ? 'Some students are still being saved.' : undefined);
           clearInterval(this.rollCall.pollTimer);
           this.rollCall.pollTimer = setInterval(() => this.rollCallPoll(), 6000);
         })
@@ -5868,6 +5872,7 @@ function app() {
         .getGDRollCallState(this.driveBoard.Company_Name, this.driveBoard.Round_Name);
     },
     closeRollCall() {
+      if (this.rollCall.pending > 0) { alert('Still saving ' + this.rollCall.pending + ' student(s) - please wait a moment, then close.'); return; }
       this.rollCall.active = false;
       clearInterval(this.rollCall.pollTimer);
       this.loadDriveBoard(); // pick up everything Roll Call placed while it was open
@@ -5880,11 +5885,32 @@ function app() {
     // several screens at once was part of what was slowing the whole
     // spreadsheet down.
     rollCallPoll() {
-      if (!this.rollCall.active) return;
+      if (!this.rollCall.active || this.rollCall.pending > 0) return;
       google.script.run
-        .withSuccessHandler(res => { if (res.success) this.rollCall.counts = res.counts || {}; })
+        .withSuccessHandler(res => { if (res.success && this.rollCall.pending === 0 && !this.rollCall.busy) this.rollCall.counts = res.counts || {}; })
         .withFailureHandler(() => {})
         .getGDRollCallCounts(this.driveBoard.Company_Name, this.driveBoard.Round_Name);
+      this.rollCall.pollCount++;
+      if (this.rollCall.pollCount % 3 === 0) this.rollCallRefreshGrouped_();
+    },
+    // Students grouped by someone else (a volunteer or another admin) stop being suggested here.
+    rollCallRefreshGrouped_() {
+      const rc = this.rollCall;
+      if (rc.listBusy || rc.pending > 0 || rc.busy || !this.driveBoard) return;
+      rc.listBusy = true;
+      const seq = rc.addSeq;
+      google.script.run
+        .withSuccessHandler(res => {
+          rc.listBusy = false;
+          if (!res || !res.success || rc.pending > 0 || rc.addSeq !== seq) return;
+          (res.data || []).forEach(row => {
+            if (row.Group_No === '' || row.Group_No === null || row.Group_No === undefined) return;
+            const s = this.driveBoardStudents.find(x => String(x.Enrollment_No) === String(row.Enrollment_No));
+            if (s && (s.Group_No === '' || s.Group_No === null || s.Group_No === undefined)) s.Group_No = row.Group_No;
+          });
+        })
+        .withFailureHandler(() => { rc.listBusy = false; })
+        .getVolunteerRoundBoard(this.driveBoard.Company_Name, this.driveBoard.Round_Name, false, '');
     },
     // Jump to any group directly (the "full flexibility" switcher) — not
     // limited to the group currently being filled, so several people can
@@ -5926,49 +5952,116 @@ function app() {
         .filter(s => String(s.Student_Name || '').toLowerCase().includes(q) || String(s.Enrollment_No || '').toLowerCase().includes(q))
         .slice(0, 8);
     },
+    // The tap updates the screen at once; saving happens in the background, in tap order, everything that is waiting
+    // going to the server in ONE request. The server still checks the real headcount under its lock. If it refuses
+    // (group just filled, already grouped by someone else...) only that student is put back, with the reason.
     rollCallAdd(student) {
+      const rc = this.rollCall;
       this.driveLastWrite = Date.now();
-      if (this.rollCall.busy) return;
-      this.rollCall.busy = true;
-      this.rollCall.error = '';
+      const g = rc.groupNo;
+      if ((rc.counts[g] || 0) >= rc.size) { rc.error = 'Group ' + g + ' is full - pick another group.'; return; }
+      const s = this.driveBoardStudents.find(x => String(x.Enrollment_No) === String(student.Enrollment_No));
+      if (!s || !(s.Group_No === '' || s.Group_No === null || s.Group_No === undefined)) return;
+      rc.error = '';
+      rc.addSeq++;
+      s.Group_No = g;                                            // on screen straight away
+      rc.counts[g] = (rc.counts[g] || 0) + 1;
+      rc.lastAdded = { enrollmentNo: student.Enrollment_No, name: student.Student_Name, groupNo: g };
+      rc.search = '';
+      if (rc.counts[g] >= rc.size) rc.groupNo = g + 1;           // auto-advance
+      rc.queue.push({ student: student, groupNo: g, size: rc.size });
+      rc.pending++;
+      this.rollCallDrain_();
+    },
+    rollCallDrain_() {
+      const rc = this.rollCall;
+      if (rc.draining || !rc.queue.length) return;
+      if (rc.noBatch) { this.rollCallDrainSingle_(); return; }
+      rc.draining = true;
+      const jobs = rc.queue.slice(0, 10);
+      rc.inFlight = jobs.length;
+      const done = () => { rc.queue.splice(0, jobs.length); rc.pending = Math.max(0, rc.pending - jobs.length); rc.draining = false; rc.inFlight = 0; this.driveLastWrite = Date.now(); };
+      const items = jobs.map(j => ({ enrollmentNo: j.student.Enrollment_No, groupNo: j.groupNo, groupSize: j.size }));
       google.script.run
         .withSuccessHandler(res => {
-          this.rollCall.busy = false;
-          if (!res.success) {
-            this.rollCall.error = res.message;
-            // The group filled (possibly from someone else's device) between
-            // this screen's last count and this tap — move on automatically
-            // rather than leaving the volunteer stuck retrying a full group.
-            if (res.groupFull) { this.rollCall.counts[res.groupNo] = res.count; this.rollCall.groupNo = res.groupNo + 1; }
-            return;
+          done();
+          if (!res || !res.success || !res.results) {
+            jobs.forEach(j => this.rollCallRevert_(j, (res && !res.success) ? res : null, 'Could not save.'));
+          } else {
+            jobs.forEach((j, i) => {
+              const r = res.results[i];
+              if (!r || !r.success) this.rollCallRevert_(j, r, '');
+              else if (!rc.queue.some(q => q.groupNo === r.groupNo)) rc.counts[r.groupNo] = r.count;
+            });
           }
-          const s = this.driveBoardStudents.find(x => String(x.Enrollment_No) === String(student.Enrollment_No));
-          if (s) s.Group_No = res.groupNo;
-          this.driveLastWrite = Date.now();
-          this.rollCall.counts[res.groupNo] = res.count;
-          this.rollCall.lastAdded = { enrollmentNo: res.enrollmentNo, name: res.studentName, groupNo: res.groupNo };
-          this.rollCall.search = '';
-          if (res.groupFull) this.rollCall.groupNo = res.groupNo + 1; // auto-advance
+          this.rollCallDrain_();
         })
-        .withFailureHandler(err => { this.rollCall.busy = false; this.rollCall.error = 'Error: ' + err.message; })
-        .rollCallAssignStudent(this.driveBoard.Company_Name, this.driveBoard.Round_Name, student.Enrollment_No, this.rollCall.groupNo, this.rollCall.size, this.adminToken);
+        .withFailureHandler(err => {
+          if (err && /Unknown function/i.test(err.message || '')) {   // Apps Script not updated yet: save one at a time instead
+            rc.noBatch = true; rc.draining = false; rc.inFlight = 0; this.rollCallDrain_(); return;
+          }
+          done();
+          jobs.forEach(j => this.rollCallRevert_(j, null, 'Error: ' + (err && err.message)));
+          this.rollCallDrain_();
+        })
+        .rollCallAssignStudentsBatch(this.driveBoard.Company_Name, this.driveBoard.Round_Name, items, this.adminToken, '', '');
+    },
+    rollCallDrainSingle_() {
+      const rc = this.rollCall;
+      if (rc.draining || !rc.queue.length) return;
+      rc.draining = true;
+      rc.inFlight = 1;
+      const job = rc.queue[0];
+      const finish = () => { rc.queue.shift(); rc.pending = Math.max(0, rc.pending - 1); rc.draining = false; rc.inFlight = 0; this.driveLastWrite = Date.now(); };
+      google.script.run
+        .withSuccessHandler(res => {
+          finish();
+          if (!res || !res.success) this.rollCallRevert_(job, res, '');
+          else if (!rc.queue.some(j => j.groupNo === res.groupNo)) rc.counts[res.groupNo] = res.count;
+          this.rollCallDrain_();
+        })
+        .withFailureHandler(err => { finish(); this.rollCallRevert_(job, null, 'Error: ' + (err && err.message)); this.rollCallDrain_(); })
+        .rollCallAssignStudent(this.driveBoard.Company_Name, this.driveBoard.Round_Name, job.student.Enrollment_No, job.groupNo, job.size, this.adminToken);
+    },
+    rollCallRevert_(job, res, errText) {
+      const rc = this.rollCall;
+      const s = this.driveBoardStudents.find(x => String(x.Enrollment_No) === String(job.student.Enrollment_No));
+      if (s) s.Group_No = (res && res.alreadyGrouped) ? res.groupNo : '';
+      rc.counts[job.groupNo] = Math.max(0, (rc.counts[job.groupNo] || 1) - 1);
+      if (res && res.groupFull) {
+        rc.counts[res.groupNo] = res.count;
+        if (rc.groupNo <= res.groupNo) rc.groupNo = res.groupNo + 1;
+      }
+      if (rc.lastAdded && String(rc.lastAdded.enrollmentNo) === String(job.student.Enrollment_No)) rc.lastAdded = null;
+      rc.error = (res && res.message) || errText || ('Could not save ' + (job.student.Student_Name || 'this student') + '.');
     },
     rollCallUndo() {
+      const rc = this.rollCall;
       this.driveLastWrite = Date.now();
-      if (!this.rollCall.lastAdded || this.rollCall.busy) return;
-      const undone = this.rollCall.lastAdded;
-      this.rollCall.busy = true;
+      if (!rc.lastAdded || rc.busy) return;
+      const undone = rc.lastAdded;
+      // Not sent yet? Just take it back; the server never hears about it.
+      const qi = rc.queue.findIndex(j => String(j.student.Enrollment_No) === String(undone.enrollmentNo));
+      if (qi >= rc.inFlight) {
+        const job = rc.queue.splice(qi, 1)[0];
+        rc.pending = Math.max(0, rc.pending - 1);
+        this.rollCallRevert_(job, null, '');
+        rc.error = '';
+        return;
+      }
+      if (qi >= 0) { rc.error = 'Saving that student right now - tap Undo again in a moment.'; return; }
+      rc.busy = true;
       google.script.run
         .withSuccessHandler(res => {
-          this.rollCall.busy = false;
-          if (!res.success) { this.rollCall.error = res.message; return; }
+          rc.busy = false;
+          if (!res.success) { rc.error = res.message; return; }
           const s = this.driveBoardStudents.find(x => String(x.Enrollment_No) === String(undone.enrollmentNo));
           if (s) s.Group_No = '';
           this.driveLastWrite = Date.now();
-          this.rollCall.counts[undone.groupNo] = Math.max(0, (this.rollCall.counts[undone.groupNo] || 1) - 1);
-          this.rollCall.lastAdded = null;
+          rc.counts[undone.groupNo] = Math.max(0, (rc.counts[undone.groupNo] || 1) - 1);
+          rc.lastAdded = null;
         })
-        .withFailureHandler(err => { this.rollCall.busy = false; this.rollCall.error = 'Error: ' + err.message; })
+        .withFailureHandler(err => { rc.busy = false; rc.error = 'Error: ' + err.message; })
         .removeStudentFromGDGroup(this.driveBoard.Company_Name, this.driveBoard.Round_Name, undone.enrollmentNo, this.adminToken);
     },
     addToDriveGroup(groupNo) {

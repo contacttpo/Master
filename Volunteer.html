@@ -238,6 +238,7 @@
   .bulkBtn.select { background: #059669; }
   .bulkBtn.move { background: #4f46e5; }
   .bulkBtn.clear { background: #fff; color: #475569; border-color: #e2e8f0; }
+  .bulkBtn.markall { background: #fff; color: #0284c7; border-color: #0284c7; }
 
   /* ---- Roll Call Mode ---- */
   .rcHeader {
@@ -1582,13 +1583,15 @@
     }
     const isMove = state.markMode === 'MoveGroup';
     const modeLabel = isMove ? 'Moving to group' : ('Marking ' + state.markMode);
-    const confirmLabel = isMove ? 'Move Selected' : ('Confirm ' + state.markMode);
+    const isAppeared = state.markMode === 'Appeared';
+    const confirmLabel = isMove ? 'Move Selected' : (isAppeared ? 'Confirm Appearance' : ('Confirm ' + state.markMode));
     return `
       <div>
         <div class="bulkCount" id="bulkCount">0 selected · ${escapeHtml(modeLabel)}</div>
         <span class="bulkSelectAll" id="bulkSelectAllBtn">Select all visible</span>
       </div>
       <div class="bulkActions">
+        ${isAppeared ? '<button class="bulkBtn markall" id="markAllBtn">✓ Mark all</button>' : ''}
         <button class="bulkBtn ${markClass_(state.markMode)}" id="confirmMarkBtn" disabled>${escapeHtml(confirmLabel)}</button>
         <button class="bulkBtn clear" id="cancelMarkBtn">Cancel</button>
       </div>
@@ -1608,6 +1611,8 @@
     }
     document.getElementById('confirmMarkBtn').onclick = confirmMark;
     document.getElementById('cancelMarkBtn').onclick = exitMarkMode;
+    const markAllBtn = document.getElementById('markAllBtn');
+    if (markAllBtn) markAllBtn.onclick = markAllPending_;
     document.getElementById('bulkSelectAllBtn').onclick = () => {
       const boxes = document.querySelectorAll('.rowCheck');
       const allChecked = boxes.length > 0 && Array.from(boxes).every(cb => cb.checked);
@@ -1617,6 +1622,31 @@
       });
       updateBulkBar();
     };
+  }
+
+  // "Mark all" (Appeared): everybody this volunteer manages who has NO result yet. Students who already
+  // have Appeared / Shortlisted / Rejected / Selected are never swept in, so a decision can't be overwritten by accident.
+  // A volunteer restricted to certain groups only gets the students in those groups.
+  function markAllCandidates_() {
+    const a = state.current;
+    const mine = isGD(a.Round_Type) ? assignedGroupNumbers_(a) : [];
+    return state.students.filter(s => {
+      if (String(s.Result || '').trim()) return false;
+      if (!String(s.Enrollment_No || '').trim()) return false;
+      if (mine.length) return s.Group_No !== '' && s.Group_No !== null && s.Group_No !== undefined && mine.indexOf(Number(s.Group_No)) !== -1;
+      return true;
+    });
+  }
+
+  function markAllPending_() {
+    const cands = markAllCandidates_();
+    if (!cands.length) { toast('No pending students left to mark Appeared.'); return; }
+    const allSelected = cands.every(s => state.selected.has(String(s.Enrollment_No)));
+    cands.forEach(s => {
+      const en = String(s.Enrollment_No);
+      if (allSelected) state.selected.delete(en); else state.selected.add(en);
+    });
+    renderBoardBody();   // shows the ticks and refreshes the counter
   }
 
   function enterMarkMode(status) {
@@ -1645,7 +1675,17 @@
         : 'Tap a status below to start marking';
     }
     const confirmBtn = document.getElementById('confirmMarkBtn');
-    if (confirmBtn) confirmBtn.disabled = (n === 0);
+    if (confirmBtn) {
+      confirmBtn.disabled = (n === 0);
+      if (state.markMode === 'Appeared') confirmBtn.textContent = n > 0 ? 'Confirm Appearance (' + n + ')' : 'Confirm Appearance';
+    }
+    const markAllBtn = document.getElementById('markAllBtn');
+    if (markAllBtn) {
+      const cands = markAllCandidates_();
+      const allSelected = cands.length > 0 && cands.every(s => state.selected.has(String(s.Enrollment_No)));
+      markAllBtn.textContent = allSelected ? 'Clear all' : '✓ Mark all (' + cands.length + ')';
+      markAllBtn.disabled = cands.length === 0;
+    }
     const selectAllBtn = document.getElementById('bulkSelectAllBtn');
     if (selectAllBtn) {
       const boxes = document.querySelectorAll('.rowCheck');
@@ -1669,7 +1709,9 @@
       if (prev && prev !== status && (prev === 'Shortlisted' || prev === 'Rejected' || prev === 'Selected')) changing[prev] = (changing[prev] || 0) + 1;
     });
     const warn = Object.keys(changing).map(k => changing[k] + ' currently ' + k).join(', ');
-    const msg = 'Mark ' + ids.length + ' student' + (ids.length > 1 ? 's' : '') + ' as ' + status + '?' +
+    const msg = (status === 'Appeared'
+      ? 'Confirm appearance of ' + ids.length + ' student' + (ids.length > 1 ? 's' : '') + '?\n\nThey will be marked Appeared.'
+      : 'Mark ' + ids.length + ' student' + (ids.length > 1 ? 's' : '') + ' as ' + status + '?') +
       (warn ? '\n\n⚠ This will CHANGE the existing result of ' + warn + '.' : '');
     if (!confirm(msg)) return;
     // SPEED (perceived): update the screen immediately and let the server

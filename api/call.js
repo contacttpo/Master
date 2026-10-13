@@ -6,13 +6,14 @@ const google = require('../lib/google');
 const ported = require('../lib/ported');
 
 // Answers are NOT kept between requests (so an edit you just made always shows), except rarely-changing lists.
-const TTL_MS = { getBranchAndCollegeLists: 60000 };
+const TTL_MS = { getBranchAndCollegeLists: 60000, getRegistrationFormForCompany: 10000 };   // the form details are the same for every student who opens the link
 // Newer rewrites are switched on only after /api/status?compare=1 proves them identical:
 // add their names (comma separated) to the FAST_EXTRA setting in Vercel.
 const NEEDS_APPROVAL = ['getBranchAndCollegeLists', 'getRegisteredStudents', 'getRoundStudents', 'getRoundCounts', 'getCompanyDetails',
   'getBranchViewFilters', 'getTopPackageStudents', 'getPlacementRate', 'getPackageAnalytics', 'getGlobalSelectionSummary', 'getAllStudentsMaster',
   'getRegisteredStudentDownloadFields', 'getRegisteredStudentEditFields',
-  'getGDRollCallCounts', 'getGDRollCallState', 'getVolunteerRoundBoard', 'volunteerLogin', 'syncVolunteerRoundOnOpen', 'exportFormattedFile'];
+  'getGDRollCallCounts', 'getGDRollCallState', 'getVolunteerRoundBoard', 'volunteerLogin', 'syncVolunteerRoundOnOpen', 'exportFormattedFile',
+  'getRegistrationFormForCompany', 'checkRegistrationEligibility'];
 // These look different when opened, so a script cannot prove them identical: even FAST_EXTRA=all does not switch them on.
 const MANUAL_ONLY = ['exportFormattedFile'];
 function enabled(fn) {

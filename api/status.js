@@ -46,12 +46,22 @@ async function buildCases(n) {
   const dash = await ported.getDashboardData();
   const names = dash.data.map(c => c.Company_Name).filter(Boolean).slice(0, n);
   const rounds = toObjects((await google.getSheets(['Process_Tracking']))['Process_Tracking']);
-  names.forEach(co => {
+  for (const co of names) {
     cases.push(['getRegisteredStudents', [co]]);
     cases.push(['getRoundCounts', [co]]);
     cases.push(['getCompanyDetails', [co]]);
     cases.push(['getRegisteredStudentDownloadFields', [co]]);
     cases.push(['getRegisteredStudentEditFields', [co]]);
+    cases.push(['getRegistrationFormForCompany', [co]]);
+    try {
+      const safeName = String(co).trim().replace(/[\[\]\*\?\/\\:]/g, ' ').replace(/^'+/, '').replace(/\s+/g, ' ').trim().substring(0, 80) || 'Unnamed';
+      const regVals = (await google.getSheets(['Reg__' + safeName]))['Reg__' + safeName];
+      const ei = regVals && regVals[0] ? regVals[0].indexOf('Enrollment_No') : -1;
+      if (ei !== -1 && regVals.length > 1) cases.push(['checkRegistrationEligibility', [co, String(regVals[1][ei])]]);   // someone already registered
+      const mVals = (await google.getSheets(['Students_Master']))['Students_Master'];
+      const mi = mVals && mVals[0] ? mVals[0].indexOf('Enrollment') : -1;
+      if (mi !== -1 && mVals.length > 1) cases.push(['checkRegistrationEligibility', [co, String(mVals[1][mi])]]);           // a student from the master list
+    } catch (e) { /* that company has no registration sheet yet */ }
     const firstRound = rounds.filter(r => String(r.Company_Name).trim() === String(co).trim())[0];
     if (firstRound) {
       cases.push(['getGDRollCallCounts', [co, firstRound.Round_Name]]);
@@ -60,7 +70,7 @@ async function buildCases(n) {
     }
     const first = rounds.filter(r => String(r.Company_Name).trim() === String(co).trim())[0];
     if (first) cases.push(['getRoundStudents', [co, first.Round_Name]]);
-  });
+  }
   try {
     const volVals = (await google.getSheets(['Round_Volunteers']))['Round_Volunteers'];
     if (volVals && volVals.length > 1) {
@@ -76,7 +86,7 @@ module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const q = req.query || {};
   const report = {
-    version: 'v13-volunteer-login',
+    version: 'v14-registration-reads',
     GAS_URL_set: !!process.env.GAS_URL,
     SHEET_ID_set: !!process.env.SHEET_ID,
     GOOGLE_CREDENTIALS_set: !!process.env.GOOGLE_CREDENTIALS,
@@ -110,7 +120,7 @@ module.exports = async (req, res) => {
     const bad = Object.keys(byFn).filter(f => !byFn[f]);
     report.safe_to_enable = ok.join(',');
     report.NOT_identical = bad.join(',') || 'none';
-    report.how_to_enable = q.only ? 'You tested only ' + q.only + '. Do NOT copy a list from this page. Run /api/status?compare=1&n=1 (without only) and use that, or set FAST_EXTRA to the single word  all  once every function says identical.' : 'In Vercel > Settings > Environment Variables set FAST_EXTRA = ' + (ok.filter(f => ['getBranchAndCollegeLists', 'getRegisteredStudents', 'getRoundStudents', 'getRoundCounts', 'getCompanyDetails', 'getBranchViewFilters', 'getTopPackageStudents', 'getPlacementRate', 'getPackageAnalytics', 'getGlobalSelectionSummary', 'getAllStudentsMaster', 'getRegisteredStudentDownloadFields', 'getRegisteredStudentEditFields', 'getGDRollCallCounts', 'getGDRollCallState', 'getVolunteerRoundBoard', 'volunteerLogin', 'syncVolunteerRoundOnOpen'].indexOf(f) !== -1).join(',') || '(nothing yet)') + ' then Redeploy.';
+    report.how_to_enable = q.only ? 'You tested only ' + q.only + '. Do NOT copy a list from this page. Run /api/status?compare=1&n=1 (without only) and use that, or set FAST_EXTRA to the single word  all  once every function says identical.' : 'In Vercel > Settings > Environment Variables set FAST_EXTRA = ' + (ok.filter(f => ['getBranchAndCollegeLists', 'getRegisteredStudents', 'getRoundStudents', 'getRoundCounts', 'getCompanyDetails', 'getBranchViewFilters', 'getTopPackageStudents', 'getPlacementRate', 'getPackageAnalytics', 'getGlobalSelectionSummary', 'getAllStudentsMaster', 'getRegisteredStudentDownloadFields', 'getRegisteredStudentEditFields', 'getGDRollCallCounts', 'getGDRollCallState', 'getVolunteerRoundBoard', 'volunteerLogin', 'syncVolunteerRoundOnOpen', 'getRegistrationFormForCompany', 'checkRegistrationEligibility'].indexOf(f) !== -1).join(',') || '(nothing yet)') + ' then Redeploy.';
   }
   res.status(200).json(report);
 };

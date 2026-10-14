@@ -13,7 +13,8 @@ const NEEDS_APPROVAL = ['getBranchAndCollegeLists', 'getRegisteredStudents', 'ge
   'getBranchViewFilters', 'getTopPackageStudents', 'getPlacementRate', 'getPackageAnalytics', 'getGlobalSelectionSummary', 'getAllStudentsMaster',
   'getRegisteredStudentDownloadFields', 'getRegisteredStudentEditFields',
   'getGDRollCallCounts', 'getGDRollCallState', 'getVolunteerRoundBoard', 'volunteerLogin', 'syncVolunteerRoundOnOpen', 'exportFormattedFile',
-  'getRegistrationFormForCompany', 'checkRegistrationEligibility'];
+  'getRegistrationFormForCompany', 'checkRegistrationEligibility',
+  'getAttendanceSessionStatus', 'verifyVolunteerMobile', 'getPhotoRequestForStudent', 'getFeedbackFormForStudent'];
 // These look different when opened, so a script cannot prove them identical: even FAST_EXTRA=all does not switch them on.
 const MANUAL_ONLY = ['exportFormattedFile'];
 function enabled(fn) {

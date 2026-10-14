@@ -79,6 +79,24 @@ async function buildCases(n) {
       cases.push(['volunteerLogin', [String(r[h.indexOf('Volunteer_Mobile')])]]);
     }
   } catch (e) { /* no volunteer sheet yet */ }
+  try {
+    const attVals = (await google.getSheets(['Attendance_Sessions']))['Attendance_Sessions'];
+    if (attVals && attVals.length > 1) {
+      const h = attVals[0], r = attVals[attVals.length - 1];
+      const sid = String(r[h.indexOf('Session_ID')]);
+      cases.push(['getAttendanceSessionStatus', [sid]]);
+      cases.push(['verifyVolunteerMobile', [sid, '9876543210']]);
+    }
+  } catch (e) { /* no attendance sessions yet */ }
+  try {
+    const selVals = (await google.getSheets(['Selected_Students']))['Selected_Students'];
+    if (selVals && selVals.length > 1) {
+      const h = selVals[0], r = selVals[1];
+      const co = String(r[h.indexOf('Company_Name')]), en = String(r[h.indexOf('Enrollment_No')]);
+      cases.push(['getPhotoRequestForStudent', [co, en]]);
+      cases.push(['getFeedbackFormForStudent', [co, en]]);
+    }
+  } catch (e) { /* no selected students yet */ }
   return cases;
 }
 
@@ -86,7 +104,7 @@ module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const q = req.query || {};
   const report = {
-    version: 'v14-registration-reads',
+    version: 'v15-student-reads',
     GAS_URL_set: !!process.env.GAS_URL,
     SHEET_ID_set: !!process.env.SHEET_ID,
     GOOGLE_CREDENTIALS_set: !!process.env.GOOGLE_CREDENTIALS,
@@ -120,7 +138,7 @@ module.exports = async (req, res) => {
     const bad = Object.keys(byFn).filter(f => !byFn[f]);
     report.safe_to_enable = ok.join(',');
     report.NOT_identical = bad.join(',') || 'none';
-    report.how_to_enable = q.only ? 'You tested only ' + q.only + '. Do NOT copy a list from this page. Run /api/status?compare=1&n=1 (without only) and use that, or set FAST_EXTRA to the single word  all  once every function says identical.' : 'In Vercel > Settings > Environment Variables set FAST_EXTRA = ' + (ok.filter(f => ['getBranchAndCollegeLists', 'getRegisteredStudents', 'getRoundStudents', 'getRoundCounts', 'getCompanyDetails', 'getBranchViewFilters', 'getTopPackageStudents', 'getPlacementRate', 'getPackageAnalytics', 'getGlobalSelectionSummary', 'getAllStudentsMaster', 'getRegisteredStudentDownloadFields', 'getRegisteredStudentEditFields', 'getGDRollCallCounts', 'getGDRollCallState', 'getVolunteerRoundBoard', 'volunteerLogin', 'syncVolunteerRoundOnOpen', 'getRegistrationFormForCompany', 'checkRegistrationEligibility'].indexOf(f) !== -1).join(',') || '(nothing yet)') + ' then Redeploy.';
+    report.how_to_enable = q.only ? 'You tested only ' + q.only + '. Do NOT copy a list from this page. Run /api/status?compare=1&n=1 (without only) and use that, or set FAST_EXTRA to the single word  all  once every function says identical.' : 'In Vercel > Settings > Environment Variables set FAST_EXTRA = ' + (ok.filter(f => ['getBranchAndCollegeLists', 'getRegisteredStudents', 'getRoundStudents', 'getRoundCounts', 'getCompanyDetails', 'getBranchViewFilters', 'getTopPackageStudents', 'getPlacementRate', 'getPackageAnalytics', 'getGlobalSelectionSummary', 'getAllStudentsMaster', 'getRegisteredStudentDownloadFields', 'getRegisteredStudentEditFields', 'getGDRollCallCounts', 'getGDRollCallState', 'getVolunteerRoundBoard', 'volunteerLogin', 'syncVolunteerRoundOnOpen', 'getRegistrationFormForCompany', 'checkRegistrationEligibility', 'getAttendanceSessionStatus', 'verifyVolunteerMobile', 'getPhotoRequestForStudent', 'getFeedbackFormForStudent'].indexOf(f) !== -1).join(',') || '(nothing yet)') + ' then Redeploy.';
   }
   res.status(200).json(report);
 };

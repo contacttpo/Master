@@ -27,7 +27,8 @@
     getRegisteredStudentDownloadFields: 1, getRegisteredStudentEditFields: 1,
     getGDRollCallCounts: 1, getGDRollCallState: 1, getVolunteerRoundBoard: 1,
     volunteerLogin: 1, syncVolunteerRoundOnOpen: 1, exportFormattedFile: 1,
-    getRegistrationFormForCompany: 1, checkRegistrationEligibility: 1 };
+    getRegistrationFormForCompany: 1, checkRegistrationEligibility: 1,
+    getAttendanceSessionStatus: 1, verifyVolunteerMobile: 1, getPhotoRequestForStudent: 1, getFeedbackFormForStudent: 1 };
   // Excel exports use the fast path; PDF exports go straight to Apps Script (no wasted round trip).
   var GATEWAY_IF = { exportFormattedFile: function (args) { return args[3] !== 'pdf'; } };
 

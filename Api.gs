@@ -45,6 +45,13 @@ const API_BLOCKED_ = {
   debugCompanyRow: 1, debugPhotoLookup: 1, debugAdminRoundSync: 1
 };
 
+// Pages (and the fast route's fallback) keep calling the old names; these run the faster versions below instead.
+// To switch back to the original behaviour, delete a line here and deploy a new version.
+const API_ALIASES_ = {
+  syncVolunteerRoundOnOpen: 'syncVolunteerRoundOnOpenFast',
+  pullPresentStudentsIntoRound: 'pullPresentStudentsIntoRoundFast'
+};
+
 function apiJson_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
@@ -61,7 +68,7 @@ function doPost(e) {
     if (!/^[A-Za-z][A-Za-z0-9]*$/.test(fn)) throw new Error('Invalid function name.');
     if (API_BLOCKED_[fn]) throw new Error('This function is not available from the web.');
 
-    const target = API_GLOBAL_[fn];
+    const target = API_GLOBAL_[API_ALIASES_[fn] || fn];
     if (typeof target !== 'function') throw new Error('Unknown function: ' + fn);
     // Refuse built-ins such as eval / Function / parseInt: only functions
     // written in this project are callable.
@@ -305,4 +312,135 @@ function rollCallAssignStudentsBatch(companyName, roundName, items, adminToken, 
   } catch (err) {
     return { success: false, message: err.message };
   }
+}
+
+// ===================================================================
+// FASTER "OPEN ROUND" SYNC (volunteer portal)
+// Same decisions and same resulting sheet rows as syncVolunteerRoundOnOpen in Code/VolunteerBackend.gs, which stays
+// as it is. The original carries shortlisted students forward ONE ROUND AT A TIME, re-reading and re-writing the round
+// tab for each round (that is the 10-13 seconds). This reads the tab once, works out every round's additions in memory
+// and writes them all in one go. The page keeps calling the old name: doPost() maps it to this one (see API_ALIASES_).
+// ===================================================================
+function syncVolunteerRoundOnOpenFast(companyName, roundName, volunteerMobile) {
+  try {
+    const blocked = assertVolunteerRoundAccess_(companyName, roundName, volunteerMobile);
+    if (blocked) return blocked;
+    const lock = LockService.getScriptLock();
+    if (!lock.tryLock(2000)) return { success: true, changed: false, skipped: true };
+    let changed = false;
+    try {
+      const companyRounds = sheetToObjects_(SHEET_NAMES.ROUNDS)
+        .filter(r => normalizeStr_(r.Company_Name) === normalizeStr_(companyName));
+      const roundSheet = getExistingRoundSheetForCompany_(companyName);
+      let rows = (roundSheet && roundSheet.getLastRow() >= 2) ? sheetObjectsFrom_(roundSheet) : [];
+      const snapshot = rows.map(r => ({
+        round: normalizeStr_(r.Round_Name), enroll: normalizeEnrollmentNo_(r.Enrollment_No), result: normalizeStr_(r.Result)
+      }));
+      const inRound = {};
+      snapshot.forEach(r => { (inRound[r.round] = inRound[r.round] || {})[r.enroll] = true; });
+
+      let pulled = false;
+      const isFirst = companyRounds.length &&
+        normalizeStr_(companyRounds[0].Round_Name) === normalizeStr_(roundName);
+      if (isFirst) {
+        const regSheet = getExistingRegisteredSheetForCompany_(companyName);
+        if (regSheet && regSheet.getLastRow() >= 2) {
+          const rv = regSheet.getDataRange().getValues();   // one read instead of three
+          const rEn = rv[0].indexOf('Enrollment_No'), rAt = rv[0].indexOf('Attendance');
+          if (rEn > -1 && rAt > -1) {
+            const have = inRound[normalizeStr_(roundName)] || {};
+            let missing = false;
+            for (let i = 1; i < rv.length; i++) {
+              if (normalizeStr_(rv[i][rAt]).toUpperCase() !== 'PRESENT') continue;
+              const k = normalizeEnrollmentNo_(rv[i][rEn]);
+              if (k && !have[k]) { missing = true; break; }
+            }
+            if (missing) {
+              const res = pullPresentStudentsIntoRoundFast(companyName, roundName);
+              if (res && res.success && res.count > 0) { changed = true; pulled = true; }
+            }
+          }
+        }
+      }
+
+      let needsForward = false;
+      for (let ci = 0; ci < companyRounds.length && !needsForward; ci++) {
+        const rn = normalizeStr_(companyRounds[ci].Round_Name);
+        const isLast = ci === companyRounds.length - 1;
+        const nextHave = isLast ? null : (inRound[normalizeStr_(companyRounds[ci + 1].Round_Name)] || {});
+        for (let i = 0; i < snapshot.length; i++) {
+          if (snapshot[i].round !== rn || snapshot[i].result !== 'Shortlisted') continue;
+          if (isLast || !nextHave[snapshot[i].enroll]) { needsForward = true; break; }
+        }
+      }
+      if (needsForward) {
+        if (pulled) rows = sheetObjectsFrom_(roundSheet);   // pick up the students the pull just added
+        if (forwardAllRoundsFast_(companyName, companyRounds, roundSheet, rows)) changed = true;
+      }
+    } finally {
+      lock.releaseLock();
+    }
+    return { success: true, changed: changed };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+}
+
+// What forwardShortlistedToNextRound_ does for every round of the company, but in one pass and one write.
+function forwardAllRoundsFast_(companyName, companyRounds, roundSheet, allRows) {
+  let changed = false;
+  const EXCLUDE_KEYS = { Company_Name: true, Round_Name: true, Result: true, Attendance: true, Check_In_Time: true };
+  const have = {};
+  allRows.forEach(r => { const rn = normalizeStr_(r.Round_Name); (have[rn] = have[rn] || {})[normalizeEnrollmentNo_(r.Enrollment_No)] = true; });
+  const expected = ROUND_STUDENTS_HEADERS.slice();
+  const queued = [];
+  let touchedHeaders = false;
+  companyRounds.forEach(r => {
+    const shortlisted = allRows.filter(x =>
+      normalizeStr_(x.Round_Name) === normalizeStr_(r.Round_Name) && normalizeStr_(x.Result) === 'Shortlisted');
+    if (!shortlisted.length) return;
+    const idx = companyRounds.findIndex(rr => normalizeStr_(rr.Round_Name) === normalizeStr_(r.Round_Name));
+    if (idx < 0) return;
+    if (idx === companyRounds.length - 1) {
+      if (addStudentsToSelectedList_(companyName, shortlisted) > 0) changed = true;
+      return;
+    }
+    const nextRoundName = companyRounds[idx + 1].Round_Name;
+    touchedHeaders = true;
+    shortlisted.forEach(s => Object.keys(s).forEach(k => {
+      if (!EXCLUDE_KEYS[k] && expected.indexOf(k) === -1) expected.push(k);
+    }));
+    const nextKey = normalizeStr_(nextRoundName);
+    const haveNext = have[nextKey] = have[nextKey] || {};
+    const seen = {};
+    shortlisted.forEach(s => {
+      const key = normalizeEnrollmentNo_(s.Enrollment_No);
+      if (!key || haveNext[key] || seen[key]) return;
+      seen[key] = true;
+      haveNext[key] = true;
+      queued.push(Object.assign({}, s, { Company_Name: companyName, Round_Name: nextRoundName, Result: '' }));
+    });
+  });
+  if (!touchedHeaders) return changed;
+
+  // one read of the header row, add any missing columns (same rule as ensureHeaders_), one write for all rows
+  const lastRow = Math.max(roundSheet.getLastRow(), 1);
+  const lastCol = Math.max(roundSheet.getLastColumn(), 1);
+  const liveHeaders = roundSheet.getRange(1, 1, 1, lastCol).getValues()[0].slice();
+  const existingSet = {};
+  liveHeaders.forEach(h => { if (h) existingSet[headerKey_(h)] = true; });
+  const photoAliasOf = {};
+  Object.keys(PHOTO_FIELD_ALIASES_).forEach(f => PHOTO_FIELD_ALIASES_[f].forEach(a => { photoAliasOf[a] = f; }));
+  const hasAlias = h => Object.keys(existingSet).some(k => photoAliasOf[k] === h);
+  const missing = expected.filter(h => !existingSet[headerKey_(h)] && !hasAlias(h));
+  if (missing.length) {
+    roundSheet.getRange(1, lastCol + 1, 1, missing.length).setValues([missing]).setFontWeight('bold');
+    missing.forEach(h => liveHeaders.push(h));
+  }
+  if (queued.length) {
+    const rowsToAdd = queued.map(o => liveHeaders.map(h => (o[h] !== undefined ? o[h] : '')));
+    roundSheet.getRange(lastRow + 1, 1, rowsToAdd.length, liveHeaders.length).setValues(rowsToAdd);
+    changed = true;
+  }
+  return changed;
 }

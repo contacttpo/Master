@@ -29,7 +29,7 @@
     volunteerLogin: 1, syncVolunteerRoundOnOpen: 1, exportFormattedFile: 1,
     getRegistrationFormForCompany: 1, checkRegistrationEligibility: 1,
     getAttendanceSessionStatus: 1, verifyVolunteerMobile: 1, getPhotoRequestForStudent: 1, getFeedbackFormForStudent: 1,
-    getCurrentAttendanceToken: 1 };
+    getCurrentAttendanceToken: 1, getVolunteerLiveOverview: 1 };
   // Excel exports use the fast path; PDF exports go straight to Apps Script (no wasted round trip).
   var GATEWAY_IF = { exportFormattedFile: function (args) { return args[3] !== 'pdf'; } };
 
@@ -40,7 +40,9 @@
     getRegistrationFormUrl: function (company) { return location.origin + '/?page=register&company=' + encodeURIComponent(company); },
     getTestUrl: function (company) { return location.origin + '/?page=test&company=' + encodeURIComponent(company); },
     getFeedbackFormUrl: function (company) { return location.origin + '/?page=feedback&company=' + encodeURIComponent(company); },
-    getAdminAppUrl: function () { return location.origin + '/'; }
+    getAdminAppUrl: function () { return location.origin + '/'; },
+    // Fixed lists copied from the Apps Script constants (it took ~3 s just to return them).
+    getBranchCourseGroups: function () { return { success: true, engineering: ["CSE", "DS", "IoT", "AIML", "AIR", "CSBS", "AI&DS", "CSD", "ECE", "EE", "EX", "ME", "CE"], mcaMba: ["MCA", "MBA-Core", "MBA-BA", "MBA-FT"] }; }
   };
 
   // If API_URL above is left as the placeholder, the address is read from the GAS_URL setting in

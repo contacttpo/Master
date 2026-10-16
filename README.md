@@ -11,7 +11,9 @@ Everything in THIS folder goes to GitHub (Vercel publishes it). Never put the .g
 | api/status.js | health + comparison page (/api/status and /api/status?compare=1) |
 | api/config.js | gives pages your Apps Script address from the GAS_URL setting |
 | lib/google.js, lib/ported.js, lib/regconst.js | Google Sheets reader, the rewritten functions, form option lists (ALL THREE must be in lib/) |
-| manifest.json, sw.js, icon-*.png | makes the site installable as an app |
+| manifest.json, sw.js, icon-*.png | makes the site installable as an app (icon = navy emblem design; maskable version for round icons) |
+| logo.webp / logo.png, emblem.webp / emblem.png | the Campus Placement Tracker logo (login card) and emblem (sidebar), transparent background |
+| theme.js | brand colours for the pages that use the Tailwind CDN (Feedback, Photo upload, Online test); the other pages carry the same colours directly |
 | vercel.json, package.json | Vercel settings (Node 24, Excel library) |
 
 ## Vercel > Settings > Environment Variables
@@ -43,3 +45,7 @@ After pasting any of them: Deploy > Manage deployments > pencil > Version: New v
 - Fast route misbehaves: delete the FAST_EXTRA setting and Redeploy; everything goes back through Apps Script (slower, same results).
 - A page misbehaves after an update: in GitHub open the file > History > restore the previous version.
 - Apps Script change misbehaves: Deploy > Manage deployments > pencil > choose an older Version.
+
+## Colour scheme (taken from the logo)
+Navy #21314e (icon background, status bar, splash) | Blue #246498 (main buttons) | Light blue #2584aa | Orange #de6413 (solid accents only).
+Status colours are unchanged (green = selected, amber = shortlisted, red = rejected). Orange is not used inside gradients because blue-to-orange blends turn muddy.

@@ -16,7 +16,7 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif; font-size: 16px;
   }
   .wrap { max-width: 640px; margin: 0 auto; padding: 20px 18px 44px; }
-  .brand { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: #4f46e5; font-weight: 800; margin-bottom: 2px; }
+  .brand { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: #246498; font-weight: 800; margin-bottom: 2px; }
   h1 { font-size: 26px; margin: 2px 0 6px; font-weight: 800; color: #0f172a; }
   .sub { font-size: 15px; color: #64748b; margin-bottom: 20px; line-height: 1.4; }
 
@@ -24,7 +24,7 @@
     width: 100%; padding: 15px 16px; font-size: 17px; border: 1.5px solid #e2e8f0;
     border-radius: 12px; background: #fff; color: #0f172a; margin-bottom: 14px;
   }
-  input:focus, select:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99,102,241,.15); }
+  input:focus, select:focus { outline: none; border-color: #2c7cbd; box-shadow: 0 0 0 4px rgba(44,124,189,.15); }
   button { cursor: pointer; font-family: inherit; }
   /* Tactile "pressed" feedback on every tappable control. */
   /* .btn, .backBtn, .cnt tactile "pressed" feedback — shared with a couple
@@ -38,7 +38,7 @@
   }
   .btn {
     width: 100%; padding: 15px; font-size: 16px; font-weight: 700; color: #fff;
-    background: #4f46e5; border: none; border-radius: 12px;
+    background: #246498; border: none; border-radius: 12px;
   }
   .btn:disabled { opacity: .5; }
   .btn.ghost { background: #fff; color: #334155; border: 1.5px solid #e2e8f0; }
@@ -59,14 +59,14 @@
     flex: 1 1 0; min-width: 0; display: inline-flex; align-items: center; justify-content: center;
     text-align: center; text-decoration: none; box-sizing: border-box;
     padding: 12px 8px; font-size: 13.5px; font-weight: 800; line-height: 1.2;
-    border-radius: 10px; border: none; color: #fff; background: #4f46e5;
+    border-radius: 10px; border: none; color: #fff; background: #246498;
     transition: transform .06s ease, background-color .06s ease;
     transform: translateY(0);
   }
   .sessBtn.spot { background: #0f766e; }
   .sessBtn:active, .sessBtn.is-pressed {
     transform: translateY(2px);
-    background-color: #3730a3;
+    background-color: #19466a;
   }
   .sessBtn.spot:active, .sessBtn.spot.is-pressed {
     background-color: #0b544f;
@@ -80,7 +80,7 @@
     margin-bottom: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.03);
     transition: transform .08s ease, border-color .08s ease;
   }
-  .card:active { border-color: #6366f1; transform: scale(0.98); }
+  .card:active { border-color: #2c7cbd; transform: scale(0.98); }
   /* Attendance cards hold their own buttons rather than being tappable as
      a whole — without this, pressing a button inside still visually
      "pressed" the whole surrounding card too (CSS :active applies to an
@@ -93,16 +93,16 @@
   .card.pausedCard:active { border-color: #e2e8f0; transform: none; }
   .card.pausedCard .rd { color: #b45309; }
   .card .co { font-size: 18px; font-weight: 800; color: #0f172a; }
-  .card .rd { font-size: 15px; color: #4f46e5; margin-top: 3px; font-weight: 600; }
+  .card .rd { font-size: 15px; color: #246498; margin-top: 3px; font-weight: 600; }
   .badge {
     display: inline-block; font-size: 12px; font-weight: 800; text-transform: uppercase;
     letter-spacing: .03em; padding: 4px 10px; border-radius: 999px; margin-top: 10px;
   }
-  .badge.gd { background: #f3e8ff; color: #7c2d92; }
+  .badge.gd { background: #dfeff5; color: #1c576f; }
   .badge.other { background: #f1f5f9; color: #475569; }
 
   .topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-  .backBtn { background: #fff; border: 1.5px solid #e2e8f0; color: #4f46e5; font-size: 22px; padding: 4px 12px; border-radius: 10px; line-height: 1.6; }
+  .backBtn { background: #fff; border: 1.5px solid #e2e8f0; color: #246498; font-size: 22px; padding: 4px 12px; border-radius: 10px; line-height: 1.6; }
   .topbar .titles { flex: 1; min-width: 0; }
   .topbar .co { font-weight: 800; font-size: 18px; color: #0f172a; }
   .topbar .rd { font-size: 14px; color: #64748b; }
@@ -114,12 +114,12 @@
   .cnt { flex: 0 0 auto; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 10px 14px; text-align: center; min-width: 72px; cursor: pointer; }
   .cnt .n { font-size: 20px; font-weight: 800; } .cnt .l { font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 700; }
   .cnt.pending .n { color: #64748b; }
-  .cnt.appeared .n { color: #0284c7; }
+  .cnt.appeared .n { color: #2784be; }
   .cnt.shortlisted .n { color: #d97706; } .cnt.rejected .n { color: #dc2626; }
   .cnt.selected .n { color: #059669; }
-  .cnt.active-filter { border-color: #4f46e5; box-shadow: 0 0 0 2px rgba(79,70,229,.22); }
+  .cnt.active-filter { border-color: #246498; box-shadow: 0 0 0 2px rgba(36,100,152,.22); }
   .filterHint { font-size: 13px; color: #64748b; margin: 0 0 14px; }
-  .filterHint .clear { color: #4f46e5; font-weight: 700; cursor: pointer; }
+  .filterHint .clear { color: #246498; font-weight: 700; cursor: pointer; }
 
   /* Status tick shown right in front of a student's name, so the current
      outcome is visible at a glance without reading the buttons below. */
@@ -128,7 +128,7 @@
     width: 18px; height: 18px; border-radius: 50%; font-size: 11px; font-weight: 800;
     color: #fff; margin-right: 5px; vertical-align: -2px;
   }
-  .tick.appeared { background: #0284c7; }
+  .tick.appeared { background: #2784be; }
   .tick.shortlisted { background: #d97706; }
   .tick.rejected { background: #dc2626; }
   .tick.selected { background: #059669; }
@@ -145,7 +145,7 @@
   .student .meta { font-size: 13.5px; color: #64748b; margin-top: 2px; }
   .rowCheckSpacer { width: 20px; flex: 0 0 auto; margin: 3px 0 0; }
 
-  .section-title { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: #4f46e5; margin: 20px 0 10px; }
+  .section-title { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: #246498; margin: 20px 0 10px; }
 
   /* One collapsible card per company on the assignments screen. The whole
      header is a button — tapping the company name expands the card to
@@ -214,31 +214,31 @@
 
   /* Checkbox + name row used everywhere a student is listed. */
   .student { display: flex; align-items: flex-start; gap: 10px; }
-  .rowCheck { width: 20px; height: 20px; flex: 0 0 auto; margin: 3px 0 0; accent-color: #4f46e5; cursor: pointer; }
+  .rowCheck { width: 20px; height: 20px; flex: 0 0 auto; margin: 3px 0 0; accent-color: #246498; cursor: pointer; }
   .student-info { flex: 1; min-width: 0; }
 
   /* Sticky bulk action bar — shows how many are selected and lets the
      volunteer mark all of them at once instead of one-by-one. */
   .bulkBar {
-    position: sticky; top: 0; z-index: 20; background: #eef2ff; border: 1.5px solid #c7d2fe;
+    position: sticky; top: 0; z-index: 20; background: #ecf3f9; border: 1.5px solid #bad7ef;
     border-radius: 12px; padding: 10px 12px; margin-bottom: 12px;
     display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
   }
-  .bulkCount { font-size: 13.5px; font-weight: 800; color: #3730a3; white-space: nowrap; }
-  .bulkSelectAll { font-size: 12.5px; color: #4f46e5; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .bulkCount { font-size: 13.5px; font-weight: 800; color: #19466a; white-space: nowrap; }
+  .bulkSelectAll { font-size: 12.5px; color: #246498; font-weight: 700; cursor: pointer; white-space: nowrap; }
   .bulkActions { display: flex; gap: 8px; flex-wrap: wrap; }
   .bulkBtn {
     padding: 9px 14px; font-size: 13px; font-weight: 800; border-radius: 10px; border: 1.5px solid transparent;
     color: #fff; opacity: 1;
   }
   .bulkBtn:disabled { opacity: .45; cursor: not-allowed; }
-  .bulkBtn.appeared { background: #0284c7; }
+  .bulkBtn.appeared { background: #2784be; }
   .bulkBtn.shortlist { background: #d97706; }
   .bulkBtn.reject { background: #dc2626; }
   .bulkBtn.select { background: #059669; }
-  .bulkBtn.move { background: #4f46e5; }
+  .bulkBtn.move { background: #246498; }
   .bulkBtn.clear { background: #fff; color: #475569; border-color: #e2e8f0; }
-  .bulkBtn.markall { background: #fff; color: #0284c7; border-color: #0284c7; }
+  .bulkBtn.markall { background: #fff; color: #2784be; border-color: #2784be; }
 
   /* ---- Roll Call Mode ---- */
   .rcHeader {
@@ -277,102 +277,102 @@
      <style id="vivid-theme"> block restores the previous look.
      =================================================================== */
   body {
-    background: linear-gradient(135deg, #e0e7ff 0%, #fae8ff 34%, #cffafe 68%, #ffedd5 100%) fixed;
+    background: linear-gradient(135deg, #dce9f4 0%, #faebe1 34%, #cffafe 68%, #ffedd5 100%) fixed;
   }
 
   /* ---- header ---- */
   .brand {
     display: inline-block; padding: 5px 13px; border-radius: 999px; color: #fff; margin-bottom: 8px;
-    background: linear-gradient(90deg, #4f46e5, #a21caf 60%, #f97316);
-    box-shadow: 0 6px 14px -6px rgba(124, 58, 237, .7);
+    background: linear-gradient(90deg, #246498, #1d6784 60%, #34a5d2);
+    box-shadow: 0 6px 14px -6px rgba(31, 110, 141, .7);
   }
   .brand span { background: #f59e0b !important; }   /* the ADMIN / PE badge */
   h1 {
-    background: linear-gradient(90deg, #4338ca, #c026d3 60%, #f97316);
+    background: linear-gradient(90deg, #1e5581, #237c9f 60%, #34a5d2);
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
-  .logoutLink { color: #7c3aed; }
+  .logoutLink { color: #1f6e8d; }
 
   /* ---- inputs & buttons ---- */
-  input, select { border-color: #ddd6fe; }
-  input:focus, select:focus { border-color: #8b5cf6; box-shadow: 0 0 0 4px rgba(139, 92, 246, .22); }
+  input, select { border-color: #bbe1f0; }
+  input:focus, select:focus { border-color: #2584aa; box-shadow: 0 0 0 4px rgba(37, 132, 170, .22); }
   .btn {
-    background: linear-gradient(90deg, #6366f1, #8b5cf6 55%, #ec4899);
-    box-shadow: 0 8px 18px -8px rgba(139, 92, 246, .8);
+    background: linear-gradient(90deg, #2c7cbd, #2584aa 55%, #2992bc);
+    box-shadow: 0 8px 18px -8px rgba(37, 132, 170, .8);
   }
   .btn:disabled { box-shadow: none; }
-  .btn.ghost { background: #fff; color: #6d28d9; border-color: #ddd6fe; box-shadow: none; }
+  .btn.ghost { background: #fff; color: #1b5f7a; border-color: #bbe1f0; box-shadow: none; }
   .btn.sm { box-shadow: none; }
-  .backBtn { color: #7c3aed; border-color: #ddd6fe; background: #faf5ff; }
+  .backBtn { color: #1f6e8d; border-color: #bbe1f0; background: #f1f8fb; }
 
   /* ---- Attendance / Spot Registration buttons ---- */
-  .sessBtn { background: linear-gradient(135deg, #6366f1, #8b5cf6); box-shadow: 0 6px 14px -6px rgba(99, 102, 241, .8); }
-  .sessBtn.spot { background: linear-gradient(135deg, #f97316, #ec4899); box-shadow: 0 6px 14px -6px rgba(236, 72, 153, .8); }
+  .sessBtn { background: linear-gradient(135deg, #2c7cbd, #2584aa); box-shadow: 0 6px 14px -6px rgba(44, 124, 189, .8); }
+  .sessBtn.spot { background: linear-gradient(135deg, #f97316, #de6413); box-shadow: 0 6px 14px -6px rgba(222, 100, 19, .8); }
   .sessBtn:active, .sessBtn.is-pressed, .sessBtn.spot:active, .sessBtn.spot.is-pressed { filter: brightness(.88); }
 
   /* ---- cards ---- */
-  .card { border-color: #e0e7ff; border-left: 5px solid #6366f1; box-shadow: 0 8px 20px -12px rgba(99, 102, 241, .45); }
-  .card:nth-child(6n+2) { border-left-color: #ec4899; }
+  .card { border-color: #dce9f4; border-left: 5px solid #2c7cbd; box-shadow: 0 8px 20px -12px rgba(44, 124, 189, .45); }
+  .card:nth-child(6n+2) { border-left-color: #de6413; }
   .card:nth-child(6n+3) { border-left-color: #f59e0b; }
   .card:nth-child(6n+4) { border-left-color: #10b981; }
   .card:nth-child(6n+5) { border-left-color: #06b6d4; }
   .card:nth-child(6n+6) { border-left-color: #f97316; }
-  .card:active { border-color: #8b5cf6; }
-  .card.staticCard:active { border-color: #e0e7ff; }
-  .card[style*="padding:6px 18px"] { border-left-width: 1.5px; border-left-color: #e0e7ff; }   /* student lists stay neutral */
-  .card .rd { color: #7c3aed; }
+  .card:active { border-color: #2584aa; }
+  .card.staticCard:active { border-color: #dce9f4; }
+  .card[style*="padding:6px 18px"] { border-left-width: 1.5px; border-left-color: #dce9f4; }   /* student lists stay neutral */
+  .card .rd { color: #1f6e8d; }
   .card.pausedCard .rd { color: #b45309; }
-  .badge.gd { background: linear-gradient(90deg, #f3e8ff, #fce7f3); color: #a21caf; }
-  .badge.other { background: #e0f2fe; color: #0369a1; }
+  .badge.gd { background: linear-gradient(90deg, #dfeff5, #faeadf); color: #9c470e; }
+  .badge.other { background: #e6f1f8; color: #1f6997; }
 
   /* ---- company cards on the assignments screen ---- */
-  .companyCard { border-color: #ddd6fe; border-left: 6px solid #6366f1; box-shadow: 0 10px 24px -14px rgba(99, 102, 241, .55); }
-  .companyCard:nth-of-type(6n+2) { border-left-color: #ec4899; }
+  .companyCard { border-color: #bbe1f0; border-left: 6px solid #2c7cbd; box-shadow: 0 10px 24px -14px rgba(44, 124, 189, .55); }
+  .companyCard:nth-of-type(6n+2) { border-left-color: #de6413; }
   .companyCard:nth-of-type(6n+3) { border-left-color: #f59e0b; }
   .companyCard:nth-of-type(6n+4) { border-left-color: #10b981; }
   .companyCard:nth-of-type(6n+5) { border-left-color: #06b6d4; }
   .companyCard:nth-of-type(6n+6) { border-left-color: #f97316; }
-  .companyToggle, .feedbackToggle, .groupToggle { background: linear-gradient(90deg, #faf5ff, #ffffff); }
-  .companyToggle:active, .feedbackToggle:active, .groupToggle:active { background: #f3e8ff; }
-  .companyToggle .ccount { color: #7c3aed; background: #ede9fe; padding: 3px 10px; border-radius: 999px; }
-  .companyBody, .groupBody, .feedbackBody { border-top-color: #ede9fe; }
-  .chev { color: #8b5cf6; }
-  .groupCard { border-color: #ddd6fe; }
-  .feedbackQrWrap img { border-color: #ddd6fe; }
-  .feedbackLinkInput { border-color: #ddd6fe; background: #faf5ff; }
+  .companyToggle, .feedbackToggle, .groupToggle { background: linear-gradient(90deg, #f1f8fb, #ffffff); }
+  .companyToggle:active, .feedbackToggle:active, .groupToggle:active { background: #dfeff5; }
+  .companyToggle .ccount { color: #1f6e8d; background: #ddeef5; padding: 3px 10px; border-radius: 999px; }
+  .companyBody, .groupBody, .feedbackBody { border-top-color: #ddeef5; }
+  .chev { color: #2584aa; }
+  .groupCard { border-color: #bbe1f0; }
+  .feedbackQrWrap img { border-color: #bbe1f0; }
+  .feedbackLinkInput { border-color: #bbe1f0; background: #f1f8fb; }
 
   /* ---- status counters: each outcome has its own colour ---- */
-  .cnt { background: #f5f3ff; border-color: #ddd6fe; }
+  .cnt { background: #edf6fa; border-color: #bbe1f0; }
   .cnt.pending { background: #f1f5f9; border-color: #cbd5e1; }
-  .cnt.appeared { background: #e0f2fe; border-color: #7dd3fc; }
+  .cnt.appeared { background: #e6f1f8; border-color: #a0cfec; }
   .cnt.shortlisted { background: #fef3c7; border-color: #fcd34d; }
   .cnt.rejected { background: #ffe4e6; border-color: #fda4af; }
   .cnt.selected { background: #d1fae5; border-color: #6ee7b7; }
-  .cnt.active-filter { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124, 58, 237, .28); }
+  .cnt.active-filter { border-color: #1f6e8d; box-shadow: 0 0 0 3px rgba(31, 110, 141, .28); }
   .cnt .l { color: #475569; }
-  .filterHint .clear { color: #7c3aed; }
+  .filterHint .clear { color: #1f6e8d; }
 
   /* ---- headings, lists, bulk bar ---- */
-  .section-title { color: #7c3aed; border-left: 4px solid #ec4899; padding-left: 10px; }
-  .student { border-top-color: #ede9fe; }
-  .rowCheck { accent-color: #7c3aed; }
-  .bulkBar { background: linear-gradient(90deg, #e0e7ff, #fae8ff); border-color: #c4b5fd; }
-  .bulkCount { color: #5b21b6; }
-  .bulkSelectAll { color: #7c3aed; }
-  .bulkBtn.move { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
-  .bulkBtn.clear { border-color: #ddd6fe; color: #6d28d9; }
-  .toast { background: linear-gradient(90deg, #4338ca, #c026d3); }
+  .section-title { color: #1f6e8d; border-left: 4px solid #de6413; padding-left: 10px; }
+  .student { border-top-color: #ddeef5; }
+  .rowCheck { accent-color: #1f6e8d; }
+  .bulkBar { background: linear-gradient(90deg, #dce9f4, #faebe1); border-color: #83c8e4; }
+  .bulkCount { color: #164f65; }
+  .bulkSelectAll { color: #1f6e8d; }
+  .bulkBtn.move { background: linear-gradient(90deg, #2c7cbd, #2584aa); }
+  .bulkBtn.clear { border-color: #bbe1f0; color: #1b5f7a; }
+  .toast { background: linear-gradient(90deg, #1e5581, #237c9f); }
   /* ---- status colours: the WHOLE row is tinted by outcome, so a wrong
      mark stands out at a glance. Same colours on the counters, the bulk
      buttons and the tick in front of the name.
        Appeared = blue · Shortlisted = green · Rejected = red · Selected = gold
      Pending rows stay plain white. ---- */
   .student { padding-left: 10px; padding-right: 10px; border-radius: 10px; border-top-color: transparent; }
-  .student.st-appeared    { background: #e0f2fe; box-shadow: inset 5px 0 0 #0284c7; }
+  .student.st-appeared    { background: #e6f1f8; box-shadow: inset 5px 0 0 #2784be; }
   .student.st-shortlisted { background: #dcfce7; box-shadow: inset 5px 0 0 #16a34a; }
   .student.st-rejected    { background: #fee2e2; box-shadow: inset 5px 0 0 #dc2626; }
   .student.st-selected    { background: #fef3c7; box-shadow: inset 5px 0 0 #d97706; }
-  .student.st-appeared .name    { color: #075985; }
+  .student.st-appeared .name    { color: #1a5980; }
   .student.st-shortlisted .name { color: #166534; }
   .student.st-rejected .name    { color: #991b1b; }
   .student.st-selected .name    { color: #92400e; }
@@ -386,7 +386,7 @@
   .bulkBtn.shortlist { background: #16a34a; }
   .bulkBtn.select { background: #d97706; }
 </style>
-<meta name="theme-color" content="#6d28d9">
+<meta name="theme-color" content="#1b5f7a">
 </head>
 <body>
 <div class="wrap" id="app"></div>
@@ -531,7 +531,7 @@
     app.innerHTML = `
       <div class="headerRow">
         <div>
-          <div class="brand">Volunteer Portal${state.isPermanentAdmin ? ' <span style="background:#4f46e5;color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;margin-left:6px;vertical-align:middle;">PERMANENT ADMIN</span>' : ''}</div>
+          <div class="brand">Volunteer Portal${state.isPermanentAdmin ? ' <span style="background:#246498;color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;margin-left:6px;vertical-align:middle;">PERMANENT ADMIN</span>' : ''}</div>
           <h1>${volunteerName ? 'Welcome, ' + escapeHtml(volunteerName) + '!' : 'Your Rounds'}</h1>
         </div>
         <button class="logoutLink" id="logoutBtn">Logout</button>
@@ -977,7 +977,7 @@
       <div class="topbar">
         <button class="backBtn" id="backBtn">‹</button>
         <div class="titles">
-          <div class="co">${escapeHtml(a.Company_Name)}${state.isPermanentAdmin ? ' <span style="background:#4f46e5;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:999px;vertical-align:middle;">ADMIN</span>' : ''}</div>
+          <div class="co">${escapeHtml(a.Company_Name)}${state.isPermanentAdmin ? ' <span style="background:#246498;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:999px;vertical-align:middle;">ADMIN</span>' : ''}</div>
           <div class="rd">${escapeHtml(a.Round_Name)} · ${escapeHtml(a.Round_Type || 'Round')}</div>
         </div>
       </div>
@@ -1043,7 +1043,7 @@
     const ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
     const box = (w, h) => `<span style="display:block;border:2px solid #94a3b8;border-radius:3px;width:${w}px;height:${h}px;"></span>`;
-    const optCss = 'flex:1;border:2px solid #c7d2fe;background:#fff;border-radius:14px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;font:600 14px inherit;color:#334155;cursor:pointer;';
+    const optCss = 'flex:1;border:2px solid #bad7ef;background:#fff;border-radius:14px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;font:600 14px inherit;color:#334155;cursor:pointer;';
     ov.innerHTML = `
       <div style="background:#fff;border-radius:18px;max-width:340px;width:100%;padding:18px;">
         <div style="font-weight:800;font-size:16px;color:#1e293b;margin-bottom:4px;">Print orientation</div>

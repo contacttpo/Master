@@ -50,6 +50,8 @@ async function buildCases(n) {
     cases.push(['getRegisteredStudents', [co]]);
     cases.push(['getRoundCounts', [co]]);
     cases.push(['getCompanyDetails', [co]]);
+    cases.push(['getCompanyQuickSummary', [co]]);
+    cases.push(['getRoundVolunteerAssignments', [co]]);
     cases.push(['getRegisteredStudentDownloadFields', [co]]);
     cases.push(['getRegisteredStudentEditFields', [co]]);
     cases.push(['getRegistrationFormForCompany', [co]]);
@@ -98,6 +100,7 @@ async function buildCases(n) {
       cases.push(['getFeedbackFormForStudent', [co, en]]);
     }
   } catch (e) { /* no selected students yet */ }
+  if (names.length) cases.push(['globalSearch', [String(names[0]).trim().slice(0, 3)]]);
   return cases;
 }
 
@@ -105,7 +108,7 @@ const statusHandler = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const q = req.query || {};
   const report = {
-    version: 'v17-volunteer-overview',
+    version: 'v18-quick-summary',
     GAS_URL_set: !!process.env.GAS_URL,
     SHEET_ID_set: !!process.env.SHEET_ID,
     GOOGLE_CREDENTIALS_set: !!process.env.GOOGLE_CREDENTIALS,
@@ -141,7 +144,7 @@ const statusHandler = async (req, res) => {
     const bad = Object.keys(byFn).filter(f => !byFn[f]);
     report.safe_to_enable = ok.join(',');
     report.NOT_identical = bad.join(',') || 'none';
-    report.how_to_enable = q.only ? 'You tested only ' + q.only + '. Do NOT copy a list from this page. Run /api/status?compare=1&n=1 (without only) and use that, or set FAST_EXTRA to the single word  all  once every function says identical.' : 'In Vercel > Settings > Environment Variables set FAST_EXTRA = ' + (ok.filter(f => ['getBranchAndCollegeLists', 'getRegisteredStudents', 'getRoundStudents', 'getRoundCounts', 'getCompanyDetails', 'getBranchViewFilters', 'getTopPackageStudents', 'getPlacementRate', 'getPackageAnalytics', 'getGlobalSelectionSummary', 'getAllStudentsMaster', 'getRegisteredStudentDownloadFields', 'getRegisteredStudentEditFields', 'getGDRollCallCounts', 'getGDRollCallState', 'getVolunteerRoundBoard', 'volunteerLogin', 'syncVolunteerRoundOnOpen', 'getRegistrationFormForCompany', 'checkRegistrationEligibility', 'getAttendanceSessionStatus', 'verifyVolunteerMobile', 'getPhotoRequestForStudent', 'getFeedbackFormForStudent', 'getCurrentAttendanceToken', 'getVolunteerLiveOverview'].indexOf(f) !== -1).join(',') || '(nothing yet)') + ' then Redeploy.';
+    report.how_to_enable = q.only ? 'You tested only ' + q.only + '. Do NOT copy a list from this page. Run /api/status?compare=1&n=1 (without only) and use that, or set FAST_EXTRA to the single word  all  once every function says identical.' : 'In Vercel > Settings > Environment Variables set FAST_EXTRA = ' + (ok.filter(f => ['getBranchAndCollegeLists', 'getRegisteredStudents', 'getRoundStudents', 'getRoundCounts', 'getCompanyDetails', 'getBranchViewFilters', 'getTopPackageStudents', 'getPlacementRate', 'getPackageAnalytics', 'getGlobalSelectionSummary', 'getAllStudentsMaster', 'getRegisteredStudentDownloadFields', 'getRegisteredStudentEditFields', 'getGDRollCallCounts', 'getGDRollCallState', 'getVolunteerRoundBoard', 'volunteerLogin', 'syncVolunteerRoundOnOpen', 'getRegistrationFormForCompany', 'checkRegistrationEligibility', 'getAttendanceSessionStatus', 'verifyVolunteerMobile', 'getPhotoRequestForStudent', 'getFeedbackFormForStudent', 'getCurrentAttendanceToken', 'getVolunteerLiveOverview', 'getCompanyQuickSummary', 'globalSearch', 'getRoundVolunteerAssignments'].indexOf(f) !== -1).join(',') || '(nothing yet)') + ' then Redeploy.';
   }
   res.status(200).json(report);
 };
@@ -151,6 +154,6 @@ module.exports = async (req, res) => {
   try { await statusHandler(req, res); }
   catch (err) {
     res.setHeader('Cache-Control', 'no-store');
-    res.status(200).json({ version: 'v17-volunteer-overview', error: String((err && err.message) || err), where: String((err && err.stack) || '').split('\n').slice(0, 4) });
+    res.status(200).json({ version: 'v18-quick-summary', error: String((err && err.message) || err), where: String((err && err.stack) || '').split('\n').slice(0, 4) });
   }
 };

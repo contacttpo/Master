@@ -98,6 +98,7 @@
 
   // ---- timing panel ----
   var log = [];
+  var overflowNote = '';
   var panel = null;
   function record(fn, total, queued, src, reason) {
     log.unshift({ fn: fn, total: total, queued: queued, src: src, reason: reason });
@@ -110,14 +111,39 @@
       panel = document.createElement('div');
       panel.style.cssText = 'position:fixed;left:6px;bottom:70px;z-index:99999;max-width:92vw;max-height:40vh;overflow:auto;' +
         'background:rgba(15,23,42,.92);color:#e2e8f0;font:11px/1.45 monospace;padding:6px 8px;border-radius:8px;white-space:pre;';
+      panel.id = 'gas-debug';
       panel.onclick = function () { panel.style.display = 'none'; };
       document.body.appendChild(panel);
     }
     panel.style.display = 'block';
-    panel.textContent = 'tap to hide · ?debug=0 to turn off\n' + log.map(function (r) {
+    panel.textContent = 'tap to hide · ?debug=0 to turn off\n' + (overflowNote ? overflowNote + '\n' : '') + log.map(function (r) {
       return (r.src === 'cache' ? '⚡' : (r.src === 'gw' ? '🚀' : '  ')) + r.fn.slice(0, 36).padEnd(36) + String(r.total).padStart(6) + ' ms' +
         (r.queued > 150 ? '  (waited ' + r.queued + ')' : '') + (r.src === 'retry' ? '  retried' : '') + (r.reason ? '\n      ↩ ' + String(r.reason).slice(0, 70) : '');
     }).join('\n');
+  }
+
+  // Debug only: finds elements sticking out past the right edge of the screen (what makes a phone scroll sideways).
+  function scanOverflow() {
+    try {
+      var vw = document.documentElement.clientWidth, found = [];
+      var els = document.body.querySelectorAll('*');
+      for (var i = 0; i < els.length; i++) {
+        var e = els[i];
+        if (e.closest && e.closest('#gas-debug')) continue;
+        var r = e.getBoundingClientRect();
+        if (r.width > 0 && r.right > vw + 2) {
+          var cs = getComputedStyle(e);
+          if (cs.position === 'fixed' || cs.visibility === 'hidden' || cs.display === 'none') continue;
+          found.push({ e: e, over: Math.round(r.right - vw) });
+        }
+      }
+      found.sort(function (a, b) { return b.over - a.over; });
+      overflowNote = found.slice(0, 4).map(function (o) {
+        var e = o.e, c = (typeof e.className === 'string') ? e.className.trim().split(/\s+/).slice(0, 2).join('.') : '';
+        return '↔ +' + o.over + 'px  ' + e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + (c ? '.' + c : '');
+      }).join('\n');
+      drawPanel();
+    } catch (err) { /* never break the page for a debug tool */ }
   }
 
   // ---- queue ----
@@ -293,5 +319,5 @@
     url: { getLocation: function (cb) { cb({ hash: location.hash.replace(/^#/, ''), parameter: window.PARAMS, parameters: {} }); } },
     host: { close: function () {}, setHeight: function () {}, setWidth: function () {}, origin: location.origin }
   };
-  if (DEBUG) window.addEventListener('load', function () { drawPanel(); });
+  if (DEBUG) window.addEventListener('load', function () { drawPanel(); scanOverflow(); setInterval(scanOverflow, 3000); window.addEventListener('resize', scanOverflow); });
 })();

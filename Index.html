@@ -253,6 +253,21 @@
   .drow-selected .drow-badge    { background: #fde68a !important; color: #92400e !important; }
 </style>
 
+<style id="mobile-safety">
+  /* Never let the page itself scroll sideways: anything wider than the screen is clipped, not pushed off to the right. */
+  html, body { max-width: 100%; overflow-x: hidden; }
+  @supports (overflow-x: clip) { html, body { overflow-x: clip; } }
+  main, section { min-width: 0; max-width: 100%; }
+  img, svg, canvas, video { max-width: 100%; }
+  /* long names and emails wrap instead of stretching a card */
+  .truncate-wrap, main h1, main h2, main h3, main p, main td, main th { overflow-wrap: anywhere; }
+  /* Branch view controls */
+  .bv-select { width: 100%; max-width: 100%; }
+  @media (min-width: 640px) { .bv-select { width: auto; min-width: 220px; } }
+  .bv-toggle { max-width: 100%; }
+  .bv-toggle button { flex: 1 1 auto; }
+  @media (max-width: 480px) { .bv-toggle button { padding-left: 10px; padding-right: 10px; font-size: 13px; } }
+</style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800" x-data="app()" x-init="init()" x-cloak>
 
@@ -505,9 +520,7 @@
           </div>
           <div class="hidden lg:block w-px h-24 bg-slate-200"></div>
           <svg viewBox="0 0 120 120" class="w-32 h-32 flex-shrink-0 drop-shadow-sm">
-            <template x-for="(slice, idx) in buildPieSlices(globalSummary.branchSummary)" :key="idx">
-              <path :d="slice.path" :fill="slice.color" stroke="white" stroke-width="1.5"></path>
-            </template>
+            <g x-html="pieSvgMarkup(buildPieSlices(globalSummary.branchSummary))"></g>
           </svg>
         </div>
         <p class="text-xs text-slate-400 mb-3 text-center">Tap a branch to see who was selected.</p>
@@ -791,7 +804,7 @@
             <!-- Round-wise funnel -->
             <div class="mb-5" x-show="quickView.data.rounds && quickView.data.rounds.length > 0">
               <h4 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Round-Wise</h4>
-              <div class="border border-slate-200 rounded-lg overflow-hidden">
+              <div class="border border-slate-200 rounded-lg overflow-x-auto">
                 <table class="w-full text-xs">
                   <thead class="bg-slate-50 text-slate-500">
                     <tr>
@@ -940,14 +953,14 @@
           <div x-show="branchView.mode === 'selections'">
             <label class="text-xs font-medium text-slate-500">Company</label>
             <select x-model="branchView.company"
-              class="block mt-1 border border-slate-300 rounded-lg px-3 py-2 text-sm min-w-[220px]">
+              class="block mt-1 border border-slate-300 rounded-lg px-3 py-2 text-sm bv-select">
               <option value="">All companies</option>
               <template x-for="co in companyList" :key="co">
                 <option :value="co" x-text="co"></option>
               </template>
             </select>
           </div>
-          <div class="flex gap-1 bg-slate-100 rounded-lg p-1">
+          <div class="flex flex-wrap gap-1 bg-slate-100 rounded-lg p-1 bv-toggle">
             <button @click="branchView.mode = 'selections'"
               class="text-sm px-3 py-1.5 rounded-lg transition whitespace-nowrap"
               :class="branchView.mode === 'selections' ? 'bg-white shadow text-indigo-600 font-medium' : 'text-slate-500'">
@@ -3246,9 +3259,7 @@
               <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Branch-wise Selection</p>
               <div class="flex items-center gap-6">
                 <svg viewBox="0 0 120 120" class="w-28 h-28 flex-shrink-0 drop-shadow-sm">
-                  <template x-for="(slice, idx) in buildPieSlices(branchSummary())" :key="idx">
-                    <path :d="slice.path" :fill="slice.color" stroke="white" stroke-width="1.5"></path>
-                  </template>
+                  <g x-html="pieSvgMarkup(buildPieSlices(branchSummary()))"></g>
                 </svg>
                 <div class="flex-1 space-y-1.5">
                   <template x-for="(b, idx) in branchSummary()" :key="b.branch">
@@ -7133,6 +7144,11 @@ function app() {
     // array of { count } objects, so the chart renders reliably across
     // browsers instead of depending on conic-gradient support. Slices start
     // at 12 o'clock and go clockwise, like a conventional pie chart.
+    // The pie is written as SVG text and dropped into a <g>: a <template x-for> placed inside an <svg> draws nothing in Alpine.
+    pieSvgMarkup(slices) {
+      return (slices || []).map(sl => '<path d="' + sl.path + '" fill="' + sl.color + '" stroke="white" stroke-width="1.5"></path>').join('');
+    },
+
     buildPieSlices(data) {
       if (!data || data.length === 0) return [];
       const size = 120;

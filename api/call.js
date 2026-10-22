@@ -13,7 +13,6 @@ const NEEDS_APPROVAL = ['getBranchAndCollegeLists', 'getRegisteredStudents', 'ge
   'getBranchViewFilters', 'getTopPackageStudents', 'getPlacementRate', 'getPackageAnalytics', 'getGlobalSelectionSummary', 'getAllStudentsMaster',
   'getRegisteredStudentDownloadFields', 'getRegisteredStudentEditFields',
   'getGDRollCallCounts', 'getGDRollCallState', 'getVolunteerRoundBoard', 'volunteerLogin', 'syncVolunteerRoundOnOpen', 'exportFormattedFile',
-  'getRegistrationFormForCompany', 'checkRegistrationEligibility',
   'getAttendanceSessionStatus', 'verifyVolunteerMobile', 'getPhotoRequestForStudent', 'getFeedbackFormForStudent', 'getCurrentAttendanceToken', 'getVolunteerLiveOverview',
   'getCompanyQuickSummary', 'globalSearch', 'getRoundVolunteerAssignments',
   'getBranchSelections', 'getBranchNoOffers', 'getBranchRoster'];

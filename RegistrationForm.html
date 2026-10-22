@@ -432,6 +432,10 @@
         hintText = 'Pick a course above to see matching branches.';
       } else {
         options = map[courseValue] || [];
+        if (!options.length) {
+          placeholder = 'No eligible branches available';
+          hintText = 'No eligible branches are configured for the selected course for this company.';
+        }
       }
     } else {
       const seen = {};

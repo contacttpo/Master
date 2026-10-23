@@ -246,11 +246,13 @@
   .drow-shortlisted { background: #dcfce7 !important; box-shadow: inset 5px 0 0 #16a34a; }
   .drow-rejected    { background: #fee2e2 !important; box-shadow: inset 5px 0 0 #dc2626; }
   .drow-selected    { background: #fef3c7 !important; box-shadow: inset 5px 0 0 #d97706; }
-  .drow-appeared, .drow-shortlisted, .drow-rejected, .drow-selected { border-radius: 8px; padding-left: 10px; padding-right: 10px; margin-top: 2px; }
+  .drow-absent      { background: #f1f5f9 !important; box-shadow: inset 5px 0 0 #64748b; }
+  .drow-appeared, .drow-shortlisted, .drow-rejected, .drow-selected, .drow-absent { border-radius: 8px; padding-left: 10px; padding-right: 10px; margin-top: 2px; }
   .drow-shortlisted .drow-badge { background: #bbf7d0 !important; color: #166534 !important; }
   .drow-rejected .drow-badge    { background: #fecaca !important; color: #991b1b !important; }
   .drow-appeared .drow-badge    { background: #c9e3f4 !important; color: #1a5980 !important; }
   .drow-selected .drow-badge    { background: #fde68a !important; color: #92400e !important; }
+  .drow-absent .drow-badge      { background: #cbd5e1 !important; color: #334155 !important; }
 </style>
 
 <style id="mobile-safety">
@@ -1644,6 +1646,7 @@
                       <span class="text-amber-700" x-text="'Shortlisted ' + r.Students_Shortlisted"></span>
                       <span class="text-emerald-700" x-text="'Selected ' + r.Students_Selected"></span>
                       <span class="text-red-600" x-text="'Rejected ' + r.Students_Rejected"></span>
+                      <span class="text-slate-500" x-text="'Absent ' + (r.Students_Absent || 0)"></span>
                     </div>
                   </div>
                   <div class="flex gap-2 flex-wrap">
@@ -1724,6 +1727,7 @@
               <span class="bg-sky-100 text-sky-700 text-xs font-bold px-2.5 py-1 rounded-full" x-text="'Appeared ' + driveBoardCounts.Appeared"></span>
               <span class="bg-amber-100 text-amber-700 text-xs font-bold px-2.5 py-1 rounded-full" x-text="'Shortlisted ' + driveBoardCounts.Shortlisted"></span>
               <span class="bg-red-100 text-red-700 text-xs font-bold px-2.5 py-1 rounded-full" x-text="'Rejected ' + driveBoardCounts.Rejected"></span>
+              <span class="bg-slate-200 text-slate-600 text-xs font-bold px-2.5 py-1 rounded-full" x-text="'Absent ' + driveBoardCounts.Absent"></span>
               <span class="bg-emerald-100 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full" x-text="'Selected ' + driveBoardCounts.Selected"></span>
             </div>
 
@@ -1764,7 +1768,7 @@
                 </label>
               </template>
             </div>
-            <p class="text-xs text-slate-400 -mt-2 mb-3" x-show="!isGD(driveBoard.Round_Type)">CSV needs two columns: "Enrollment No" and "Result" (Appeared / Shortlisted / Rejected / Selected).</p>
+            <p class="text-xs text-slate-400 -mt-2 mb-3" x-show="!isGD(driveBoard.Round_Type)">CSV needs two columns: "Enrollment No" and "Result" (Appeared / Shortlisted / Rejected / Selected / Absent).</p>
 
             <input x-model="driveBoardSearch" placeholder="Search by name or enrollment number…" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-base mb-4">
 
@@ -1776,6 +1780,7 @@
               <div class="flex gap-2 flex-wrap">
                 <button @click="bulkMarkDrive('Shortlisted')" :disabled="!selectedDriveBoardCount" class="text-xs font-bold px-3 py-2 rounded-lg text-white bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed">Mark Shortlisted</button>
                 <button @click="bulkMarkDrive('Rejected')" :disabled="!selectedDriveBoardCount" class="text-xs font-bold px-3 py-2 rounded-lg text-white bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed">Mark Rejected</button>
+                <button @click="bulkMarkDrive('Absent')" :disabled="!selectedDriveBoardCount" class="text-xs font-bold px-3 py-2 rounded-lg text-white bg-slate-500 disabled:opacity-40 disabled:cursor-not-allowed">Mark Absent</button>
                 <template x-if="isHR(driveBoard.Round_Type)">
                   <button @click="bulkMarkDrive('Selected')" :disabled="!selectedDriveBoardCount" class="text-xs font-bold px-3 py-2 rounded-lg text-white bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed">Mark Selected</button>
                 </template>
@@ -1793,7 +1798,7 @@
                       <div class="font-semibold text-slate-800" x-text="s.Student_Name || '(no name)'"></div>
                       <div class="text-sm text-slate-500 mb-1" x-text="s.Enrollment_No + ' · ' + (s.Branch||'') + (s.College ? ' · ' + s.College : '')"></div>
                       <span x-show="s.Result" class="drow-badge text-xs font-bold px-2 py-0.5 rounded-full inline-block"
-                            :class="{'bg-sky-100 text-sky-700': s.Result==='Appeared','bg-amber-100 text-amber-700': s.Result==='Shortlisted','bg-red-100 text-red-700': s.Result==='Rejected','bg-emerald-100 text-emerald-700': s.Result==='Selected'}"
+                            :class="{'bg-sky-100 text-sky-700': s.Result==='Appeared','bg-amber-100 text-amber-700': s.Result==='Shortlisted','bg-red-100 text-red-700': s.Result==='Rejected','bg-emerald-100 text-emerald-700': s.Result==='Selected','bg-slate-200 text-slate-600': s.Result==='Absent'}"
                             x-text="s.Result"></span>
                       <button @click="setDriveStatus(s.Enrollment_No, s.Result==='Appeared' ? '' : 'Appeared')" class="text-xs font-semibold text-slate-400 hover:text-sky-600 ml-2">Toggle Appeared</button>
                     </div>
@@ -1831,7 +1836,7 @@
                           <div class="flex-1">
                             <div class="font-medium text-slate-800 text-sm" x-text="s.Student_Name + ' (' + s.Enrollment_No + ')'"></div>
                             <span x-show="s.Result" class="drow-badge text-xs font-bold px-2 py-0.5 rounded-full inline-block mt-1"
-                                  :class="{'bg-sky-100 text-sky-700': s.Result==='Appeared','bg-amber-100 text-amber-700': s.Result==='Shortlisted','bg-red-100 text-red-700': s.Result==='Rejected','bg-emerald-100 text-emerald-700': s.Result==='Selected'}"
+                                  :class="{'bg-sky-100 text-sky-700': s.Result==='Appeared','bg-amber-100 text-amber-700': s.Result==='Shortlisted','bg-red-100 text-red-700': s.Result==='Rejected','bg-emerald-100 text-emerald-700': s.Result==='Selected','bg-slate-200 text-slate-600': s.Result==='Absent'}"
                                   x-text="s.Result"></span>
                             <div class="flex flex-wrap gap-3 mt-1.5">
                               <button @click="setDriveStatus(s.Enrollment_No, s.Result==='Appeared' ? '' : 'Appeared')" class="text-xs font-semibold text-slate-400 hover:text-sky-600">Toggle Appeared</button>
@@ -2296,7 +2301,7 @@
         <div x-show="downloadModal.source === 'round'" x-cloak class="mb-4">
           <p class="text-xs font-medium text-slate-500 mb-1.5">Filter by Result</p>
           <div class="flex gap-2 flex-wrap">
-            <template x-for="opt in ['All', 'Pending', 'Shortlisted', 'Selected', 'Rejected']" :key="opt">
+            <template x-for="opt in ['All', 'Pending', 'Shortlisted', 'Selected', 'Rejected', 'Absent']" :key="opt">
               <button @click="downloadModal.resultFilter = opt" class="text-sm px-4 py-2 rounded-lg border"
                 :class="downloadModal.resultFilter === opt ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 text-slate-600 hover:bg-slate-50'"
                 x-text="opt"></button>
@@ -2645,6 +2650,7 @@
                     <th class="py-1.5 pr-2">Shortlisted</th>
                     <th class="py-1.5 pr-2">Selected</th>
                     <th class="py-1.5 pr-2">Rejected</th>
+                    <th class="py-1.5 pr-2 text-slate-500">Absent</th>
                     <th class="py-1.5 pr-2">Remarks</th>
                     <th class="py-2"></th>
                   </tr>
@@ -2667,6 +2673,7 @@
                       <td class="py-1.5 pr-2 text-emerald-700" x-text="r.Students_Shortlisted"></td>
                       <td class="py-1.5 pr-2 text-blue-700" x-text="r.Students_Selected"></td>
                       <td class="py-1.5 pr-2 text-red-600" x-text="r.Students_Rejected"></td>
+                      <td class="py-1.5 pr-2 text-slate-500" x-text="r.Students_Absent || 0"></td>
                       <td class="py-1.5 pr-2 text-slate-500 max-w-xs break-words">
                         <span x-show="!r.Remarks">—</span>
                         <span x-show="r.Remarks" x-html="r.Remarks"></span>
@@ -4115,6 +4122,7 @@
                       <th class="py-1.5 pr-4 text-blue-700">Selected</th>
                       <th class="py-1.5 pr-4 text-red-600">Rejected</th>
                       <th class="py-1.5 pr-4 text-slate-500">Pending</th>
+                      <th class="py-1.5 pr-4 text-slate-400">Absent</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -4156,6 +4164,12 @@
                             :class="(roundListBranch === row.branch && roundListFilter === 'Pending') ? 'font-semibold underline' : ''"
                             x-text="row.pending"></button>
                         </td>
+                        <td class="py-1.5 pr-4 text-slate-400">
+                          <button type="button" @click="setRoundBranchFilter(row.branch, 'Absent')"
+                            class="hover:underline"
+                            :class="(roundListBranch === row.branch && roundListFilter === 'Absent') ? 'font-semibold underline' : ''"
+                            x-text="row.absent"></button>
+                        </td>
                       </tr>
                     </template>
                   </tbody>
@@ -4188,6 +4202,10 @@
                   class="text-xs font-medium px-2.5 py-1 rounded-full border transition-colors"
                   :class="roundListFilter === 'Rejected' ? 'bg-red-600 border-red-600 text-white' : 'bg-red-100 border-red-100 text-red-700 hover:bg-red-200'"
                   x-text="roundResultCounts().rejected + ' Rejected'"></button>
+                <button type="button" @click="setRoundListFilter('Absent')"
+                  class="text-xs font-medium px-2.5 py-1 rounded-full border transition-colors"
+                  :class="roundListFilter === 'Absent' ? 'bg-slate-600 border-slate-600 text-white' : 'bg-slate-200 border-slate-200 text-slate-600 hover:bg-slate-300'"
+                  x-text="roundResultCounts().absent + ' Absent'"></button>
                 <button type="button" x-show="roundListFilter !== 'All' || roundListBranch" @click="clearRoundListFilters()"
                   class="text-xs font-medium text-indigo-600 hover:text-indigo-800 underline ml-1">
                   Clear filter
@@ -4280,12 +4298,14 @@
                     <option value="Shortlisted">Shortlisted</option>
                     <option value="Selected">Selected</option>
                     <option value="Rejected">Rejected</option>
+                    <option value="Absent">Absent</option>
                   </select>
                   <span class="text-slate-500">and everyone else in this round as</span>
                   <select x-model="bulkResultRestAs" class="border border-slate-300 rounded-lg px-2 py-1.5 text-sm">
                     <option value="Rejected">Rejected</option>
                     <option value="Shortlisted">Shortlisted</option>
                     <option value="Selected">Selected</option>
+                    <option value="Absent">Absent</option>
                     <option value="">Pending</option>
                     <option value="none">Leave unchanged</option>
                   </select>
@@ -4344,6 +4364,7 @@
                       <option value="Shortlisted">Shortlisted</option>
                       <option value="Selected">Selected</option>
                       <option value="Rejected">Rejected</option>
+                      <option value="Absent">Absent</option>
                     </select>
                   </div>
                   <div class="flex items-end gap-2" x-show="roundStudentForm._foundInMaster !== null || roundStudentForm._isEdit">
@@ -4436,11 +4457,12 @@
                         <td class="py-1.5 pr-2">
                           <select :value="s.Result || ''" @change="updateRoundResult(s, $event.target.value)"
                             class="text-xs font-medium rounded-lg px-2 py-1 border"
-                            :class="s.Result === 'Shortlisted' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : (s.Result === 'Selected' ? 'bg-blue-50 border-blue-300 text-blue-700' : (s.Result === 'Rejected' ? 'bg-red-50 border-red-300 text-red-600' : 'bg-slate-50 border-slate-300 text-slate-500'))">
+                            :class="s.Result === 'Shortlisted' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : (s.Result === 'Selected' ? 'bg-blue-50 border-blue-300 text-blue-700' : (s.Result === 'Rejected' ? 'bg-red-50 border-red-300 text-red-600' : (s.Result === 'Absent' ? 'bg-slate-200 border-slate-400 text-slate-700' : 'bg-slate-50 border-slate-300 text-slate-500')))">
                             <option value="">Pending</option>
                             <option value="Shortlisted">Shortlisted</option>
                             <option value="Selected">Selected</option>
                             <option value="Rejected">Rejected</option>
+                            <option value="Absent">Absent</option>
                           </select>
                         </td>
                         <td class="py-2 text-right whitespace-nowrap">
@@ -5664,7 +5686,7 @@ function app() {
     // CSS class that tints a student's whole row by result (see .drow-* styles).
     driveRowClass(s) {
       const r = String((s && s.Result) || '').trim().toLowerCase();
-      return ['appeared', 'shortlisted', 'rejected', 'selected'].indexOf(r) !== -1 ? 'drow-' + r : '';
+      return ['appeared', 'shortlisted', 'rejected', 'selected', 'absent'].indexOf(r) !== -1 ? 'drow-' + r : '';
     },
     isGroupRound(r) { return this.isGD(r && r.Round_Name) || !!(r && r.Group_Mode); },
     openDriveBoard(round) {
@@ -5740,7 +5762,7 @@ function app() {
         String(s.Student_Name || '').toLowerCase().includes(q));
     },
     get driveBoardCounts() {
-      const c = { Pending: 0, Appeared: 0, Shortlisted: 0, Rejected: 0, Selected: 0 };
+      const c = { Pending: 0, Appeared: 0, Shortlisted: 0, Rejected: 0, Selected: 0, Absent: 0 };
       this.driveBoardStudents.forEach(s => {
         const r = (s.Result || '').trim();
         if (c[r] !== undefined) c[r]++; else c.Pending++;
@@ -8610,6 +8632,7 @@ function app() {
               r.Students_Appeared = c.Students_Appeared;
               r.Students_Shortlisted = c.Students_Shortlisted;
               r.Students_Rejected = c.Students_Rejected;
+              r.Students_Absent = c.Students_Absent || 0;
               r.Students_Selected = c.Students_Selected;
             }
           });
@@ -8680,11 +8703,12 @@ function app() {
     // modal — recomputed from roundStudents on every render, so it updates
     // instantly as Result dropdowns are changed (no reload needed).
     roundResultCounts() {
-      const counts = { pending: 0, shortlisted: 0, selected: 0, rejected: 0 };
+      const counts = { pending: 0, shortlisted: 0, selected: 0, rejected: 0, absent: 0 };
       this.roundStudents.forEach(s => {
         if (s.Result === 'Shortlisted') counts.shortlisted++;
         else if (s.Result === 'Selected') counts.selected++;
         else if (s.Result === 'Rejected') counts.rejected++;
+        else if (s.Result === 'Absent') counts.absent++;
         else counts.pending++;
       });
       return counts;
@@ -9202,7 +9226,8 @@ function app() {
       const rows = {};
       this.roundStudents.forEach(s => {
         const b = (s.Branch || '').trim() || 'Unspecified';
-        if (!rows[b]) rows[b] = { branch: b, appeared: 0, shortlisted: 0, selected: 0, rejected: 0, pending: 0 };
+        if (!rows[b]) rows[b] = { branch: b, appeared: 0, shortlisted: 0, selected: 0, rejected: 0, pending: 0, absent: 0 };
+        if (s.Result === 'Absent') { rows[b].absent++; return; }
         rows[b].appeared++;
         if (s.Result === 'Shortlisted') rows[b].shortlisted++;
         else if (s.Result === 'Selected') rows[b].selected++;

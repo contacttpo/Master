@@ -446,24 +446,21 @@
   <!-- Shown on the Home screen whenever a drive is running (the live overview has at least one round).
        Sits on the right border of the screen, above the bottom bar; tap to open the live details. -->
   <div x-data x-init="liveFabStart()">
-    <button type="button" x-show="loggedIn && view !== 'liveOverview' && liveFab.rows.length && !liveFab.open" x-cloak
-      @click="liveFabOpen()" aria-label="Open Live Overview" title="Live Overview"
-      class="fixed right-3 z-40 w-12 h-12 flex items-center justify-center rounded-full shadow-lg text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800"
+    <button type="button" x-show="loggedIn && view === 'home' && liveFab.rows.length && !liveFab.open" x-cloak
+      @click="liveFabOpen()" aria-label="Open Live Overview"
+      class="fixed right-0 z-40 flex items-center gap-2 pl-3 pr-2.5 py-2.5 rounded-l-full shadow-lg text-white text-sm font-bold bg-red-600 active:bg-red-700"
       style="bottom: calc(env(safe-area-inset-bottom) + 5.5rem)">
-      <!-- live icon: lightning bolt inside a double ring -->
-      <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10.5"></circle>
-        <circle cx="12" cy="12" r="8.6"></circle>
-        <path d="M13.6 1.8 L8.2 13 H11.6 L9.4 22.2 L17.2 10.2 H13.2 Z" fill="currentColor" stroke="none"></path>
-        <path d="M13.6 1.8 L8.2 13 H11.6 L9.4 22.2 L17.2 10.2 H13.2 Z"></path>
-      </svg>
+      <span class="relative flex h-2.5 w-2.5">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+      </span>
+      <span>LIVE</span>
+      <span class="bg-white/25 rounded-full px-1.5 text-xs" x-text="liveFabGroups().length"></span>
     </button>
 
-    <div x-show="liveFab.open" x-cloak @keydown.escape.window="liveFabClose()"
-         class="fixed inset-0 z-50 flex items-end justify-center sm:inset-auto sm:right-4 sm:bottom-4 sm:top-auto sm:left-auto sm:block sm:w-96">
-      <!-- dimmed backdrop on mobile only; on desktop the page stays usable beside the panel -->
-      <div class="absolute inset-0 bg-black/40 sm:hidden" @click="liveFabClose()"></div>
-      <div class="relative bg-white w-full rounded-t-2xl sm:rounded-2xl shadow-xl sm:shadow-2xl sm:border sm:border-slate-200 flex flex-col"
+    <div x-show="liveFab.open" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div class="absolute inset-0 bg-black/40" @click="liveFabClose()"></div>
+      <div class="relative bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-xl flex flex-col"
            style="max-height: 85vh; padding-bottom: env(safe-area-inset-bottom)">
         <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-200">
           <div class="min-w-0">
@@ -5735,8 +5732,8 @@ function app() {
       this.liveFab.started = true;
       const tick = () => {
         if (!this.loggedIn || document.hidden) return;
-        // refresh every 5s while the panel is open; every ~30s on any page just to know if a drive is running
-        if (this.liveFab.open || this.liveFab.tick % 6 === 0) this.liveFabLoad();
+        // refresh every 5s while the panel is open; every ~30s on Home just to know if a drive is running
+        if (this.liveFab.open || (this.view === 'home' && this.liveFab.tick % 6 === 0)) this.liveFabLoad();
         this.liveFab.tick++;
       };
       setTimeout(tick, 1500);
@@ -9479,55 +9476,60 @@ function app() {
       this.regFormLink = '';
       const company = this.detail.company.Company_Name;
 
-      google.script.run
-        .withSuccessHandler(optRes => {
-          this.regFormFieldOptions = optRes.success ? optRes.fields : [];
-          if (optRes.success && optRes.courseOptions && optRes.branchOptionsByCourse) {
-            this.regFormCourseOptions = optRes.courseOptions;
-            this.regFormBranchOptionsByCourse = optRes.branchOptionsByCourse;
-          }
-
+      // The two reads are independent, so they run at the same time (they used to run one after the
+      // other, which doubled the wait). The modal shows once both have answered.
+      let optRes = null, cfgRes = null, failed = false;
+      const finish = () => {
+        if (failed || optRes === null || cfgRes === null) return;
+        this.regFormLoading = false;
+        this.regFormFieldOptions = optRes.success ? optRes.fields : [];
+        if (optRes.success && optRes.courseOptions && optRes.branchOptionsByCourse) {
+          this.regFormCourseOptions = optRes.courseOptions;
+          this.regFormBranchOptionsByCourse = optRes.branchOptionsByCourse;
+        }
+        if (cfgRes.success && cfgRes.found) {
+          this.regFormSelectedKeys = cfgRes.fields || [];
+          this.regFormIncludeCV = !!cfgRes.includeCV;
+          this.regFormCriteria = cfgRes.criteria || {};
+          this.regFormEligibleCourses = cfgRes.eligibleCourses || {};
+          this.regFormCompanyDescription = cfgRes.companyDescription || '';
+          this.regFormPlacedAllowedStr = cfgRes.placedAllowed === false ? 'no' : 'yes';
+          this.regFormExcludedCompaniesText = (cfgRes.excludedCompanies || []).join(', ');
+          this.regFormClosesAtLocal = this.isoToClosesAtLocal_(cfgRes.closesAt || '');
+          this.regFormCustomQuestions = (cfgRes.customQuestions && cfgRes.customQuestions.length ? cfgRes.customQuestions : this.defaultCustomQuestions_())
+            .map(q => ({ enabled: !!q.enabled, label: q.label || '', type: q.type || 'text', required: !!q.required, optionsText: (q.options || []).join(', ') }));
+          // The link is just text joined together (instant, done in the browser).
           google.script.run
-            .withSuccessHandler(cfgRes => {
-              this.regFormLoading = false;
-              if (cfgRes.success && cfgRes.found) {
-                this.regFormSelectedKeys = cfgRes.fields || [];
-                this.regFormIncludeCV = !!cfgRes.includeCV;
-                this.regFormCriteria = cfgRes.criteria || {};
-                this.regFormEligibleCourses = cfgRes.eligibleCourses || {};
-                this.regFormCompanyDescription = cfgRes.companyDescription || '';
-                this.regFormPlacedAllowedStr = cfgRes.placedAllowed === false ? 'no' : 'yes';
-                this.regFormExcludedCompaniesText = (cfgRes.excludedCompanies || []).join(', ');
-                this.regFormClosesAtLocal = this.isoToClosesAtLocal_(cfgRes.closesAt || '');
-                this.regFormCustomQuestions = (cfgRes.customQuestions && cfgRes.customQuestions.length ? cfgRes.customQuestions : this.defaultCustomQuestions_())
-                  .map(q => ({ enabled: !!q.enabled, label: q.label || '', type: q.type || 'text', required: !!q.required, optionsText: (q.options || []).join(', ') }));
-                google.script.run
-                  .withSuccessHandler(url => { this.regFormLink = url; })
-                  .withFailureHandler(() => {})
-                  .getRegistrationFormUrl(company);
-              } else {
-                this.regFormSelectedKeys = [];
-                this.regFormIncludeCV = false;
-                this.regFormCriteria = {};
-                this.regFormEligibleCourses = {};
-                this.regFormCompanyDescription = '';
-                this.regFormPlacedAllowedStr = 'yes';
-                this.regFormExcludedCompaniesText = '';
-                this.regFormClosesAtLocal = '';
-                this.regFormCustomQuestions = this.defaultCustomQuestions_();
-              }
-            })
-            .withFailureHandler(err => {
-              this.regFormLoading = false;
-              this.showToast('Error loading current setup: ' + err.message, 'error');
-            })
-            .getRegistrationFormConfig(company);
-        })
-        .withFailureHandler(err => {
-          this.regFormLoading = false;
-          this.showToast('Error loading form fields: ' + err.message, 'error');
-        })
+            .withSuccessHandler(url => { this.regFormLink = url; })
+            .withFailureHandler(() => {})
+            .getRegistrationFormUrl(company);
+        } else {
+          this.regFormSelectedKeys = [];
+          this.regFormIncludeCV = false;
+          this.regFormCriteria = {};
+          this.regFormEligibleCourses = {};
+          this.regFormCompanyDescription = '';
+          this.regFormPlacedAllowedStr = 'yes';
+          this.regFormExcludedCompaniesText = '';
+          this.regFormClosesAtLocal = '';
+          this.regFormCustomQuestions = this.defaultCustomQuestions_();
+        }
+      };
+      const fail = (what) => (err) => {
+        if (failed) return;
+        failed = true;
+        this.regFormLoading = false;
+        this.showToast('Error loading ' + what + ': ' + (err && err.message ? err.message : err), 'error');
+      };
+
+      google.script.run
+        .withSuccessHandler(r => { optRes = r || { success: false }; finish(); })
+        .withFailureHandler(fail('form fields'))
         .getRegistrationFormFieldOptions();
+      google.script.run
+        .withSuccessHandler(r => { cfgRes = r || { success: false }; finish(); })
+        .withFailureHandler(fail('current setup'))
+        .getRegistrationFormConfig(company);
     },
 
     closeRegistrationFormModal() {

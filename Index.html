@@ -442,6 +442,66 @@
     </button>
   </nav>
 
+  <!-- ===================== LIVE OVERVIEW FLOATING BUTTON ===================== -->
+  <!-- Shown on the Home screen whenever a drive is running (the live overview has at least one round).
+       Sits on the right border of the screen, above the bottom bar; tap to open the live details. -->
+  <div x-data x-init="liveFabStart()">
+    <button type="button" x-show="loggedIn && view === 'home' && liveFab.rows.length && !liveFab.open" x-cloak
+      @click="liveFabOpen()" aria-label="Open Live Overview"
+      class="fixed right-0 z-40 flex items-center gap-2 pl-3 pr-2.5 py-2.5 rounded-l-full shadow-lg text-white text-sm font-bold bg-red-600 active:bg-red-700"
+      style="bottom: calc(env(safe-area-inset-bottom) + 5.5rem)">
+      <span class="relative flex h-2.5 w-2.5">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+      </span>
+      <span>LIVE</span>
+      <span class="bg-white/25 rounded-full px-1.5 text-xs" x-text="liveFabGroups().length"></span>
+    </button>
+
+    <div x-show="liveFab.open" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div class="absolute inset-0 bg-black/40" @click="liveFabClose()"></div>
+      <div class="relative bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-xl flex flex-col"
+           style="max-height: 85vh; padding-bottom: env(safe-area-inset-bottom)">
+        <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-200">
+          <div class="min-w-0">
+            <div class="font-bold text-slate-800 flex items-center gap-2">
+              <span class="inline-block h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse"></span> Live Overview
+            </div>
+            <div class="text-xs text-slate-400" x-show="liveFab.updatedAt" x-text="'Updated ' + (liveFab.updatedAt ? liveFab.updatedAt.toLocaleTimeString() : '')"></div>
+          </div>
+          <button type="button" @click="liveFabClose()" class="text-slate-400 hover:text-slate-700 text-2xl leading-none px-2" aria-label="Close">&times;</button>
+        </div>
+        <div class="overflow-y-auto px-4 py-3 space-y-3">
+          <div x-show="!liveFab.rows.length" class="text-sm text-slate-400">No drive is running right now.</div>
+          <template x-for="c in liveFabGroups()" :key="c.Company_Name">
+            <div class="border border-slate-200 rounded-xl overflow-hidden">
+              <div class="px-3 py-2 bg-slate-50 font-semibold text-slate-800 text-sm" x-text="c.Company_Name"></div>
+              <div class="divide-y divide-slate-100">
+                <template x-for="r in c.rounds" :key="r.Company_Name + r.Round_Name">
+                  <div class="px-3 py-2.5" x-show="!r.isAttendance">
+                    <div class="text-sm text-indigo-600" x-text="r.Round_Name + ' · ' + r.total + ' student(s)'"></div>
+                    <div class="flex flex-wrap gap-1.5 mt-2">
+                      <span class="bg-slate-100 text-slate-600 text-[11px] font-bold px-2 py-0.5 rounded-full" x-text="'Pending ' + r.counts.Pending"></span>
+                      <span class="bg-sky-100 text-sky-700 text-[11px] font-bold px-2 py-0.5 rounded-full" x-text="'Appeared ' + r.counts.Appeared"></span>
+                      <span class="bg-amber-100 text-amber-700 text-[11px] font-bold px-2 py-0.5 rounded-full" x-text="'Shortlisted ' + r.counts.Shortlisted"></span>
+                      <span class="bg-red-100 text-red-700 text-[11px] font-bold px-2 py-0.5 rounded-full" x-text="'Rejected ' + r.counts.Rejected"></span>
+                      <span class="bg-emerald-100 text-emerald-700 text-[11px] font-bold px-2 py-0.5 rounded-full" x-text="'Selected ' + r.counts.Selected"></span>
+                      <span class="bg-slate-200 text-slate-600 text-[11px] font-bold px-2 py-0.5 rounded-full" x-text="'Absent ' + (r.counts.Absent || 0)"></span>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+        <div class="px-4 py-3 border-t border-slate-200">
+          <button type="button" @click="liveFabClose(); goToLiveOverview()"
+            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-lg text-sm">Open full Live Overview</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ===================== MAIN CONTENT COLUMN ===================== -->
   <div x-show="loggedIn" class="flex-1 min-w-0">
 
@@ -1553,6 +1613,7 @@
                       <span class="bg-amber-100 text-amber-700 text-xs font-bold px-2.5 py-1 rounded-full" x-text="'Shortlisted ' + r.counts.Shortlisted"></span>
                       <span class="bg-red-100 text-red-700 text-xs font-bold px-2.5 py-1 rounded-full" x-text="'Rejected ' + r.counts.Rejected"></span>
                       <span class="bg-emerald-100 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full" x-text="'Selected ' + r.counts.Selected"></span>
+                      <span class="bg-slate-200 text-slate-600 text-xs font-bold px-2.5 py-1 rounded-full" x-text="'Absent ' + (r.counts.Absent || 0)"></span>
                     </div>
                     <div class="text-xs text-slate-400 mt-2" x-text="'Volunteer(s): ' + r.volunteers.join(', ')"></div>
                     <div class="mt-3 divide-y divide-slate-100 max-h-56 overflow-y-auto" x-show="!r.isAttendance && liveSearch.trim() !== ''">
@@ -4909,6 +4970,7 @@ function app() {
     passwordResetLoading: false,
 
 
+    liveFab: { rows: [], open: false, updatedAt: null, tick: 0, started: false, busy: false },
     view: 'home', // 'home' | 'dashboard' | 'branches' | 'volunteers' | 'form' | 'detail' | 'manageDrive' | 'activityLog'
     mobileNavOpen: false,
     loading: true,
@@ -5612,6 +5674,42 @@ function app() {
       // resync `detail` in case it changed under it (e.g. a round managed
       // from Company Details in between) rather than showing stale data.
       if (this.manageDriveCompany) this.openCompanyForManageDrive(this.manageDriveCompany);
+    },
+
+    // ---- Live Overview floating button (Home screen) ----
+    liveFabStart() {
+      if (this.liveFab.started) return;
+      this.liveFab.started = true;
+      const tick = () => {
+        if (!this.loggedIn || document.hidden) return;
+        // refresh every 5s while the panel is open; every ~30s on Home just to know if a drive is running
+        if (this.liveFab.open || (this.view === 'home' && this.liveFab.tick % 6 === 0)) this.liveFabLoad();
+        this.liveFab.tick++;
+      };
+      setTimeout(tick, 1500);
+      setInterval(tick, 5000);
+    },
+    liveFabLoad() {
+      if (this.liveFab.busy) return;
+      this.liveFab.busy = true;
+      google.script.run
+        .withSuccessHandler(res => {
+          this.liveFab.busy = false;
+          if (res && res.success) { this.liveFab.rows = res.data || []; this.liveFab.updatedAt = new Date(); }
+        })
+        .withFailureHandler(() => { this.liveFab.busy = false; })
+        .getVolunteerLiveOverview();
+    },
+    liveFabOpen() { this.liveFab.open = true; this.liveFabLoad(); },
+    liveFabClose() { this.liveFab.open = false; },
+    liveFabGroups() {
+      const map = {}, order = [];
+      (this.liveFab.rows || []).forEach(r => {
+        if (!map[r.Company_Name]) { map[r.Company_Name] = []; order.push(r.Company_Name); }
+        map[r.Company_Name].push(r);
+      });
+      const rank = r => r.isAttendance ? -1 : (typeof r.Round_Order === 'number' ? r.Round_Order : 999);
+      return order.map(n => ({ Company_Name: n, rounds: map[n].slice().sort((a, b) => rank(a) - rank(b)) }));
     },
 
     goToLiveOverview() {

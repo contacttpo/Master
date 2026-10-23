@@ -44,7 +44,7 @@
     getFeedbackFormUrl: function (company) { return location.origin + '/?page=feedback&company=' + encodeURIComponent(company); },
     getAdminAppUrl: function () { return location.origin + '/'; },
     // Fixed lists copied from the Apps Script constants (it took ~3 s just to return them).
-    getBranchCourseGroups: function () { return { success: true, engineering: ["CSE", "DS", "IoT", "AIML", "AIR", "CSBS", "AI&DS", "CSD", "ECE", "EE", "EX", "ME", "CE"], mcaMba: ["MCA", "MBA-Core", "MBA-BA", "MBA-FT"] }; }
+    getBranchCourseGroups: function () { return { success: true, engineering: ["CSE", "DS", "IoT", "AIML", "AIR", "CSBS", "AI&DS", "CSD", "ECE", "EE", "EX", "ME", "CE", "B.Pharma"], mcaMba: ["MCA", "MBA-Core", "MBA-BA", "MBA-FT"] }; }
   };
 
   // If API_URL above is left as the placeholder, the address is read from the GAS_URL setting in

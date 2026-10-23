@@ -385,6 +385,13 @@
   .cnt.selected .n { color: #d97706; }
   .bulkBtn.shortlist { background: #16a34a; }
   .bulkBtn.select { background: #d97706; }
+  /* Absent = grey (did not turn up for this round) */
+  .cnt.absent { background: #f1f5f9; border-color: #94a3b8; }
+  .cnt.absent .n { color: #475569; }
+  .tick.absent { background: #64748b; }
+  .student.st-absent { background: #f1f5f9; box-shadow: inset 5px 0 0 #64748b; }
+  .student.st-absent .name { color: #475569; }
+  .bulkBtn.absent { background: #64748b; }
 </style>
 <meta name="theme-color" content="#1b5f7a">
 </head>
@@ -933,7 +940,7 @@
   }
 
   function computeCounts() {
-    const counts = { Pending: 0, Appeared: 0, Shortlisted: 0, Rejected: 0, Selected: 0 };
+    const counts = { Pending: 0, Appeared: 0, Shortlisted: 0, Rejected: 0, Selected: 0, Absent: 0 };
     state.students.forEach(s => {
       const r = (s.Result || '').trim();
       if (counts[r] !== undefined) counts[r]++; else counts.Pending++;
@@ -996,6 +1003,7 @@
         <div class="cnt appeared" data-status="Appeared"><div class="n">${counts.Appeared}</div><div class="l">Appeared</div></div>
         <div class="cnt shortlisted" data-status="Shortlisted"><div class="n">${counts.Shortlisted}</div><div class="l">Shortlist</div></div>
         <div class="cnt rejected" data-status="Rejected"><div class="n">${counts.Rejected}</div><div class="l">Rejected</div></div>
+        <div class="cnt absent" data-status="Absent"><div class="n">${counts.Absent}</div><div class="l">Absent</div></div>
         <div class="cnt selected" data-status="Selected"><div class="n">${counts.Selected}</div><div class="l">Selected</div></div>
       </div>
       <div class="filterHint" id="filterHint" style="display:none;"></div>
@@ -1551,6 +1559,7 @@
     if (status === 'Appeared') return 'appeared';
     if (status === 'Shortlisted') return 'shortlist';
     if (status === 'Rejected') return 'reject';
+    if (status === 'Absent') return 'absent';
     if (status === 'MoveGroup') return 'move';
     return 'select';
   }
@@ -1576,6 +1585,7 @@
           <button class="bulkBtn appeared" id="modeAppearedBtn">Mark Appeared</button>
           <button class="bulkBtn shortlist" id="modeShortlistBtn">Mark Shortlisted</button>
           <button class="bulkBtn reject" id="modeRejectBtn">Mark Rejected</button>
+          <button class="bulkBtn absent" id="modeAbsentBtn">Mark Absent</button>
           ${isFinal(a) ? '<button class="bulkBtn select" id="modeSelectBtn">Mark Selected</button>' : ''}
           ${isGD(a.Round_Type) ? '<button class="bulkBtn move" id="modeMoveBtn">Move to Group</button>' : ''}
         </div>
@@ -1603,6 +1613,7 @@
       document.getElementById('modeAppearedBtn').onclick = () => enterMarkMode('Appeared');
       document.getElementById('modeShortlistBtn').onclick = () => enterMarkMode('Shortlisted');
       document.getElementById('modeRejectBtn').onclick = () => enterMarkMode('Rejected');
+      document.getElementById('modeAbsentBtn').onclick = () => enterMarkMode('Absent');
       const modeSelectBtn = document.getElementById('modeSelectBtn');
       if (modeSelectBtn) modeSelectBtn.onclick = () => enterMarkMode('Selected');
       const modeMoveBtn = document.getElementById('modeMoveBtn');
@@ -1706,7 +1717,7 @@
     ids.forEach(en => {
       const st = state.students.find(x => String(x.Enrollment_No) === String(en));
       const prev = st && String(st.Result || '').trim();
-      if (prev && prev !== status && (prev === 'Shortlisted' || prev === 'Rejected' || prev === 'Selected')) changing[prev] = (changing[prev] || 0) + 1;
+      if (prev && prev !== status && (prev === 'Shortlisted' || prev === 'Rejected' || prev === 'Selected' || prev === 'Absent')) changing[prev] = (changing[prev] || 0) + 1;
     });
     const warn = Object.keys(changing).map(k => changing[k] + ' currently ' + k).join(', ');
     const msg = (status === 'Appeared'
@@ -1855,6 +1866,7 @@
     if (r === 'Shortlisted') return '<span class="tick shortlisted" title="Shortlisted">✓</span>';
     if (r === 'Rejected') return '<span class="tick rejected" title="Rejected">✕</span>';
     if (r === 'Selected') return '<span class="tick selected" title="Selected">✓</span>';
+    if (r === 'Absent') return '<span class="tick absent" title="Absent">A</span>';
     return '';
   }
 
@@ -1871,7 +1883,7 @@
     const checked = state.selected.has(en) ? 'checked' : '';
     const showCheckbox = !!state.markMode;
     const st = String(s.Result || '').trim().toLowerCase();
-    const stCls = ['appeared', 'shortlisted', 'rejected', 'selected'].indexOf(st) !== -1 ? ' st-' + st : '';
+    const stCls = ['appeared', 'shortlisted', 'rejected', 'selected', 'absent'].indexOf(st) !== -1 ? ' st-' + st : '';
     return `
       <div class="student${stCls}">
         ${showCheckbox

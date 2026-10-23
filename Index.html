@@ -2901,6 +2901,45 @@
                       Enrollment Number <span class="text-slate-400 font-normal">(always included)</span>
                     </label>
 
+                    <div class="mb-4 border border-slate-200 rounded-lg p-4 bg-slate-50">
+                      <p class="text-sm font-medium text-slate-700 mb-1">Eligible Courses &amp; Branches</p>
+                      <p class="text-xs text-slate-400 mb-3">
+                        Tick the courses that can register for this drive; once a course is ticked, choose which of its
+                        branches are eligible. Students will only see the courses and branches you pick here. Leave
+                        everything unticked to allow every course and branch.
+                      </p>
+                      <template x-for="c in regFormCourseOptions" :key="c">
+                        <div class="mb-2">
+                          <label class="flex items-center gap-2 text-sm font-medium">
+                            <input type="checkbox" :checked="regFormCourseOn(c)" @change="toggleRegFormCourse(c)"
+                              class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                            <span x-text="c"></span>
+                          </label>
+                          <div x-show="regFormCourseOn(c)" class="ml-6 mt-1.5 pl-3 border-l-2 border-indigo-100">
+                            <div class="flex items-center gap-3 text-xs text-slate-400 mb-1">
+                              <span>Eligible branches:</span>
+                              <button type="button" @click="setRegFormBranches(c, true)" class="text-indigo-600 hover:underline">Select all</button>
+                              <button type="button" @click="setRegFormBranches(c, false)" class="text-indigo-600 hover:underline">Clear</button>
+                            </div>
+                            <div class="flex flex-wrap gap-x-4 gap-y-1">
+                              <template x-for="b in (regFormBranchOptionsByCourse[c] || [])" :key="c + '|' + b">
+                                <label class="flex items-center gap-1.5 text-sm">
+                                  <input type="checkbox" :checked="regFormBranchOn(c, b)" @change="toggleRegFormBranch(c, b)"
+                                    class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                  <span x-text="b"></span>
+                                </label>
+                              </template>
+                            </div>
+                          </div>
+                        </div>
+                      </template>
+                      <p x-show="Object.keys(regFormEligibleCourses).length && (!regFormSelectedKeys.includes('Course') || !regFormSelectedKeys.includes('Branch'))"
+                        class="text-xs text-amber-600 mt-2">
+                        Tip: also tick the <b>Course</b> and <b>Branch</b> fields below so students choose them on the form.
+                        (Students whose registered branch is not eligible are blocked at the enrollment check either way.)
+                      </p>
+                    </div>
+
                     <div class="max-h-72 overflow-y-auto border border-slate-100 rounded-lg p-3 mb-4">
                       <div class="grid grid-cols-2 gap-x-4 gap-y-2">
                         <template x-for="f in regFormFieldOptions" :key="f.key">
@@ -5133,6 +5172,17 @@ function app() {
     regFormSelectedKeys: [],
     regFormIncludeCV: false,
     regFormCriteria: {},
+    // Eligible courses for this drive: { 'Engineering': ['CSE', ...], 'Pharmacy': ['B.Pharma'] }.
+    // Empty object = no restriction (every course and branch).
+    regFormEligibleCourses: {},
+    regFormCourseOptions: ['Engineering', 'Pharmacy', 'MCA', 'Management', 'Non Engineering Graduation'],
+    regFormBranchOptionsByCourse: {
+      'Engineering': ['CSE', 'DS', 'IoT', 'AIML', 'AIR', 'CSBS', 'AI&DS', 'CSD', 'ECE', 'EE', 'EX', 'ME', 'CE'],
+      'Pharmacy': ['B.Pharma'],
+      'MCA': ['MCA'],
+      'Management': ['MBA-Core', 'MBA-BA', 'MBA-FT'],
+      'Non Engineering Graduation': ['BA', 'B.Com.', 'BBA', 'BCA', 'B.Sc.']
+    },
     regFormCompanyDescription: '',
     // Placement gate: 'yes' (default) means already-placed students may
     // still register unless they're selected in one of the companies
@@ -9397,6 +9447,29 @@ function app() {
       return [0, 1, 2].map(() => ({ enabled: false, label: '', type: 'text', required: false, optionsText: '' }));
     },
 
+    // ---- Eligible courses -> branches picker (registration form setup) ----
+    regFormCourseOn(c) { return Object.prototype.hasOwnProperty.call(this.regFormEligibleCourses, c); },
+    regFormBranchOn(c, b) { return (this.regFormEligibleCourses[c] || []).indexOf(b) !== -1; },
+    toggleRegFormCourse(c) {
+      const m = Object.assign({}, this.regFormEligibleCourses);
+      if (this.regFormCourseOn(c)) delete m[c];
+      else m[c] = (this.regFormBranchOptionsByCourse[c] || []).slice();   // new course starts with every branch ticked
+      this.regFormEligibleCourses = m;
+    },
+    toggleRegFormBranch(c, b) {
+      const m = Object.assign({}, this.regFormEligibleCourses);
+      const cur = (m[c] || []).slice();
+      const i = cur.indexOf(b);
+      if (i === -1) cur.push(b); else cur.splice(i, 1);
+      m[c] = cur;
+      this.regFormEligibleCourses = m;
+    },
+    setRegFormBranches(c, on) {
+      const m = Object.assign({}, this.regFormEligibleCourses);
+      m[c] = on ? (this.regFormBranchOptionsByCourse[c] || []).slice() : [];
+      this.regFormEligibleCourses = m;
+    },
+
     openRegistrationFormModal() {
       this.showRegistrationFormModal = true;
       this.regFormLoading = true;
@@ -9406,6 +9479,10 @@ function app() {
       google.script.run
         .withSuccessHandler(optRes => {
           this.regFormFieldOptions = optRes.success ? optRes.fields : [];
+          if (optRes.success && optRes.courseOptions && optRes.branchOptionsByCourse) {
+            this.regFormCourseOptions = optRes.courseOptions;
+            this.regFormBranchOptionsByCourse = optRes.branchOptionsByCourse;
+          }
 
           google.script.run
             .withSuccessHandler(cfgRes => {
@@ -9414,6 +9491,7 @@ function app() {
                 this.regFormSelectedKeys = cfgRes.fields || [];
                 this.regFormIncludeCV = !!cfgRes.includeCV;
                 this.regFormCriteria = cfgRes.criteria || {};
+                this.regFormEligibleCourses = cfgRes.eligibleCourses || {};
                 this.regFormCompanyDescription = cfgRes.companyDescription || '';
                 this.regFormPlacedAllowedStr = cfgRes.placedAllowed === false ? 'no' : 'yes';
                 this.regFormExcludedCompaniesText = (cfgRes.excludedCompanies || []).join(', ');
@@ -9428,6 +9506,7 @@ function app() {
                 this.regFormSelectedKeys = [];
                 this.regFormIncludeCV = false;
                 this.regFormCriteria = {};
+                this.regFormEligibleCourses = {};
                 this.regFormCompanyDescription = '';
                 this.regFormPlacedAllowedStr = 'yes';
                 this.regFormExcludedCompaniesText = '';
@@ -9473,7 +9552,8 @@ function app() {
         .saveRegistrationFormConfig(company, this.regFormSelectedKeys, this.regFormIncludeCV, this.regFormCriteria,
           this.regFormCompanyDescription, placedAllowed, this.regFormExcludedCompaniesText,
           this.closesAtLocalToIso_(this.regFormClosesAtLocal),
-          this.regFormCustomQuestions.map(q => ({ enabled: q.enabled, label: q.label, type: q.type, required: q.required, options: q.optionsText })));
+          this.regFormCustomQuestions.map(q => ({ enabled: q.enabled, label: q.label, type: q.type, required: q.required, options: q.optionsText })),
+          this.regFormEligibleCourses);
     },
 
     copyRegistrationFormLink() {

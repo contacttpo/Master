@@ -397,8 +397,20 @@
     wrap.classList.toggle('hidden', !visible);
     if (!visible) clearField(key);
   }
+  // Same CGPA field for both; only the wording changes with the course.
+  function relabelCgpa_(courseValue) {
+    const wrap = document.getElementById('fieldWrap_BTech_CGPA');
+    if (!wrap) return;
+    const degree = courseValue === 'Pharmacy' ? 'B.Pharma' : 'B.Tech';
+    const lab = wrap.querySelector('label');
+    if (lab) lab.textContent = lab.textContent.replace(/B\.(Tech|Pharma) CGPA/, degree + ' CGPA');
+    const hint = wrap.querySelector('.field-hint');
+    if (hint) hint.textContent = 'On a 0\u201310 scale (' + degree + ' CGPA).';
+  }
   function applyCourseVisibility(courseValue) {
-    const showBtech = courseValue === 'Engineering';
+    // CGPA field is shared: Engineering (B.Tech) and Pharmacy (B.Pharma).
+    const showBtech = courseValue === 'Engineering' || courseValue === 'Pharmacy';
+    relabelCgpa_(courseValue);
     const showMcaMba = courseValue === 'MCA' || courseValue === 'Management';
     // Graduation % is asked for MCA/Management (their prior UG %) and for
     // Non Engineering Graduation (their own graduation %) — everyone
@@ -833,7 +845,7 @@
       if (f.key === 'BTech_CGPA' && val) {
         const cgpaNum = parseFloat(val);
         if (isNaN(cgpaNum) || cgpaNum < 0 || cgpaNum > 10) {
-          clientErr = 'B.Tech CGPA must be a number between 0 and 10.';
+          clientErr = 'CGPA must be a number between 0 and 10.';
         }
       }
     });

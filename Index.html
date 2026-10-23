@@ -443,35 +443,62 @@
   </nav>
 
   <!-- ===================== LIVE OVERVIEW FLOATING BUTTON ===================== -->
-  <!-- Shown on the Home screen whenever a drive is running (the live overview has at least one round).
-       Sits on the right border of the screen, above the bottom bar; tap to open the live details. -->
-  <div x-data x-init="liveFabStart()">
-    <button type="button" x-show="loggedIn && view === 'home' && liveFab.rows.length && !liveFab.open" x-cloak
-      @click="liveFabOpen()" aria-label="Open Live Overview"
-      class="fixed right-0 z-40 flex items-center gap-2 pl-3 pr-2.5 py-2.5 rounded-l-full shadow-lg text-white text-sm font-bold bg-red-600 active:bg-red-700"
-      style="bottom: calc(env(safe-area-inset-bottom) + 5.5rem)">
-      <span class="relative flex h-2.5 w-2.5">
-        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
-      </span>
-      <span>LIVE</span>
-      <span class="bg-white/25 rounded-full px-1.5 text-xs" x-text="liveFabGroups().length"></span>
+  <!-- A small round button (bolt-in-circle icon, in the app's theme colours) shown on EVERY screen of the
+       admin app whenever a drive is running. Phone: opens a bottom sheet. Computer: opens a small pop-up
+       card in the corner that does NOT cover or block the page behind it, so you can keep working while
+       the numbers update live. (Hidden on the full Live Overview screen itself, which shows the same data.) -->
+  <style>
+    .live-fab { position: fixed; right: 14px; z-index: 40; width: 52px; height: 52px; border-radius: 9999px;
+      display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; border: 2px solid rgba(255,255,255,.85);
+      background: linear-gradient(145deg, #1e5581 0%, #237c9f 100%);   /* same blues as the sidebar */
+      box-shadow: 0 8px 20px -4px rgba(30,85,129,.55), 0 2px 6px rgba(0,0,0,.2);
+      bottom: calc(env(safe-area-inset-bottom) + 5.5rem); transition: transform .15s ease, box-shadow .15s ease; }
+    .live-fab:hover { transform: scale(1.07); }
+    .live-fab:active { transform: scale(.96); }
+    .live-fab .live-ping { position: absolute; inset: -2px; border-radius: 9999px; background: var(--v-pink, #de6413); opacity: .45;
+      animation: liveFabPing 1.8s cubic-bezier(0,0,.2,1) infinite; z-index: -1; }
+    .live-fab .live-count { position: absolute; top: -5px; right: -5px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 9999px;
+      background: var(--v-pink, #de6413); color: #fff; font-size: 11px; font-weight: 700; line-height: 20px; text-align: center;
+      border: 2px solid #fff; }
+    @keyframes liveFabPing { 75%, 100% { transform: scale(1.6); opacity: 0; } }
+    .live-panel-wrap { position: fixed; inset: 0; z-index: 50; pointer-events: none; }
+    .live-panel-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.4); pointer-events: auto; }
+    .live-panel { pointer-events: auto; position: absolute; left: 0; right: 0; bottom: 0; background: #fff; display: flex; flex-direction: column;
+      border-radius: 16px 16px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,.25); max-height: 85vh; padding-bottom: env(safe-area-inset-bottom); }
+    @media (min-width: 768px) {
+      .live-fab { bottom: 1.5rem; right: 1.5rem; }
+      .live-panel-backdrop { display: none; }                      /* nothing is dimmed or blocked on a computer */
+      .live-panel { left: auto; right: 1.5rem; bottom: 5.25rem; width: 24rem; max-height: min(70vh, 38rem); padding-bottom: 0;
+        border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 20px 45px -10px rgba(15,35,60,.4); }
+    }
+  </style>
+  <div x-data x-init="liveFabStart()" @keydown.escape.window="liveFab.open && liveFabClose()">
+    <button type="button" x-show="loggedIn && view !== 'liveOverview' && (liveFab.rows.length || liveFab.open)" x-cloak
+      @click="liveFab.open ? liveFabClose() : liveFabOpen()" aria-label="Live Overview" title="Live Overview"
+      class="live-fab">
+      <span class="live-ping" x-show="!liveFab.open"></span>
+      <!-- bolt inside a double ring; drawn with currentColor so it follows the theme -->
+      <svg x-show="!liveFab.open" viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10.6"/><circle cx="12" cy="12" r="8.4"/>
+        <path d="M14.2 1.8 6.4 13.2h4.6l-2.4 8.8 9-11.4h-5Z" fill="currentColor" stroke="currentColor"/>
+      </svg>
+      <svg x-show="liveFab.open" x-cloak viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      <span class="live-count" x-show="!liveFab.open && liveFabGroups().length" x-text="liveFabGroups().length"></span>
     </button>
 
-    <div x-show="liveFab.open" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div class="absolute inset-0 bg-black/40" @click="liveFabClose()"></div>
-      <div class="relative bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-xl flex flex-col"
-           style="max-height: 85vh; padding-bottom: env(safe-area-inset-bottom)">
+    <div x-show="liveFab.open" x-cloak class="live-panel-wrap">
+      <div class="live-panel-backdrop" @click="liveFabClose()"></div>
+      <div class="live-panel">
         <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-200">
           <div class="min-w-0">
             <div class="font-bold text-slate-800 flex items-center gap-2">
-              <span class="inline-block h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse"></span> Live Overview
+              <span class="inline-block h-2.5 w-2.5 rounded-full animate-pulse" style="background:var(--v-pink,#de6413)"></span> Live Overview
             </div>
             <div class="text-xs text-slate-400" x-show="liveFab.updatedAt" x-text="'Updated ' + (liveFab.updatedAt ? liveFab.updatedAt.toLocaleTimeString() : '')"></div>
           </div>
           <button type="button" @click="liveFabClose()" class="text-slate-400 hover:text-slate-700 text-2xl leading-none px-2" aria-label="Close">&times;</button>
         </div>
-        <div class="overflow-y-auto px-4 py-3 space-y-3">
+        <div class="overflow-y-auto min-h-0 px-4 py-3 space-y-3">
           <div x-show="!liveFab.rows.length" class="text-sm text-slate-400">No drive is running right now.</div>
           <template x-for="c in liveFabGroups()" :key="c.Company_Name">
             <div class="border border-slate-200 rounded-xl overflow-hidden">
@@ -5726,14 +5753,14 @@ function app() {
       if (this.manageDriveCompany) this.openCompanyForManageDrive(this.manageDriveCompany);
     },
 
-    // ---- Live Overview floating button (Home screen) ----
+    // ---- Live Overview floating button (every screen) ----
     liveFabStart() {
       if (this.liveFab.started) return;
       this.liveFab.started = true;
       const tick = () => {
         if (!this.loggedIn || document.hidden) return;
-        // refresh every 5s while the panel is open; every ~30s on Home just to know if a drive is running
-        if (this.liveFab.open || (this.view === 'home' && this.liveFab.tick % 6 === 0)) this.liveFabLoad();
+        // refresh every 5s while the panel is open; every ~30s on any screen just to know if a drive is running
+        if (this.liveFab.open || (this.view !== 'liveOverview' && this.liveFab.tick % 6 === 0)) this.liveFabLoad();
         this.liveFab.tick++;
       };
       setTimeout(tick, 1500);

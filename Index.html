@@ -10088,7 +10088,11 @@ function app() {
       const l = (this.ef.info && this.ef.info.recipients) || [];
       return l.find(r => r.id === this.ef.recipient) || l[0] || { id: 'poc', name: '', email: '', url: '', qrUrl: '', requested: '' };
     },
-    efTick(id, on) { this.ef.selected = { ...this.ef.selected, [id]: !!on }; },
+    efTick(id, on) {
+      this.ef.selected = { ...this.ef.selected, [id]: !!on };
+      // Ticking someone also highlights them, so the To box, mail preview, link and QR show that person.
+      if (on && this.ef.recipient !== id) this.efPick(id);
+    },
     efTickAll(on) {
       const s = {};
       ((this.ef.info && this.ef.info.recipients) || []).forEach(r => { if (on && r.email) s[r.id] = true; });

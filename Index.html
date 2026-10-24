@@ -3928,6 +3928,9 @@
                             <div class="text-xs mt-1 font-semibold"
                               :class="r.responded ? 'text-emerald-600' : (r.requested ? 'text-indigo-600' : 'text-slate-400')"
                               x-text="r.responded ? '✓ Feedback received' + (r.respondedName ? ' from ' + r.respondedName : '') : (r.requested ? 'Requested ' + r.requested : 'Not requested yet')"></div>
+                            <button type="button" @click.stop="efSendOne(r)" :disabled="ef.sending || !r.email"
+                              class="mt-2 text-xs font-bold ef-btn rounded-lg px-3 py-1.5 disabled:opacity-50"
+                              x-text="ef.sendingId === r.id ? 'Sending…' : (r.requested ? '✉ Send again' : '✉ Send mail')"></button>
                           </div>
                         </div>
                       </template>
@@ -5251,7 +5254,7 @@ function app() {
 
     // Student Feedback
     showFeedbackModal: false,
-    ef: { loading: false, info: null, open: false, step: 1, showQr: false, email: '', sending: false, showResponses: false, responses: null, respLoading: false, mode: 'own', signature: '', replyTo: '', cc: '', orgEmail: '', subject: '', note: '', draft: null, drafting: false, recipient: 'poc', sendAllMsg: '', selected: {} },
+    ef: { loading: false, info: null, open: false, step: 1, showQr: false, email: '', sending: false, showResponses: false, responses: null, respLoading: false, mode: 'own', signature: '', replyTo: '', cc: '', orgEmail: '', subject: '', note: '', draft: null, drafting: false, recipient: 'poc', sendAllMsg: '', sendingId: '', selected: {} },
     feedbackLoading: false,
     feedbackLink: '',
     feedbackLinkCopied: false,
@@ -10225,6 +10228,22 @@ function app() {
         })
         .withFailureHandler(err => { this.ef.sending = false; this.showToast('Error: ' + err.message, 'error'); })
         .sendEmployerFeedbackRequest(this.detail.company.Company_Name, this.ef.email, this.adminToken, this.ef.replyTo, this.ef.cc, this.ef.signature, { subject: this.ef.subject, note: this.ef.note }, this.ef.mode === 'own' ? this.ef.orgEmail : '', this.ef.recipient);
+    },
+    // Sends the mail to ONE person only (the Send button on their card), whatever is ticked.
+    efSendOne(r) {
+      if (!r || !r.email) { this.showToast('No email id saved for this person', 'error'); return; }
+      if (this.ef.mode === 'own' && !this.ef.orgEmail) { this.showToast('Enter your organisational email first', 'error'); return; }
+      if (!window.confirm('Send the feedback request to ' + (r.name || r.email) + ' (' + r.email + ') only?')) return;
+      this.ef.sending = true; this.ef.sendingId = r.id;
+      google.script.run
+        .withSuccessHandler(res => {
+          this.ef.sending = false; this.ef.sendingId = '';
+          if (!res.success) { this.showToast(res.message || 'Could not send', 'error'); return; }
+          this.showToast(res.message);
+          this.efReloadInfo();
+        })
+        .withFailureHandler(err => { this.ef.sending = false; this.ef.sendingId = ''; this.showToast('Error: ' + err.message, 'error'); })
+        .sendEmployerFeedbackRequest(this.detail.company.Company_Name, r.email, this.adminToken, this.ef.replyTo, this.ef.cc, this.ef.signature, { subject: this.ef.subject, note: this.ef.note }, this.ef.mode === 'own' ? this.ef.orgEmail : '', r.id);
     },
     // Sends the mail, personalised and with their own link, to every ticked person.
     async efSendSelected() {

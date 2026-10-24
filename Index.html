@@ -1642,7 +1642,7 @@
                       <span class="bg-emerald-100 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full" x-text="'Selected ' + r.counts.Selected"></span>
                       <span class="bg-slate-200 text-slate-600 text-xs font-bold px-2.5 py-1 rounded-full" x-text="'Absent ' + (r.counts.Absent || 0)"></span>
                     </div>
-                    <div class="text-xs text-slate-400 mt-2" x-text="'Volunteer(s): ' + r.volunteers.join(', ')"></div>
+                    <div class="text-xs text-slate-400 mt-2" x-text="r.volunteers.length ? 'Volunteer(s): ' + r.volunteers.join(', ') : 'No volunteer assigned yet'"></div>
                     <div class="mt-3 divide-y divide-slate-100 max-h-56 overflow-y-auto" x-show="!r.isAttendance && liveSearch.trim() !== ''">
                       <template x-for="s in r.students" :key="s.Enrollment_No">
                         <div class="flex items-center justify-between py-1.5 text-sm">

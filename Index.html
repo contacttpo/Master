@@ -1631,7 +1631,7 @@
                     <div class="flex items-center justify-between">
                       <div>
                         <div class="text-sm text-indigo-600" x-show="r.isAttendance">Attendance / Kiosk check-in access</div>
-                        <div class="text-sm text-indigo-600" x-show="!r.isAttendance" x-text="r.Round_Name + ' · ' + r.Round_Type + ' · ' + r.total + ' student(s)'"></div>
+                        <div class="text-sm text-indigo-600" x-show="!r.isAttendance" x-text="r.Round_Name + (r.Round_Type && r.Round_Type !== r.Round_Name ? ' · ' + r.Round_Type : '') + ' · ' + r.total + ' student(s)'"></div>
                       </div>
                     </div>
                     <div class="flex flex-wrap gap-2 mt-3" x-show="!r.isAttendance">

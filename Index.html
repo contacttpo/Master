@@ -10120,9 +10120,8 @@ function app() {
           const first = (res.recipients || [])[0];
           this.ef.recipient = first ? first.id : 'poc';
           this.ef.email = first ? (first.email || '') : '';
-          const sel = {};
-          (res.recipients || []).forEach(r => { if (r.email && !r.responded) sel[r.id] = true; });
-          this.ef.selected = sel;
+          // Nothing is pre-ticked: mail goes only to the people the admin ticks.
+          this.ef.selected = {};
           this.efStart();
         })
         .withFailureHandler(err => { this.ef.loading = false; this.showToast('Error: ' + err.message, 'error'); })

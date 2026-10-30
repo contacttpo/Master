@@ -1606,6 +1606,11 @@
           </div>
         </div>
 
+        <div x-show="filteredLive.some(r => !r.isAttendance && r.counts && !r.counts.AppearedIsTotal)" x-cloak
+             class="mb-3 rounded-lg border border-amber-300 bg-amber-50 text-amber-900 text-sm px-3 py-2">
+          ⚠ The server is running an <b>old version</b> of VolunteerBackend.gs, so "Appeared" is still counted the old way.
+          Paste the latest file into Apps Script, then <b>Deploy → Manage deployments → Edit → New version → Deploy</b> and refresh.
+        </div>
         <input x-model="liveSearch" placeholder="Search any round by student name or enrollment number…" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-base mb-4">
         <div x-show="!filteredLive.length" class="text-slate-400 text-sm">No matching volunteers/students right now.</div>
         <div class="space-y-3">
@@ -1717,6 +1722,11 @@
             </div>
 
             <!-- Stage 1..N: every round, in the same order as Company Details -->
+            <div x-show="detail.rounds.some(r => r.Students_AppearedNow === undefined)" x-cloak
+                 class="mb-3 rounded-lg border border-amber-300 bg-amber-50 text-amber-900 text-sm px-3 py-2">
+              ⚠ The server is running an <b>old version</b> of Code.gs, so Pending / Appeared are not showing correctly.
+              Paste the latest file into Apps Script, then <b>Deploy → Manage deployments → Edit → New version → Deploy</b> and refresh.
+            </div>
             <template x-for="(r, idx) in detail.rounds" :key="r.Round_Name">
               <div>
                 <div class="border border-slate-200 border-l-4 border-l-indigo-400 rounded-xl px-4 py-3.5 flex items-center justify-between gap-3 flex-wrap">

@@ -338,6 +338,18 @@
   .companyBody, .groupBody, .feedbackBody { border-top-color: #ddeef5; }
   .chev { color: #2584aa; }
   .groupCard { border-color: #bbe1f0; }
+  /* Marking progress: green = everyone in the group has a decision, amber = some do. */
+  .groupCard.gDone { border-color: #6ee7b7; }
+  .groupCard.gDone .groupToggle { background: linear-gradient(90deg, #d1fae5, #ecfdf5); }
+  .groupCard.gDone .groupToggle:active { background: #a7f3d0; }
+  .groupCard.gDone .gname { color: #065f46; }
+  .groupCard.gDone .gcount { color: #047857; }
+  .groupCard.gPartial { border-color: #fcd34d; }
+  .groupCard.gPartial .groupToggle { background: linear-gradient(90deg, #fef3c7, #fffbeb); }
+  .groupCard.gPartial .groupToggle:active { background: #fde68a; }
+  .gbadge { font-size: 11px; font-weight: 800; border-radius: 999px; padding: 2px 8px; letter-spacing: .02em; }
+  .gbadge.done { background: #059669; color: #fff; text-transform: uppercase; }
+  .gbadge.partial { background: #fde68a; color: #92400e; }
   .feedbackQrWrap img { border-color: #bbe1f0; }
   .feedbackLinkInput { border-color: #bbe1f0; background: #f1f8fb; }
 
@@ -1931,10 +1943,17 @@
     // automatically — otherwise tapping "Shortlisted" up top would compute
     // the right students but hide them behind still-collapsed group cards.
     const isOpen = !!filterActive || state.openGroups.has(g);
+    // Marking progress for the colour cue. Uses the whole group from
+    // state.students, not `members`, which may be narrowed by a filter/search.
+    const full = state.students.filter(s => s.Group_No !== '' && s.Group_No !== null && s.Group_No !== undefined && Number(s.Group_No) === Number(g));
+    const decided = full.filter(s => ['shortlisted', 'selected', 'rejected', 'absent'].indexOf(String(s.Result || '').trim().toLowerCase()) !== -1).length;
+    const prog = !full.length || decided === 0 ? '' : (decided === full.length ? 'done' : 'partial');
+    const badge = prog === 'done' ? '<span class="gbadge done">✓ Done</span>'
+      : (prog === 'partial' ? `<span class="gbadge partial">${decided}/${full.length} marked</span>` : '');
     return `
-      <div class="groupCard">
+      <div class="groupCard ${prog === 'done' ? 'gDone' : (prog === 'partial' ? 'gPartial' : '')}">
         <button type="button" class="groupToggle" data-toggle-group="${g}">
-          <div class="gname"><span class="chev">${isOpen ? '▾' : '▸'}</span>Group ${g}</div>
+          <div class="gname"><span class="chev">${isOpen ? '▾' : '▸'}</span>Group ${g}${badge}</div>
           <div class="gcount">${members.length}/${size}</div>
         </button>
         <div class="groupBody" style="display:${isOpen ? 'block' : 'none'};">

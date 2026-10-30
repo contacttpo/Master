@@ -1729,8 +1729,8 @@
                       </span>
                     </div>
                     <div class="text-sm mt-0.5 flex flex-wrap gap-x-3 gap-y-1">
-                      <span class="text-slate-400" x-text="'Pending ' + Math.max(0, r.Students_Appeared - r.Students_Shortlisted - r.Students_Rejected - r.Students_Selected)"></span>
-                      <span class="text-slate-500" x-text="'Appeared ' + r.Students_Appeared"></span>
+                      <span class="text-slate-400" x-text="'Pending ' + (r.Students_Pending || 0)"></span>
+                      <span class="text-slate-500" x-text="'Appeared ' + (r.Students_AppearedNow || 0)"></span>
                       <span class="text-amber-700" x-text="'Shortlisted ' + r.Students_Shortlisted"></span>
                       <span class="text-emerald-700" x-text="'Selected ' + r.Students_Selected"></span>
                       <span class="text-red-600" x-text="'Rejected ' + r.Students_Rejected"></span>
@@ -8832,6 +8832,8 @@ function app() {
               r.Students_Shortlisted = c.Students_Shortlisted;
               r.Students_Rejected = c.Students_Rejected;
               r.Students_Absent = c.Students_Absent || 0;
+              r.Students_Pending = c.Students_Pending || 0;
+              r.Students_AppearedNow = c.Students_AppearedNow || 0;
               r.Students_Selected = c.Students_Selected;
             }
           });

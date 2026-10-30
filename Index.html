@@ -5952,6 +5952,8 @@ function app() {
         const r = (s.Result || '').trim();
         if (c[r] !== undefined) c[r]++; else c.Pending++;
       });
+      // Appeared = everyone who turned up: awaiting decision + decided.
+      c.Appeared += c.Shortlisted + c.Rejected + c.Selected;
       return c;
     },
     toggleDriveGroup(g) { this.driveBoardOpenGroups[g] = !this.driveBoardOpenGroups[g]; },

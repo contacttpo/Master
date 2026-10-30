@@ -957,6 +957,8 @@
       const r = (s.Result || '').trim();
       if (counts[r] !== undefined) counts[r]++; else counts.Pending++;
     });
+    // Appeared = everyone who turned up: awaiting decision + Shortlisted/Rejected/Selected.
+    counts.Appeared += counts.Shortlisted + counts.Rejected + counts.Selected;
     return counts;
   }
 
@@ -1847,7 +1849,9 @@
     if (state.statusFilter) {
       list = list.filter(s => {
         const r = (s.Result || '').trim();
-        return state.statusFilter === 'Pending' ? !r : r === state.statusFilter;
+        if (state.statusFilter === 'Pending') return !r;
+        if (state.statusFilter === 'Appeared') return ['Appeared', 'Shortlisted', 'Rejected', 'Selected'].indexOf(r) !== -1;
+        return r === state.statusFilter;
       });
     }
     if (!q) return list;

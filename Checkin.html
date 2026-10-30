@@ -126,8 +126,14 @@
                 <option value="GGITS">GGITS</option>
                 <option value="GGCT">GGCT</option>
                 <option value="GGCE">GGCE</option>
+                <option value="__OTHER__">Other</option>
               </select>
             </div>
+          </div>
+
+          <div id="spotCollegeOtherWrap" class="hidden">
+            <label for="spotCollegeOther">Your College Name</label>
+            <input id="spotCollegeOther" type="text" autocomplete="off" placeholder="Enter your college name">
           </div>
 
           <label for="spotMobile">Mobile Number</label>
@@ -172,6 +178,14 @@
   const spotEnrollment = document.getElementById('spotEnrollment');
   const spotBranch = document.getElementById('spotBranch');
   const spotCollege = document.getElementById('spotCollege');
+  const spotCollegeOtherWrap = document.getElementById('spotCollegeOtherWrap');
+  const spotCollegeOther = document.getElementById('spotCollegeOther');
+  // Show the free-text college box only when "Other" is chosen.
+  spotCollege.addEventListener('change', function () {
+    const other = spotCollege.value === '__OTHER__';
+    spotCollegeOtherWrap.classList.toggle('hidden', !other);
+    if (other) { spotCollegeOther.focus(); } else { spotCollegeOther.value = ''; }
+  });
   const spotMobile = document.getElementById('spotMobile');
   const spotEmail = document.getElementById('spotEmail');
 
@@ -267,13 +281,14 @@
         Student_Name: spotName.value.trim(),
         Enrollment_No: spotEnrollment.value.trim(),
         Branch: spotBranch.value.trim(),
-        College: spotCollege.value.trim(),
+        College: (spotCollege.value === '__OTHER__' ? spotCollegeOther.value : spotCollege.value).trim().replace(/\s+/g, ' '),
         Mobile_No: spotMobile.value.trim(),
         Email_ID: spotEmail.value.trim()
       };
       if (!studentData.Student_Name) return showErr('Please enter your name.');
       if (!studentData.Enrollment_No) return showErr('Please enter your enrollment number.');
       if (!studentData.Branch) return showErr('Please select your branch.');
+      if (spotCollege.value === '__OTHER__' && !studentData.College) return showErr('Please type your college name.');
       if (!studentData.College) return showErr('Please select your college.');
       if (!studentData.Mobile_No || studentData.Mobile_No.replace(/\D/g, '').length < 6) return showErr('Please enter a valid mobile number.');
 
@@ -372,7 +387,8 @@
     formView.classList.remove('hidden');
     if (isSpot) {
       spotName.value = ''; spotEnrollment.value = ''; spotBranch.value = '';
-      spotCollege.value = ''; spotMobile.value = ''; spotEmail.value = '';
+      spotCollege.value = ''; spotCollegeOther.value = ''; spotCollegeOtherWrap.classList.add('hidden');
+      spotMobile.value = ''; spotEmail.value = '';
       spotName.focus();
     } else {
       enrollmentInput.value = '';

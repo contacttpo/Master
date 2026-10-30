@@ -5193,6 +5193,8 @@ function app() {
 
     showRegisteredStudentsModal: false,
     registeredStudentsPollTimer: null,
+    // Save-in-flight guards so a background refresh never overwrites a fresh tick.
+    regWritePending: 0, regLastWrite: 0, rsWritePending: 0, rsLastWrite: 0,
     registeredStudents: [],
 
     showRegistrationFormModal: false,
@@ -5485,7 +5487,7 @@ function app() {
       // background when nobody's looking at it.
       this.$watch('showRoundStudentsModal', open => {
         clearInterval(this.roundStudentsPollTimer);
-        if (open) this.roundStudentsPollTimer = setInterval(() => this.loadRoundStudents(), 6000);
+        if (open) this.roundStudentsPollTimer = setInterval(() => this.loadRoundStudents(true), 6000);
       });
     },
 
@@ -8778,16 +8780,20 @@ function app() {
       }
     },
 
-    loadRoundStudents() {
+    // silent = background poll; dropped if a Result save is in flight or
+    // finished after it was requested (same stale-overwrite fix as above).
+    loadRoundStudents(silent) {
+      const startedAt = Date.now();
       google.script.run
         .withSuccessHandler(res => {
           if (res.success) {
+            if (silent && (this.rsWritePending > 0 || this.rsLastWrite >= startedAt)) return;
             this.roundStudents = res.data;
-          } else {
+          } else if (!silent) {
             this.showToast(res.message || 'Failed to load students', 'error');
           }
         })
-        .withFailureHandler(err => this.showToast('Error: ' + err.message, 'error'))
+        .withFailureHandler(err => { if (!silent) this.showToast('Error: ' + err.message, 'error'); })
         .getRoundStudents(this.detail.company.Company_Name, this.activeRoundName);
     },
 
@@ -8978,8 +8984,10 @@ function app() {
       const company = this.detail.company.Company_Name;
       const prevResult = student.Result;
       student.Result = newResult; // optimistic update
+      this.rsWritePending++; this.rsLastWrite = Date.now();
       google.script.run
         .withSuccessHandler(res => {
+          this.rsWritePending--; this.rsLastWrite = Date.now();
           if (!res.success) {
             student.Result = prevResult;
             this.showToast(res.message || 'Failed to update', 'error');
@@ -8989,6 +8997,7 @@ function app() {
           }
         })
         .withFailureHandler(err => {
+          this.rsWritePending--; this.rsLastWrite = Date.now();
           student.Result = prevResult;
           this.showToast('Error: ' + err.message, 'error');
         })
@@ -9323,7 +9332,7 @@ function app() {
       // Auto-refresh while this panel is open, so new check-ins (marked from
       // a student's own phone) show up without having to close and reopen.
       clearInterval(this.registeredStudentsPollTimer);
-      this.registeredStudentsPollTimer = setInterval(() => this.loadRegisteredStudents(), 6000);
+      this.registeredStudentsPollTimer = setInterval(() => this.loadRegisteredStudents(true), 6000);
     },
 
     closeRegisteredStudentsModal() {
@@ -9600,16 +9609,23 @@ function app() {
       });
     },
 
-    loadRegisteredStudents() {
+    // silent = the background 6s poll. A poll that was requested BEFORE the
+    // admin's last save finished carries the OLD value; applying it made a
+    // freshly-marked student flip back to "Not marked" a few seconds later.
+    // So a silent poll is dropped if a save is in flight or finished after
+    // the poll went out — the next tick then brings the correct data.
+    loadRegisteredStudents(silent) {
+      const startedAt = Date.now();
       google.script.run
         .withSuccessHandler(res => {
           if (res.success) {
+            if (silent && (this.regWritePending > 0 || this.regLastWrite >= startedAt)) return;
             this.registeredStudents = res.data;
-          } else {
+          } else if (!silent) {
             this.showToast(res.message || 'Failed to load students', 'error');
           }
         })
-        .withFailureHandler(err => this.showToast('Error: ' + err.message, 'error'))
+        .withFailureHandler(err => { if (!silent) this.showToast('Error: ' + err.message, 'error'); })
         .getRegisteredStudents(this.detail.company.Company_Name);
     },
 
@@ -9661,8 +9677,10 @@ function app() {
       const company = this.detail.company.Company_Name;
       const prevValue = student.Attendance;
       student.Attendance = value; // optimistic update
+      this.regWritePending++; this.regLastWrite = Date.now();
       google.script.run
         .withSuccessHandler(res => {
+          this.regWritePending--; this.regLastWrite = Date.now();
           if (!res.success) {
             student.Attendance = prevValue;
             this.showToast(res.message || 'Failed to update', 'error');
@@ -9674,6 +9692,7 @@ function app() {
           }
         })
         .withFailureHandler(err => {
+          this.regWritePending--; this.regLastWrite = Date.now();
           student.Attendance = prevValue;
           this.showToast('Error: ' + err.message, 'error');
         })

@@ -526,6 +526,8 @@
                       <div class="max-h-72 overflow-y-auto">
                         <div x-show="chipLoading[chipKey('fab', r)]" class="p-3 text-xs text-slate-400">Loading…</div>
                         <div x-show="!chipLoading[chipKey('fab', r)] && !chipStudents('fab', r).length" class="p-3 text-xs text-slate-400">No students here.</div>
+                        <div x-show="chipMsg[chipKey('fab', r)]" class="p-3 text-xs text-red-600 bg-red-50 border-t border-red-100" x-text="chipMsg[chipKey('fab', r)]"></div>
+                        <div class="px-3 py-1 text-[10px] text-slate-300 border-t border-slate-100" x-text="'source: ' + (chipNeedsFetch('fab', r) ? 'loaded on tap' : 'live data') + ' · ' + chipRows('fab', r).length + ' student(s) in this round'"></div>
                         <template x-for="g in chipGroups('fab', r)" :key="g.branch">
                           <div>
                             <div x-show="!chipFlat" class="px-3 py-1.5 bg-slate-100 text-[11px] font-bold text-slate-600 uppercase tracking-wide flex items-center justify-between sticky top-0">
@@ -1684,6 +1686,8 @@
                       <div class="max-h-72 overflow-y-auto">
                         <div x-show="chipLoading[chipKey('live', r)]" class="p-3 text-xs text-slate-400">Loading…</div>
                         <div x-show="!chipLoading[chipKey('live', r)] && !chipStudents('live', r).length" class="p-3 text-xs text-slate-400">No students here.</div>
+                        <div x-show="chipMsg[chipKey('live', r)]" class="p-3 text-xs text-red-600 bg-red-50 border-t border-red-100" x-text="chipMsg[chipKey('live', r)]"></div>
+                        <div class="px-3 py-1 text-[10px] text-slate-300 border-t border-slate-100" x-text="'source: ' + (chipNeedsFetch('live', r) ? 'loaded on tap' : 'live data') + ' · ' + chipRows('live', r).length + ' student(s) in this round'"></div>
                         <template x-for="g in chipGroups('live', r)" :key="g.branch">
                           <div>
                             <div x-show="!chipFlat" class="px-3 py-1.5 bg-slate-100 text-[11px] font-bold text-slate-600 uppercase tracking-wide flex items-center justify-between sticky top-0">
@@ -1820,6 +1824,8 @@
                   <div class="max-h-72 overflow-y-auto">
                     <div x-show="chipLoading[chipKey('drive', r)]" class="p-3 text-xs text-slate-400">Loading…</div>
                     <div x-show="!chipLoading[chipKey('drive', r)] && !chipStudents('drive', r).length" class="p-3 text-xs text-slate-400">No students here.</div>
+                    <div x-show="chipMsg[chipKey('drive', r)]" class="p-3 text-xs text-red-600 bg-red-50 border-t border-red-100" x-text="chipMsg[chipKey('drive', r)]"></div>
+                    <div class="px-3 py-1 text-[10px] text-slate-300 border-t border-slate-100" x-text="'source: ' + (chipNeedsFetch('drive', r) ? 'loaded on tap' : 'live data') + ' · ' + chipRows('drive', r).length + ' student(s) in this round'"></div>
                     <template x-for="g in chipGroups('drive', r)" :key="g.branch">
                       <div>
                         <div x-show="!chipFlat" class="px-3 py-1.5 bg-slate-100 text-[11px] font-bold text-slate-600 uppercase tracking-wide flex items-center justify-between sticky top-0">
@@ -10597,7 +10603,7 @@ function volunteerManager() {
     volunteerPool: [], selectedPoolMobile: '',
     portalUrl: '', portalUrlCopied: false,
     assignErr: '', assignments: [],
-    chipOpen: {}, chipFlat: false, chipData: {}, chipLoading: {},
+    chipOpen: {}, chipFlat: false, chipData: {}, chipLoading: {}, chipMsg: {},
     live: [], liveSearch: '', liveTimer: null, liveRefreshing: false, liveUpdatedAt: null, expandedCompanies: {},
     expandedVolunteers: {},
 
@@ -11112,16 +11118,22 @@ function volunteerManager() {
     chipLoadRound(scope, r) {
       const k = this.chipKey(scope, r);
       const company = r.Company_Name || (this.detail && this.detail.company && this.detail.company.Company_Name) || '';
+      const setMsg = m => { this.chipMsg = { ...this.chipMsg, [k]: m }; };
       this.chipLoading = { ...this.chipLoading, [k]: true };
+      setMsg('');
       google.script.run
         .withSuccessHandler(res => {
           this.chipLoading = { ...this.chipLoading, [k]: false };
-          if (res && res.success) this.chipData = { ...this.chipData, [k]: res.data || [] };
-          else this.showToast((res && res.message) || 'Could not load students', 'error');
+          if (res && res.success) {
+            this.chipData = { ...this.chipData, [k]: res.data || [] };
+            if (!(res.data || []).length) setMsg('The server returned 0 students for "' + r.Round_Name + '" (' + company + ').');
+          } else {
+            setMsg('Could not load students: ' + ((res && res.message) || 'the server gave no reply') + '');
+          }
         })
         .withFailureHandler(err => {
           this.chipLoading = { ...this.chipLoading, [k]: false };
-          this.showToast('Error: ' + err.message, 'error');
+          setMsg('Could not load students: ' + (err && err.message ? err.message : err));
         })
         .getRoundStudents(company, r.Round_Name);
     },

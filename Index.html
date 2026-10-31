@@ -508,12 +508,38 @@
                   <div class="px-3 py-2.5" x-show="!r.isAttendance">
                     <div class="text-sm text-indigo-600" x-text="r.Round_Name + ' · ' + r.total + ' student(s)'"></div>
                     <div class="flex flex-wrap gap-1.5 mt-2">
-                      <span class="bg-slate-100 text-slate-600 text-[11px] font-bold px-2 py-0.5 rounded-full" x-text="'Pending ' + r.counts.Pending"></span>
-                      <span class="bg-sky-100 text-sky-700 text-[11px] font-bold px-2 py-0.5 rounded-full" x-text="'Appeared ' + r.counts.Appeared"></span>
-                      <span class="bg-amber-100 text-amber-700 text-[11px] font-bold px-2 py-0.5 rounded-full" x-text="'Shortlisted ' + r.counts.Shortlisted"></span>
-                      <span class="bg-red-100 text-red-700 text-[11px] font-bold px-2 py-0.5 rounded-full" x-text="'Rejected ' + r.counts.Rejected"></span>
-                      <span class="bg-emerald-100 text-emerald-700 text-[11px] font-bold px-2 py-0.5 rounded-full" x-text="'Selected ' + r.counts.Selected"></span>
-                      <span class="bg-slate-200 text-slate-600 text-[11px] font-bold px-2 py-0.5 rounded-full" x-text="'Absent ' + (r.counts.Absent || 0)"></span>
+                      <button type="button" @click="toggleChip('fab', r, 'Pending')" :class="chipIsOpen('fab', r, 'Pending') ? 'ring-2 ring-offset-1 ring-indigo-400' : ''" class="bg-slate-100 text-slate-600 text-[11px] font-bold px-2 py-0.5 rounded-full cursor-pointer hover:brightness-95 transition" title="Show Pending students" x-text="'Pending ' + r.counts.Pending"></button>
+                      <button type="button" @click="toggleChip('fab', r, 'Appeared')" :class="chipIsOpen('fab', r, 'Appeared') ? 'ring-2 ring-offset-1 ring-indigo-400' : ''" class="bg-sky-100 text-sky-700 text-[11px] font-bold px-2 py-0.5 rounded-full cursor-pointer hover:brightness-95 transition" title="Show Appeared students" x-text="'Appeared ' + r.counts.Appeared"></button>
+                      <button type="button" @click="toggleChip('fab', r, 'Shortlisted')" :class="chipIsOpen('fab', r, 'Shortlisted') ? 'ring-2 ring-offset-1 ring-indigo-400' : ''" class="bg-amber-100 text-amber-700 text-[11px] font-bold px-2 py-0.5 rounded-full cursor-pointer hover:brightness-95 transition" title="Show Shortlisted students" x-text="'Shortlisted ' + r.counts.Shortlisted"></button>
+                      <button type="button" @click="toggleChip('fab', r, 'Rejected')" :class="chipIsOpen('fab', r, 'Rejected') ? 'ring-2 ring-offset-1 ring-indigo-400' : ''" class="bg-red-100 text-red-700 text-[11px] font-bold px-2 py-0.5 rounded-full cursor-pointer hover:brightness-95 transition" title="Show Rejected students" x-text="'Rejected ' + r.counts.Rejected"></button>
+                      <button type="button" @click="toggleChip('fab', r, 'Selected')" :class="chipIsOpen('fab', r, 'Selected') ? 'ring-2 ring-offset-1 ring-indigo-400' : ''" class="bg-emerald-100 text-emerald-700 text-[11px] font-bold px-2 py-0.5 rounded-full cursor-pointer hover:brightness-95 transition" title="Show Selected students" x-text="'Selected ' + r.counts.Selected"></button>
+                      <button type="button" @click="toggleChip('fab', r, 'Absent')" :class="chipIsOpen('fab', r, 'Absent') ? 'ring-2 ring-offset-1 ring-indigo-400' : ''" class="bg-slate-200 text-slate-600 text-[11px] font-bold px-2 py-0.5 rounded-full cursor-pointer hover:brightness-95 transition" title="Show Absent students" x-text="'Absent ' + (r.counts.Absent || 0)"></button>
+                    </div>
+                    <div x-show="chipOpen[chipKey('fab', r)]" x-cloak class="mt-3 border border-slate-200 rounded-xl bg-white">
+                      <div class="flex items-center justify-between gap-2 px-3 py-2 bg-slate-50 border-b border-slate-200 rounded-t-xl">
+                        <div class="text-xs font-bold text-slate-700" x-text="chipOpen[chipKey('fab', r)] + ' · ' + chipStudents('fab', r).length + ' student(s)'"></div>
+                        <div class="flex items-center gap-3">
+                          <button type="button" @click="chipFlat = !chipFlat" class="text-[11px] font-semibold text-indigo-600 hover:underline" x-text="chipFlat ? 'Group by branch' : 'Show flat list'"></button>
+                          <button type="button" @click="toggleChip('fab', r, chipOpen[chipKey('fab', r)])" class="text-slate-400 hover:text-slate-600 text-sm leading-none" title="Close">✕</button>
+                        </div>
+                      </div>
+                      <div class="max-h-72 overflow-y-auto">
+                        <div x-show="chipLoading[chipKey('fab', r)]" class="p-3 text-xs text-slate-400">Loading…</div>
+                        <div x-show="!chipLoading[chipKey('fab', r)] && !chipStudents('fab', r).length" class="p-3 text-xs text-slate-400">No students here.</div>
+                        <template x-for="g in chipGroups('fab', r)" :key="g.branch">
+                          <div>
+                            <div x-show="!chipFlat" class="px-3 py-1.5 bg-slate-100 text-[11px] font-bold text-slate-600 uppercase tracking-wide flex items-center justify-between sticky top-0">
+                              <span x-text="g.branch"></span><span x-text="g.students.length"></span>
+                            </div>
+                            <template x-for="s in g.students" :key="s.Enrollment_No">
+                              <div class="flex items-center justify-between gap-2 px-3 py-1.5 text-sm border-b border-slate-50">
+                                <span class="min-w-0 truncate" x-text="s.Student_Name + ' (' + s.Enrollment_No + ')'"></span>
+                                <span class="text-xs text-slate-500 flex-shrink-0" x-text="(s.Result || 'Pending') + (chipFlat && s.Branch ? ' · ' + s.Branch : '')"></span>
+                              </div>
+                            </template>
+                          </div>
+                        </template>
+                      </div>
                     </div>
                   </div>
                 </template>
@@ -1640,12 +1666,38 @@
                       </div>
                     </div>
                     <div class="flex flex-wrap gap-2 mt-3" x-show="!r.isAttendance">
-                      <span class="bg-slate-100 text-slate-600 text-xs font-bold px-2.5 py-1 rounded-full" x-text="'Pending ' + r.counts.Pending"></span>
-                      <span class="bg-sky-100 text-sky-700 text-xs font-bold px-2.5 py-1 rounded-full" x-text="'Appeared ' + r.counts.Appeared"></span>
-                      <span class="bg-amber-100 text-amber-700 text-xs font-bold px-2.5 py-1 rounded-full" x-text="'Shortlisted ' + r.counts.Shortlisted"></span>
-                      <span class="bg-red-100 text-red-700 text-xs font-bold px-2.5 py-1 rounded-full" x-text="'Rejected ' + r.counts.Rejected"></span>
-                      <span class="bg-emerald-100 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full" x-text="'Selected ' + r.counts.Selected"></span>
-                      <span class="bg-slate-200 text-slate-600 text-xs font-bold px-2.5 py-1 rounded-full" x-text="'Absent ' + (r.counts.Absent || 0)"></span>
+                      <button type="button" @click="toggleChip('live', r, 'Pending')" :class="chipIsOpen('live', r, 'Pending') ? 'ring-2 ring-offset-1 ring-indigo-400' : ''" class="bg-slate-100 text-slate-600 text-xs font-bold px-2.5 py-1 rounded-full cursor-pointer hover:brightness-95 transition" title="Show Pending students" x-text="'Pending ' + r.counts.Pending"></button>
+                      <button type="button" @click="toggleChip('live', r, 'Appeared')" :class="chipIsOpen('live', r, 'Appeared') ? 'ring-2 ring-offset-1 ring-indigo-400' : ''" class="bg-sky-100 text-sky-700 text-xs font-bold px-2.5 py-1 rounded-full cursor-pointer hover:brightness-95 transition" title="Show Appeared students" x-text="'Appeared ' + r.counts.Appeared"></button>
+                      <button type="button" @click="toggleChip('live', r, 'Shortlisted')" :class="chipIsOpen('live', r, 'Shortlisted') ? 'ring-2 ring-offset-1 ring-indigo-400' : ''" class="bg-amber-100 text-amber-700 text-xs font-bold px-2.5 py-1 rounded-full cursor-pointer hover:brightness-95 transition" title="Show Shortlisted students" x-text="'Shortlisted ' + r.counts.Shortlisted"></button>
+                      <button type="button" @click="toggleChip('live', r, 'Rejected')" :class="chipIsOpen('live', r, 'Rejected') ? 'ring-2 ring-offset-1 ring-indigo-400' : ''" class="bg-red-100 text-red-700 text-xs font-bold px-2.5 py-1 rounded-full cursor-pointer hover:brightness-95 transition" title="Show Rejected students" x-text="'Rejected ' + r.counts.Rejected"></button>
+                      <button type="button" @click="toggleChip('live', r, 'Selected')" :class="chipIsOpen('live', r, 'Selected') ? 'ring-2 ring-offset-1 ring-indigo-400' : ''" class="bg-emerald-100 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full cursor-pointer hover:brightness-95 transition" title="Show Selected students" x-text="'Selected ' + r.counts.Selected"></button>
+                      <button type="button" @click="toggleChip('live', r, 'Absent')" :class="chipIsOpen('live', r, 'Absent') ? 'ring-2 ring-offset-1 ring-indigo-400' : ''" class="bg-slate-200 text-slate-600 text-xs font-bold px-2.5 py-1 rounded-full cursor-pointer hover:brightness-95 transition" title="Show Absent students" x-text="'Absent ' + (r.counts.Absent || 0)"></button>
+                    </div>
+                    <div x-show="chipOpen[chipKey('live', r)]" x-cloak class="mt-3 border border-slate-200 rounded-xl bg-white">
+                      <div class="flex items-center justify-between gap-2 px-3 py-2 bg-slate-50 border-b border-slate-200 rounded-t-xl">
+                        <div class="text-xs font-bold text-slate-700" x-text="chipOpen[chipKey('live', r)] + ' · ' + chipStudents('live', r).length + ' student(s)'"></div>
+                        <div class="flex items-center gap-3">
+                          <button type="button" @click="chipFlat = !chipFlat" class="text-[11px] font-semibold text-indigo-600 hover:underline" x-text="chipFlat ? 'Group by branch' : 'Show flat list'"></button>
+                          <button type="button" @click="toggleChip('live', r, chipOpen[chipKey('live', r)])" class="text-slate-400 hover:text-slate-600 text-sm leading-none" title="Close">✕</button>
+                        </div>
+                      </div>
+                      <div class="max-h-72 overflow-y-auto">
+                        <div x-show="chipLoading[chipKey('live', r)]" class="p-3 text-xs text-slate-400">Loading…</div>
+                        <div x-show="!chipLoading[chipKey('live', r)] && !chipStudents('live', r).length" class="p-3 text-xs text-slate-400">No students here.</div>
+                        <template x-for="g in chipGroups('live', r)" :key="g.branch">
+                          <div>
+                            <div x-show="!chipFlat" class="px-3 py-1.5 bg-slate-100 text-[11px] font-bold text-slate-600 uppercase tracking-wide flex items-center justify-between sticky top-0">
+                              <span x-text="g.branch"></span><span x-text="g.students.length"></span>
+                            </div>
+                            <template x-for="s in g.students" :key="s.Enrollment_No">
+                              <div class="flex items-center justify-between gap-2 px-3 py-1.5 text-sm border-b border-slate-50">
+                                <span class="min-w-0 truncate" x-text="s.Student_Name + ' (' + s.Enrollment_No + ')'"></span>
+                                <span class="text-xs text-slate-500 flex-shrink-0" x-text="(s.Result || 'Pending') + (chipFlat && s.Branch ? ' · ' + s.Branch : '')"></span>
+                              </div>
+                            </template>
+                          </div>
+                        </template>
+                      </div>
                     </div>
                     <div class="text-xs text-slate-400 mt-2" x-text="r.volunteers.length ? 'Volunteer(s): ' + r.volunteers.join(', ') : 'No volunteer assigned yet'"></div>
                     <div class="mt-3 divide-y divide-slate-100 max-h-56 overflow-y-auto" x-show="!r.isAttendance && liveSearch.trim() !== ''">
@@ -1739,12 +1791,12 @@
                       </span>
                     </div>
                     <div class="text-sm mt-0.5 flex flex-wrap gap-x-3 gap-y-1">
-                      <span class="text-slate-400" x-text="'Pending ' + (r.Students_Pending || 0)"></span>
-                      <span class="text-slate-500" x-text="'Appeared ' + (r.Students_AppearedNow || 0)"></span>
-                      <span class="text-amber-700" x-text="'Shortlisted ' + r.Students_Shortlisted"></span>
-                      <span class="text-emerald-700" x-text="'Selected ' + r.Students_Selected"></span>
-                      <span class="text-red-600" x-text="'Rejected ' + r.Students_Rejected"></span>
-                      <span class="text-slate-500" x-text="'Absent ' + (r.Students_Absent || 0)"></span>
+                      <button type="button" @click="toggleChip('drive', r, 'Pending')" :class="chipIsOpen('drive', r, 'Pending') ? 'ring-2 ring-offset-1 ring-indigo-400 rounded' : ''" class="text-slate-500 font-semibold hover:underline cursor-pointer" title="Show Pending students" x-text="'Pending ' + (r.Students_Pending || 0)"></button>
+                      <button type="button" @click="toggleChip('drive', r, 'Appeared')" :class="chipIsOpen('drive', r, 'Appeared') ? 'ring-2 ring-offset-1 ring-indigo-400 rounded' : ''" class="text-sky-700 font-semibold hover:underline cursor-pointer" title="Show Appeared students" x-text="'Appeared ' + (r.Students_AppearedNow || 0)"></button>
+                      <button type="button" @click="toggleChip('drive', r, 'Shortlisted')" :class="chipIsOpen('drive', r, 'Shortlisted') ? 'ring-2 ring-offset-1 ring-indigo-400 rounded' : ''" class="text-amber-700 font-semibold hover:underline cursor-pointer" title="Show Shortlisted students" x-text="'Shortlisted ' + r.Students_Shortlisted"></button>
+                      <button type="button" @click="toggleChip('drive', r, 'Selected')" :class="chipIsOpen('drive', r, 'Selected') ? 'ring-2 ring-offset-1 ring-indigo-400 rounded' : ''" class="text-emerald-700 font-semibold hover:underline cursor-pointer" title="Show Selected students" x-text="'Selected ' + r.Students_Selected"></button>
+                      <button type="button" @click="toggleChip('drive', r, 'Rejected')" :class="chipIsOpen('drive', r, 'Rejected') ? 'ring-2 ring-offset-1 ring-indigo-400 rounded' : ''" class="text-red-600 font-semibold hover:underline cursor-pointer" title="Show Rejected students" x-text="'Rejected ' + r.Students_Rejected"></button>
+                      <button type="button" @click="toggleChip('drive', r, 'Absent')" :class="chipIsOpen('drive', r, 'Absent') ? 'ring-2 ring-offset-1 ring-indigo-400 rounded' : ''" class="text-slate-500 font-semibold hover:underline cursor-pointer" title="Show Absent students" x-text="'Absent ' + (r.Students_Absent || 0)"></button>
                     </div>
                   </div>
                   <div class="flex gap-2 flex-wrap">
@@ -1755,6 +1807,32 @@
                         : 'text-slate-600 bg-slate-50 hover:bg-slate-100 border-slate-200'"
                       class="text-sm font-semibold border rounded-lg px-3 py-1.5 whitespace-nowrap"
                       x-text="r.Round_Status === 'Completed' ? 'Reopen' : 'Mark Completed'"></button>
+                  </div>
+                </div>
+                <div x-show="chipOpen[chipKey('drive', r)]" x-cloak class="mt-3 border border-slate-200 rounded-xl bg-white">
+                  <div class="flex items-center justify-between gap-2 px-3 py-2 bg-slate-50 border-b border-slate-200 rounded-t-xl">
+                    <div class="text-xs font-bold text-slate-700" x-text="chipOpen[chipKey('drive', r)] + ' · ' + chipStudents('drive', r).length + ' student(s)'"></div>
+                    <div class="flex items-center gap-3">
+                      <button type="button" @click="chipFlat = !chipFlat" class="text-[11px] font-semibold text-indigo-600 hover:underline" x-text="chipFlat ? 'Group by branch' : 'Show flat list'"></button>
+                      <button type="button" @click="toggleChip('drive', r, chipOpen[chipKey('drive', r)])" class="text-slate-400 hover:text-slate-600 text-sm leading-none" title="Close">✕</button>
+                    </div>
+                  </div>
+                  <div class="max-h-72 overflow-y-auto">
+                    <div x-show="chipLoading[chipKey('drive', r)]" class="p-3 text-xs text-slate-400">Loading…</div>
+                    <div x-show="!chipLoading[chipKey('drive', r)] && !chipStudents('drive', r).length" class="p-3 text-xs text-slate-400">No students here.</div>
+                    <template x-for="g in chipGroups('drive', r)" :key="g.branch">
+                      <div>
+                        <div x-show="!chipFlat" class="px-3 py-1.5 bg-slate-100 text-[11px] font-bold text-slate-600 uppercase tracking-wide flex items-center justify-between sticky top-0">
+                          <span x-text="g.branch"></span><span x-text="g.students.length"></span>
+                        </div>
+                        <template x-for="s in g.students" :key="s.Enrollment_No">
+                          <div class="flex items-center justify-between gap-2 px-3 py-1.5 text-sm border-b border-slate-50">
+                            <span class="min-w-0 truncate" x-text="s.Student_Name + ' (' + s.Enrollment_No + ')'"></span>
+                            <span class="text-xs text-slate-500 flex-shrink-0" x-text="(s.Result || 'Pending') + (chipFlat && s.Branch ? ' · ' + s.Branch : '')"></span>
+                          </div>
+                        </template>
+                      </div>
+                    </template>
                   </div>
                 </div>
                 <div class="flex justify-center text-slate-300" x-show="idx < detail.rounds.length - 1">
@@ -10519,6 +10597,7 @@ function volunteerManager() {
     volunteerPool: [], selectedPoolMobile: '',
     portalUrl: '', portalUrlCopied: false,
     assignErr: '', assignments: [],
+    chipOpen: {}, chipFlat: false, chipData: {}, chipLoading: {},
     live: [], liveSearch: '', liveTimer: null, liveRefreshing: false, liveUpdatedAt: null, expandedCompanies: {},
     expandedVolunteers: {},
 
@@ -11012,6 +11091,56 @@ function volunteerManager() {
     },
     toggleLiveCompany(name) {
       this.expandedCompanies[name] = !this.expandedCompanies[name];
+    },
+    // ---- Status chips -> buttons: tap a chip to list those students under it, grouped by branch ----
+    chipKey(scope, r) {
+      const co = r.Company_Name || (this.detail && this.detail.company && this.detail.company.Company_Name) || '';
+      return scope + '|' + co + '||' + r.Round_Name;
+    },
+    chipIsOpen(scope, r, status) { return this.chipOpen[this.chipKey(scope, r)] === status; },
+    toggleChip(scope, r, status) {
+      const k = this.chipKey(scope, r);
+      if (this.chipOpen[k] === status) { this.chipOpen = { ...this.chipOpen, [k]: '' }; return; }
+      this.chipOpen = { ...this.chipOpen, [k]: status };
+      if (scope === 'drive') this.chipLoadDrive(r);
+    },
+    // Manage Drive rounds don't carry their students, so fetch them when a chip is opened.
+    chipLoadDrive(r) {
+      const k = this.chipKey('drive', r);
+      this.chipLoading = { ...this.chipLoading, [k]: true };
+      google.script.run
+        .withSuccessHandler(res => {
+          this.chipLoading = { ...this.chipLoading, [k]: false };
+          if (res && res.success) this.chipData = { ...this.chipData, [k]: res.data || [] };
+          else this.showToast((res && res.message) || 'Could not load students', 'error');
+        })
+        .withFailureHandler(err => {
+          this.chipLoading = { ...this.chipLoading, [k]: false };
+          this.showToast('Error: ' + err.message, 'error');
+        })
+        .getRoundStudents(this.detail.company.Company_Name, r.Round_Name);
+    },
+    chipRows(scope, r) {
+      return scope === 'drive' ? (this.chipData[this.chipKey(scope, r)] || []) : (r.students || []);
+    },
+    chipStudents(scope, r) {
+      const status = this.chipOpen[this.chipKey(scope, r)];
+      if (!status) return [];
+      const decided = ['Appeared', 'Shortlisted', 'Rejected', 'Selected'];
+      return this.chipRows(scope, r).filter(s => {
+        const res = String(s.Result || '').trim();
+        if (status === 'Pending') return decided.indexOf(res) === -1 && res !== 'Absent';
+        if (status === 'Appeared') return decided.indexOf(res) !== -1;   // everyone who turned up
+        return res === status;
+      });
+    },
+    chipGroups(scope, r) {
+      const list = this.chipStudents(scope, r).slice().sort((a, b) => String(a.Student_Name || '').localeCompare(String(b.Student_Name || '')));
+      if (this.chipFlat) return list.length ? [{ branch: 'All students', students: list }] : [];
+      const map = {};
+      list.forEach(s => { const b = String(s.Branch || '').trim() || 'Branch not set'; (map[b] = map[b] || []).push(s); });
+      return Object.keys(map).sort((x, y) => x === 'Branch not set' ? 1 : (y === 'Branch not set' ? -1 : x.localeCompare(y)))
+        .map(b => ({ branch: b, students: map[b] }));
     },
     isLiveExpanded(name) {
       // While searching, auto-expand every company that has matches so

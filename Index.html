@@ -11102,11 +11102,16 @@ function volunteerManager() {
       const k = this.chipKey(scope, r);
       if (this.chipOpen[k] === status) { this.chipOpen = { ...this.chipOpen, [k]: '' }; return; }
       this.chipOpen = { ...this.chipOpen, [k]: status };
-      if (scope === 'drive') this.chipLoadDrive(r);
+      // Manage Drive rounds never carry their students, and a Live Overview round may arrive
+      // without them (older server copy, trimmed reply): in both cases fetch them now.
+      if (this.chipNeedsFetch(scope, r)) this.chipLoadRound(scope, r);
     },
-    // Manage Drive rounds don't carry their students, so fetch them when a chip is opened.
-    chipLoadDrive(r) {
-      const k = this.chipKey('drive', r);
+    chipNeedsFetch(scope, r) {
+      return scope === 'drive' || (!(r.students && r.students.length) && Number(r.total) > 0);
+    },
+    chipLoadRound(scope, r) {
+      const k = this.chipKey(scope, r);
+      const company = r.Company_Name || (this.detail && this.detail.company && this.detail.company.Company_Name) || '';
       this.chipLoading = { ...this.chipLoading, [k]: true };
       google.script.run
         .withSuccessHandler(res => {
@@ -11118,10 +11123,10 @@ function volunteerManager() {
           this.chipLoading = { ...this.chipLoading, [k]: false };
           this.showToast('Error: ' + err.message, 'error');
         })
-        .getRoundStudents(this.detail.company.Company_Name, r.Round_Name);
+        .getRoundStudents(company, r.Round_Name);
     },
     chipRows(scope, r) {
-      return scope === 'drive' ? (this.chipData[this.chipKey(scope, r)] || []) : (r.students || []);
+      return this.chipNeedsFetch(scope, r) ? (this.chipData[this.chipKey(scope, r)] || []) : (r.students || []);
     },
     chipStudents(scope, r) {
       const status = this.chipOpen[this.chipKey(scope, r)];

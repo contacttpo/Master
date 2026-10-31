@@ -5138,6 +5138,8 @@ function app() {
     passwordResetLoading: false,
 
 
+    // Status-chip panels (shared by the floating button, Live Overview and Manage Drive).
+    chipOpen: {}, chipFlat: false, chipData: {}, chipLoading: {}, chipMsg: {},
     liveFab: { rows: [], open: false, updatedAt: null, tick: 0, started: false, busy: false },
     view: 'home', // 'home' | 'dashboard' | 'branches' | 'volunteers' | 'form' | 'detail' | 'manageDrive' | 'activityLog'
     mobileNavOpen: false,
@@ -5883,6 +5885,67 @@ function app() {
     },
     liveFabOpen() { this.liveFab.open = true; this.liveFabLoad(); },
     liveFabClose() { this.liveFab.open = false; },
+    // ---- Status chips -> buttons: tap a chip to list those students under it, grouped by branch ----
+    chipKey(scope, r) {
+      const co = r.Company_Name || (this.detail && this.detail.company && this.detail.company.Company_Name) || '';
+      return scope + '|' + co + '||' + r.Round_Name;
+    },
+    chipIsOpen(scope, r, status) { return this.chipOpen[this.chipKey(scope, r)] === status; },
+    toggleChip(scope, r, status) {
+      const k = this.chipKey(scope, r);
+      if (this.chipOpen[k] === status) { this.chipOpen = { ...this.chipOpen, [k]: '' }; return; }
+      this.chipOpen = { ...this.chipOpen, [k]: status };
+      // Manage Drive rounds never carry their students, and a Live Overview round may arrive
+      // without them (older server copy, trimmed reply): in both cases fetch them now.
+      if (this.chipNeedsFetch(scope, r)) this.chipLoadRound(scope, r);
+    },
+    chipNeedsFetch(scope, r) {
+      return scope === 'drive' || (!(r.students && r.students.length) && Number(r.total) > 0);
+    },
+    chipLoadRound(scope, r) {
+      const k = this.chipKey(scope, r);
+      const company = r.Company_Name || (this.detail && this.detail.company && this.detail.company.Company_Name) || '';
+      const setMsg = m => { this.chipMsg = { ...this.chipMsg, [k]: m }; };
+      this.chipLoading = { ...this.chipLoading, [k]: true };
+      setMsg('');
+      google.script.run
+        .withSuccessHandler(res => {
+          this.chipLoading = { ...this.chipLoading, [k]: false };
+          if (res && res.success) {
+            this.chipData = { ...this.chipData, [k]: res.data || [] };
+            if (!(res.data || []).length) setMsg('The server returned 0 students for "' + r.Round_Name + '" (' + company + ').');
+          } else {
+            setMsg('Could not load students: ' + ((res && res.message) || 'the server gave no reply') + '');
+          }
+        })
+        .withFailureHandler(err => {
+          this.chipLoading = { ...this.chipLoading, [k]: false };
+          setMsg('Could not load students: ' + (err && err.message ? err.message : err));
+        })
+        .getRoundStudents(company, r.Round_Name);
+    },
+    chipRows(scope, r) {
+      return this.chipNeedsFetch(scope, r) ? (this.chipData[this.chipKey(scope, r)] || []) : (r.students || []);
+    },
+    chipStudents(scope, r) {
+      const status = this.chipOpen[this.chipKey(scope, r)];
+      if (!status) return [];
+      const decided = ['Appeared', 'Shortlisted', 'Rejected', 'Selected'];
+      return this.chipRows(scope, r).filter(s => {
+        const res = String(s.Result || '').trim();
+        if (status === 'Pending') return decided.indexOf(res) === -1 && res !== 'Absent';
+        if (status === 'Appeared') return decided.indexOf(res) !== -1;   // everyone who turned up
+        return res === status;
+      });
+    },
+    chipGroups(scope, r) {
+      const list = this.chipStudents(scope, r).slice().sort((a, b) => String(a.Student_Name || '').localeCompare(String(b.Student_Name || '')));
+      if (this.chipFlat) return list.length ? [{ branch: 'All students', students: list }] : [];
+      const map = {};
+      list.forEach(s => { const b = String(s.Branch || '').trim() || 'Branch not set'; (map[b] = map[b] || []).push(s); });
+      return Object.keys(map).sort((x, y) => x === 'Branch not set' ? 1 : (y === 'Branch not set' ? -1 : x.localeCompare(y)))
+        .map(b => ({ branch: b, students: map[b] }));
+    },
     liveFabGroups() {
       const map = {}, order = [];
       (this.liveFab.rows || []).forEach(r => {
@@ -10603,7 +10666,6 @@ function volunteerManager() {
     volunteerPool: [], selectedPoolMobile: '',
     portalUrl: '', portalUrlCopied: false,
     assignErr: '', assignments: [],
-    chipOpen: {}, chipFlat: false, chipData: {}, chipLoading: {}, chipMsg: {},
     live: [], liveSearch: '', liveTimer: null, liveRefreshing: false, liveUpdatedAt: null, expandedCompanies: {},
     expandedVolunteers: {},
 
@@ -11097,67 +11159,6 @@ function volunteerManager() {
     },
     toggleLiveCompany(name) {
       this.expandedCompanies[name] = !this.expandedCompanies[name];
-    },
-    // ---- Status chips -> buttons: tap a chip to list those students under it, grouped by branch ----
-    chipKey(scope, r) {
-      const co = r.Company_Name || (this.detail && this.detail.company && this.detail.company.Company_Name) || '';
-      return scope + '|' + co + '||' + r.Round_Name;
-    },
-    chipIsOpen(scope, r, status) { return this.chipOpen[this.chipKey(scope, r)] === status; },
-    toggleChip(scope, r, status) {
-      const k = this.chipKey(scope, r);
-      if (this.chipOpen[k] === status) { this.chipOpen = { ...this.chipOpen, [k]: '' }; return; }
-      this.chipOpen = { ...this.chipOpen, [k]: status };
-      // Manage Drive rounds never carry their students, and a Live Overview round may arrive
-      // without them (older server copy, trimmed reply): in both cases fetch them now.
-      if (this.chipNeedsFetch(scope, r)) this.chipLoadRound(scope, r);
-    },
-    chipNeedsFetch(scope, r) {
-      return scope === 'drive' || (!(r.students && r.students.length) && Number(r.total) > 0);
-    },
-    chipLoadRound(scope, r) {
-      const k = this.chipKey(scope, r);
-      const company = r.Company_Name || (this.detail && this.detail.company && this.detail.company.Company_Name) || '';
-      const setMsg = m => { this.chipMsg = { ...this.chipMsg, [k]: m }; };
-      this.chipLoading = { ...this.chipLoading, [k]: true };
-      setMsg('');
-      google.script.run
-        .withSuccessHandler(res => {
-          this.chipLoading = { ...this.chipLoading, [k]: false };
-          if (res && res.success) {
-            this.chipData = { ...this.chipData, [k]: res.data || [] };
-            if (!(res.data || []).length) setMsg('The server returned 0 students for "' + r.Round_Name + '" (' + company + ').');
-          } else {
-            setMsg('Could not load students: ' + ((res && res.message) || 'the server gave no reply') + '');
-          }
-        })
-        .withFailureHandler(err => {
-          this.chipLoading = { ...this.chipLoading, [k]: false };
-          setMsg('Could not load students: ' + (err && err.message ? err.message : err));
-        })
-        .getRoundStudents(company, r.Round_Name);
-    },
-    chipRows(scope, r) {
-      return this.chipNeedsFetch(scope, r) ? (this.chipData[this.chipKey(scope, r)] || []) : (r.students || []);
-    },
-    chipStudents(scope, r) {
-      const status = this.chipOpen[this.chipKey(scope, r)];
-      if (!status) return [];
-      const decided = ['Appeared', 'Shortlisted', 'Rejected', 'Selected'];
-      return this.chipRows(scope, r).filter(s => {
-        const res = String(s.Result || '').trim();
-        if (status === 'Pending') return decided.indexOf(res) === -1 && res !== 'Absent';
-        if (status === 'Appeared') return decided.indexOf(res) !== -1;   // everyone who turned up
-        return res === status;
-      });
-    },
-    chipGroups(scope, r) {
-      const list = this.chipStudents(scope, r).slice().sort((a, b) => String(a.Student_Name || '').localeCompare(String(b.Student_Name || '')));
-      if (this.chipFlat) return list.length ? [{ branch: 'All students', students: list }] : [];
-      const map = {};
-      list.forEach(s => { const b = String(s.Branch || '').trim() || 'Branch not set'; (map[b] = map[b] || []).push(s); });
-      return Object.keys(map).sort((x, y) => x === 'Branch not set' ? 1 : (y === 'Branch not set' ? -1 : x.localeCompare(y)))
-        .map(b => ({ branch: b, students: map[b] }));
     },
     isLiveExpanded(name) {
       // While searching, auto-expand every company that has matches so

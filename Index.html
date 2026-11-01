@@ -292,6 +292,16 @@
   .dot-live { position: relative; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
   .dot-live::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid #22c55e; opacity: 0; animation: dotLive 1.8s ease-out infinite; }
   @keyframes dotLive { 0% { transform: scale(.6); opacity: .8; } 100% { transform: scale(1.5); opacity: 0; } }
+  /* one calm accent on every Home/section card instead of cycling orange/amber/green */
+  main section > .bg-white.border.rounded-2xl,
+  main section > .bg-white.border.rounded-2xl:nth-of-type(n) { border-top: 3px solid #2c7cbd !important; }
+  /* these two colour utilities are missing from the compiled Tailwind, so define them */
+  .bg-orange-100 { background-color: #ffedd5; }
+  .text-orange-700 { color: #c2410c; }
+  /* Registered Students table */
+  .reg-table th { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; color: #64748b; }
+  .reg-row { transition: background-color .1s ease; }
+  .reg-row:hover { background: #f8fafc; }
   /* long names never push a card wider than the screen */
   .truncate { text-overflow: ellipsis; }
 </style>
@@ -682,7 +692,7 @@
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
           </div>
           <div class="min-w-0">
-            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Running drives<span class="dot-live ml-1.5 align-middle"></span></p>
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Running drives<span class="dot-live align-middle" style="margin-left:14px"></span></p>
             <p class="text-2xl sm:text-3xl font-extrabold text-slate-800 leading-tight tabular-nums truncate" x-text="homeStats.running"></p>
             <p class="text-xs text-slate-500 truncate" x-text="homeStats.running ? 'Tap for Live Overview' : 'No drive running'"></p>
           </div>
@@ -785,7 +795,7 @@
             <div class="rounded-xl p-4 border" :style="'background-color:' + (idx === 0 ? '#FFE0B2' : '#FFF3E0') + '; border-color:#FFB74D'">
               <div class="flex items-center justify-between mb-2">
                 <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 text-white" style="background-color:#E65100" x-text="idx + 1"></span>
-                <span class="text-sm font-extrabold flex-shrink-0" style="color:#E65100" x-text="p.Package"></span>
+                <span class="text-sm font-extrabold flex-shrink-0" style="color:#E65100" x-text="fmtPackage(p.Package)"></span>
               </div>
               <p class="font-semibold text-slate-800 truncate" x-text="p.Student_Name || '(no name)'"></p>
               <p class="text-xs text-slate-500 truncate mt-0.5" x-text="(p.Branch || '—') + ' · ' + p.Company_Name"></p>
@@ -4745,11 +4755,18 @@
                   </thead>
                   <tbody>
                     <template x-for="(s, idx) in visibleRoundStudents()" :key="s.Enrollment_No">
-                      <tr class="border-b border-slate-100">
+                      <tr class="reg-row border-b border-slate-100">
                         <td class="py-1.5 pr-2" x-text="idx + 1"></td>
                         <td class="py-1.5 pr-2 whitespace-nowrap" x-text="s.Enrollment_No"></td>
-                        <td class="py-1.5 pr-2" x-text="s.Student_Name"></td>
-                        <td class="py-1.5 pr-2" x-text="s.Branch"></td>
+                        <td class="py-1.5 pr-2">
+                          <span class="flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-full text-[10px] font-bold text-white flex items-center justify-center flex-shrink-0" :style="'background:' + branchColor(s.Branch)" x-text="initials(s.Student_Name)"></span>
+                            <span x-text="s.Student_Name"></span>
+                          </span>
+                        </td>
+                        <td class="py-1.5 pr-2">
+                          <span x-show="s.Branch" class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap" :style="'background:' + branchColor(s.Branch) + '1f; color:' + branchColor(s.Branch)" x-text="s.Branch"></span>
+                        </td>
                         <td class="py-1.5 pr-2" x-text="s.College"></td>
                         <td class="py-1.5 pr-2" x-text="s.Mobile_No"></td>
                         <td class="py-1.5 pr-2" x-text="s.Display_Email"></td>
@@ -5088,7 +5105,7 @@
               </div>
 
               <div class="overflow-auto max-h-[50vh] border border-slate-100 rounded-lg" x-show="registeredStudents.length > 0">
-                <table class="text-sm" style="width:auto; border-collapse:collapse;">
+                <table class="reg-table text-sm" style="width:auto; border-collapse:collapse;">
                   <thead class="sticky top-0 z-10">
                     <tr class="text-left text-slate-400 border-b border-slate-200 bg-white">
                       <th class="py-1.5 pr-2 bg-white">S.No.</th>
@@ -5105,11 +5122,18 @@
                   </thead>
                   <tbody>
                     <template x-for="(s, idx) in filteredRegisteredStudents()" :key="s.Enrollment_No">
-                      <tr class="border-b border-slate-100">
+                      <tr class="reg-row border-b border-slate-100">
                         <td class="py-1.5 pr-2" x-text="idx + 1"></td>
                         <td class="py-1.5 pr-2 whitespace-nowrap" x-text="s.Enrollment_No"></td>
-                        <td class="py-1.5 pr-2" x-text="s.Student_Name"></td>
-                        <td class="py-1.5 pr-2" x-text="s.Branch"></td>
+                        <td class="py-1.5 pr-2">
+                          <span class="flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-full text-[10px] font-bold text-white flex items-center justify-center flex-shrink-0" :style="'background:' + branchColor(s.Branch)" x-text="initials(s.Student_Name)"></span>
+                            <span x-text="s.Student_Name"></span>
+                          </span>
+                        </td>
+                        <td class="py-1.5 pr-2">
+                          <span x-show="s.Branch" class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap" :style="'background:' + branchColor(s.Branch) + '1f; color:' + branchColor(s.Branch)" x-text="s.Branch"></span>
+                        </td>
                         <td class="py-1.5 pr-2" x-text="s.College"></td>
                         <td class="py-1.5 pr-2" x-text="s.Mobile_No"></td>
                         <td class="py-1.5 pr-2" x-text="s.Display_Email"></td>
@@ -5193,6 +5217,24 @@ function readFileAsCsvText_(file) {
   });
 }
 
+// Remembers which colour each branch was given, so a branch keeps the same colour everywhere
+// and between visits, and no two branches share a colour (up to 24 branches).
+const BRANCH_COLORS = ['#2c7cbd', '#0f9d7a', '#d97706', '#dc2626', '#7c3aed', '#0e7490', '#be185d', '#65a30d',
+  '#475569', '#b45309', '#2563eb', '#059669', '#ea580c', '#9333ea', '#0891b2', '#db2777',
+  '#4d7c0f', '#334155', '#ca8a04', '#4f46e5', '#0d9488', '#e11d48', '#a16207', '#6d28d9'];
+const BRANCH_REG = (function () { try { return JSON.parse(localStorage.getItem('cpt_branch_colors') || '{}'); } catch (e) { return {}; } })();
+function branchColorFor(name) {
+  const n = String(name || '').trim().toUpperCase();
+  if (!n || n === 'UNSPECIFIED' || n === 'BRANCH NOT SET') return '#64748b';
+  if (BRANCH_REG[n] !== undefined) return BRANCH_COLORS[BRANCH_REG[n]];
+  const used = {}; Object.keys(BRANCH_REG).forEach(k => { used[BRANCH_REG[k]] = true; });
+  let h = 0; for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) >>> 0;
+  let idx = h % BRANCH_COLORS.length, tries = 0;
+  while (used[idx] && tries < BRANCH_COLORS.length) { idx = (idx + 1) % BRANCH_COLORS.length; tries++; }
+  BRANCH_REG[n] = idx;
+  try { localStorage.setItem('cpt_branch_colors', JSON.stringify(BRANCH_REG)); } catch (e) {}
+  return BRANCH_COLORS[idx];
+}
 function app() {
   return {
     loggedIn: false,
@@ -7568,13 +7610,9 @@ function app() {
 
     // Shared color palette for pie-chart slices, legend dots, and avatar/card accents.
     // One fixed colour per branch (same branch = same colour on every screen/chart).
-    branchColor(name) {
-      const n = String(name || '').trim().toUpperCase();
-      if (!n || n === 'UNSPECIFIED' || n === 'BRANCH NOT SET') return '#64748b';
-      const palette = ['#2c7cbd', '#0f9d7a', '#d97706', '#c2410c', '#7c3aed', '#0e7490', '#be185d', '#4d7c0f', '#475569', '#b45309'];
-      let h = 0; for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) >>> 0;
-      return palette[h % palette.length];
-    },
+    branchColor(name) { return branchColorFor(name); },
+    // Package text is typed by hand ("9.09 lpa", "5Lpa"): show the unit consistently as LPA.
+    fmtPackage(p) { return String(p == null ? '' : p).replace(/(\d\s*)lpa\b/ig, '$1LPA'); },
     initials(name) {
       const p = String(name || '').trim().split(/\s+/).filter(Boolean);
       if (!p.length) return '?';
@@ -7588,7 +7626,7 @@ function app() {
       const gs = this.globalSummary || { total: 0, branchSummary: [] };
       return { companies: cs.length, completed: completed, running: cs.length - completed,
                selected: gs.total || 0, branches: (gs.branchSummary || []).length,
-               topPackage: top ? top.Package : '', topWho: top ? (top.Student_Name || '') : '' };
+               topPackage: top ? this.fmtPackage(top.Package) : '', topWho: top ? (top.Student_Name || '') : '' };
     },
     pieColor(idx) {
       const palette = ['#2c7cbd', '#10b981', '#f59e0b', '#de6413', '#4ba3da', '#2789b0', '#f43f5e', '#14b8a6'];

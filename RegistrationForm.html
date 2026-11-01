@@ -28,7 +28,7 @@
   html, body { height: 100%; }
   body {
     margin: 0; min-height: 100%; display: flex; align-items: flex-start; justify-content: center;
-    background: linear-gradient(160deg, #ecf3f9 0%, #edf6fa 30%, #fdf6f1 55%, #fff7ed 100%);
+    background: #f1f5f9;
     color: #1e293b; font-family: 'Inter', system-ui, -apple-system, sans-serif;
     padding: 20px;
     overflow-y: auto;
@@ -138,6 +138,13 @@
   .countdown-banner .cb-label { font-size: 12px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: .04em; }
   .countdown-banner.urgent .cb-label { color: var(--coral); }
   .countdown-banner .cb-timer { font-size: 15px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+</style>
+<style id="polish-theme">
+  /* POLISH — consistent text rendering, touch feel and keyboard focus. Delete this block to revert. */
+  html { -webkit-text-size-adjust: 100%; }
+  body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; -webkit-tap-highlight-color: transparent; }
+  button:focus-visible, a:focus-visible, summary:focus-visible, [role="button"]:focus-visible { outline: 2px solid #2c7cbd; outline-offset: 2px; }
+  button, .chip, .cnt, .stat, .gbadge { font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>

@@ -277,7 +277,7 @@
      <style id="vivid-theme"> block restores the previous look.
      =================================================================== */
   body {
-    background: linear-gradient(135deg, #dce9f4 0%, #faebe1 34%, #cffafe 68%, #ffedd5 100%) fixed;
+    background: #f1f5f9;
   }
 
   /* ---- header ---- */
@@ -404,6 +404,16 @@
   .student.st-absent { background: #f1f5f9; box-shadow: inset 5px 0 0 #64748b; }
   .student.st-absent .name { color: #475569; }
   .bulkBtn.absent { background: #64748b; }
+</style>
+<style id="polish-theme">
+  /* POLISH — consistent text rendering, touch feel and keyboard focus. Delete this block to revert. */
+  html { -webkit-text-size-adjust: 100%; }
+  body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; -webkit-tap-highlight-color: transparent; }
+  button:focus-visible, a:focus-visible, summary:focus-visible, [role="button"]:focus-visible { outline: 2px solid #2c7cbd; outline-offset: 2px; }
+  button, .chip, .cnt, .stat, .gbadge { font-variant-numeric: tabular-nums; }
+</style>
+<style id="polish-badge">
+  .gbadge.done { display: inline-flex; align-items: center; gap: 4px; }
 </style>
 <meta name="theme-color" content="#1b5f7a">
 </head>
@@ -1952,7 +1962,7 @@
     const full = state.students.filter(s => s.Group_No !== '' && s.Group_No !== null && s.Group_No !== undefined && Number(s.Group_No) === Number(g));
     const decided = full.filter(s => ['shortlisted', 'selected', 'rejected', 'absent'].indexOf(String(s.Result || '').trim().toLowerCase()) !== -1).length;
     const prog = !full.length || decided === 0 ? '' : (decided === full.length ? 'done' : 'partial');
-    const badge = prog === 'done' ? '<span class="gbadge done">✓ Done</span>'
+    const badge = prog === 'done' ? '<span class="gbadge done"><svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 9.7a1 1 0 111.4-1.4l3.8 3.8 6.8-6.8a1 1 0 011.4 0z" clip-rule="evenodd"/></svg> Done</span>'
       : (prog === 'partial' ? `<span class="gbadge partial">${decided}/${full.length} marked</span>` : '');
     return `
       <div class="groupCard ${prog === 'done' ? 'gDone' : (prog === 'partial' ? 'gPartial' : '')}">

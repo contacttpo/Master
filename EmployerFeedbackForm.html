@@ -4,14 +4,22 @@
 <base target="_top">
 <script src="/gas-shim.js"></script>
 <title>Employer Feedback — Gyan Ganga Group</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   :root { --ink:#1e293b; --mute:#64748b; --line:#e2e8f0; --brand:#246498; --bg:#f1f5f9; }
   * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; line-height:1.5; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:'Inter',-apple-system,"Segoe UI",Roboto,Arial,sans-serif; line-height:1.5; -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent; }
   .wrap { max-width:680px; margin:0 auto; padding:16px 14px 60px; }
-  .hero { background:linear-gradient(135deg,#246498,#1f6e8d); color:#fff; border-radius:18px; padding:22px 20px; margin-bottom:14px; }
+  .hero { position:relative; background:linear-gradient(135deg,#246498,#1f6e8d); color:#fff; border-radius:18px; padding:22px 84px 22px 20px; margin-bottom:14px; }
+  .hero .emb { position:absolute; right:16px; top:16px; width:52px; height:52px; border-radius:14px; background:#fff; padding:4px; object-fit:contain; box-shadow:0 4px 12px rgba(0,0,0,.18); }
+  button:focus-visible { outline:2px solid #246498; outline-offset:2px; }
+  .scale button, .chips button { transition: transform .08s ease, background-color .12s ease; }
+  .scale button:active, .chips button:active { transform:scale(.96); }
+  .center .big.ok { width:64px; height:64px; margin:0 auto 12px; border-radius:50%; background:#dcfce7; color:#16a34a; display:flex; align-items:center; justify-content:center; }
   .hero small { opacity:.85; letter-spacing:.06em; text-transform:uppercase; font-weight:700; font-size:11px; }
   .hero h1 { margin:6px 0 4px; font-size:22px; }
   .hero p { margin:0; opacity:.9; font-size:14px; }
@@ -97,6 +105,7 @@
       `<button type="button" class="${String(form.Recommend_Score) === String(i) ? 'on' : ''}" onclick="setVal('Recommend_Score',${i})">${i}</button>`).join('');
     app.innerHTML = `
       <div class="hero">
+        <img class="emb" src="/emblem.png" alt="">
         <small>Gyan Ganga Group · Training &amp; Placement Cell</small>
         <h1>Employer Feedback</h1>
         <p>${esc(meta.company)}${meta.date ? ' · Drive on ' + esc(meta.date) : ''} — thank you for visiting our campus. This takes about 3 minutes.</p>
@@ -175,7 +184,7 @@
           window.scrollTo(0, 0);
           return;
         }
-        app.innerHTML = '<div class="card center"><div class="big">🙏</div><h2>Thank you!</h2>' +
+        app.innerHTML = '<div class="card center"><div class="big ok"><svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 9.7a1 1 0 111.4-1.4l3.8 3.8 6.8-6.8a1 1 0 011.4 0z" clip-rule="evenodd"/></svg></div><h2>Thank you!</h2>' +
           '<p class="sub">Your feedback has been recorded. We truly value your time and look forward to hosting you again.</p></div>';
         window.scrollTo(0, 0);
       })

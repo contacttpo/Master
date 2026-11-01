@@ -5,13 +5,16 @@
 <script src="/gas-shim.js"></script>
 <meta charset="UTF-8">
 <title>Attendance Kiosk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <style>
   * { box-sizing: border-box; }
   body {
     margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
     background: #0f172a; color: #f1f5f9;
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
     padding: 24px;
   }
   .card { width: 100%; max-width: 460px; text-align: center; }
@@ -67,6 +70,13 @@
      fallback click handler below can still fire while the real URL is
      still loading. */
   .backLink[aria-disabled="true"] { opacity: .6; }
+</style>
+<style id="polish-theme">
+  /* POLISH — consistent text rendering, touch feel and keyboard focus. Delete this block to revert. */
+  html { -webkit-text-size-adjust: 100%; }
+  body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; -webkit-tap-highlight-color: transparent; }
+  button:focus-visible, a:focus-visible, summary:focus-visible, [role="button"]:focus-visible { outline: 2px solid #75b9e3; outline-offset: 2px; }
+  button, .chip, .cnt, .stat, .gbadge { font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>

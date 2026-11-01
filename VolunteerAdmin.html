@@ -5,10 +5,13 @@
 <script src="/gas-shim.js"></script>
 <meta charset="UTF-8">
 <title>Manage Volunteers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  body { margin: 0; min-height: 100vh; background: #0f172a; color: #f1f5f9; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+  body { margin: 0; min-height: 100vh; background: #0f172a; color: #f1f5f9; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
   .wrap { max-width: 760px; margin: 0 auto; padding: 20px 16px 50px; }
   .brand { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #539bd7; font-weight: 700; }
   h1 { font-size: 22px; margin: 2px 0 16px; }
@@ -60,6 +63,13 @@
   .statusBadge.status-active { background: #064e3b; color: #6ee7b7; }
   .statusBadge.status-paused { background: #78350f; color: #fcd34d; }
   .statusBadge.status-stopped { background: #7f1d1d; color: #fca5a5; }
+</style>
+<style id="polish-theme">
+  /* POLISH — consistent text rendering, touch feel and keyboard focus. Delete this block to revert. */
+  html { -webkit-text-size-adjust: 100%; }
+  body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; -webkit-tap-highlight-color: transparent; }
+  button:focus-visible, a:focus-visible, summary:focus-visible, [role="button"]:focus-visible { outline: 2px solid #75b9e3; outline-offset: 2px; }
+  button, .chip, .cnt, .stat, .gbadge { font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>

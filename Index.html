@@ -278,6 +278,20 @@
   @media (pointer: coarse) { .chip-btn { min-height: 34px; display: inline-flex; align-items: center; } }
   /* clear keyboard focus without changing mouse/touch behaviour */
   button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid #2c7cbd; outline-offset: 2px; }
+  /* ---- sidebar: deep brand navy, neutral icons, gold accent on the active item ---- */
+  aside.bg-white { background: linear-gradient(180deg, #16233f 0%, #1b2f52 100%); box-shadow: 4px 0 24px -8px rgba(15,23,42,.55); }
+  aside nav button svg,
+  aside nav button:nth-child(n) svg { background: rgba(255,255,255,.10) !important; color: #cfe0f1 !important; box-shadow: none !important; }
+  aside nav button:not(.bg-indigo-50):hover svg { background: rgba(255,255,255,.18) !important; color: #fff !important; }
+  aside nav button.bg-indigo-50 { background: #fff; color: #16233f; box-shadow: 0 8px 18px -8px rgba(0,0,0,.55); }
+  aside nav button.bg-indigo-50 svg { background: #e3a63a !important; color: #16233f !important; }
+  aside img { background: #fff; }
+  /* ---- Home stat tiles ---- */
+  .stat-tile { transition: transform .12s ease, box-shadow .12s ease; }
+  button.stat-tile:hover { transform: translateY(-2px); box-shadow: 0 10px 22px -12px rgba(15,23,42,.35); }
+  .dot-live { position: relative; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
+  .dot-live::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid #22c55e; opacity: 0; animation: dotLive 1.8s ease-out infinite; }
+  @keyframes dotLive { 0% { transform: scale(.6); opacity: .8; } 100% { transform: scale(1.5); opacity: 0; } }
   /* long names never push a card wider than the screen */
   .truncate { text-overflow: ellipsis; }
 </style>
@@ -557,11 +571,11 @@
                         <template x-for="g in chipGroups('fab', r)" :key="g.branch">
                           <div>
                             <div x-show="!chipFlat" class="px-3 py-1.5 bg-slate-100 text-[11px] font-bold text-slate-600 uppercase tracking-wide flex items-center justify-between sticky top-0">
-                              <span x-text="g.branch"></span><span x-text="g.students.length"></span>
+                              <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" :style="'background:' + branchColor(g.branch)"></span><span x-text="g.branch"></span></span><span x-text="g.students.length"></span>
                             </div>
                             <template x-for="s in g.students" :key="s.Enrollment_No">
                               <div class="flex items-center justify-between gap-2 px-3 py-1.5 text-sm border-b border-slate-50">
-                                <span class="min-w-0 truncate" x-text="s.Student_Name + ' (' + s.Enrollment_No + ')'"></span>
+                                <span class="min-w-0 flex items-center gap-2"><span class="w-6 h-6 rounded-full text-[10px] font-bold text-white flex items-center justify-center flex-shrink-0" :style="'background:' + branchColor(s.Branch)" x-text="initials(s.Student_Name)"></span><span class="truncate" x-text="s.Student_Name + ' (' + s.Enrollment_No + ')'"></span></span>
                                 <span class="text-xs text-slate-500 flex-shrink-0" x-text="(s.Result || 'Pending') + (chipFlat && s.Branch ? ' · ' + s.Branch : '')"></span>
                               </div>
                             </template>
@@ -651,6 +665,50 @@
     <section x-show="view === 'home'" class="fade-in" x-cloak>
       <h2 class="brand-heading text-2xl mb-5">Home</h2>
 
+      <!-- At-a-glance stat tiles -->
+      <div x-show="!loading" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div  class="stat-tile bg-white border border-slate-200 rounded-2xl shadow-sm p-4 flex items-start gap-3 text-left">
+          <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg>
+          </div>
+          <div class="min-w-0">
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Companies</p>
+            <p class="text-2xl sm:text-3xl font-extrabold text-slate-800 leading-tight tabular-nums truncate" x-text="homeStats.companies"></p>
+            <p class="text-xs text-slate-500 truncate" x-text="homeStats.completed + ' completed'"></p>
+          </div>
+        </div>
+        <button type="button" @click="goToLiveOverview()" class="stat-tile bg-white border border-slate-200 rounded-2xl shadow-sm p-4 flex items-start gap-3 text-left">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          </div>
+          <div class="min-w-0">
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Running drives<span class="dot-live ml-1.5 align-middle"></span></p>
+            <p class="text-2xl sm:text-3xl font-extrabold text-slate-800 leading-tight tabular-nums truncate" x-text="homeStats.running"></p>
+            <p class="text-xs text-slate-500 truncate" x-text="homeStats.running ? 'Tap for Live Overview' : 'No drive running'"></p>
+          </div>
+        </button>
+        <div  class="stat-tile bg-white border border-slate-200 rounded-2xl shadow-sm p-4 flex items-start gap-3 text-left">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.42a12 12 0 01.67 6.47c-.6.38-3.6 2.45-6.83 2.45s-6.23-2.07-6.83-2.45a12 12 0 01.67-6.47L12 14z"/></svg>
+          </div>
+          <div class="min-w-0">
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Students selected</p>
+            <p class="text-2xl sm:text-3xl font-extrabold text-slate-800 leading-tight tabular-nums truncate" x-text="homeStats.selected"></p>
+            <p class="text-xs text-slate-500 truncate" x-text="homeStats.branches + ' branch(es)'"></p>
+          </div>
+        </div>
+        <div  class="stat-tile bg-white border border-slate-200 rounded-2xl shadow-sm p-4 flex items-start gap-3 text-left">
+          <div class="w-10 h-10 rounded-xl bg-orange-100 text-orange-700 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8m-4-4v4m-5-18h10v6a5 5 0 01-10 0V3zm10 2h3a2 2 0 01-2 4m-11-4H4a2 2 0 002 4"/></svg>
+          </div>
+          <div class="min-w-0">
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Top package</p>
+            <p class="text-2xl sm:text-3xl font-extrabold text-slate-800 leading-tight tabular-nums truncate" x-text="(homeStats.topPackage || '—')"></p>
+            <p class="text-xs text-slate-500 truncate" x-text="(homeStats.topWho || 'Not recorded yet')"></p>
+          </div>
+        </div>
+      </div>
+
       <!-- Total Selections + Branch-wise Pie Chart -->
       <div x-show="!loading && globalSummary.total > 0" class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mb-6">
         <div class="flex flex-col lg:flex-row items-center justify-center gap-8 pb-6 mb-6 border-b border-slate-100">
@@ -670,7 +728,7 @@
             <button @click="goToBranchSelections(b.branch)"
               class="text-center border border-slate-200 hover:border-indigo-300 hover:shadow-md rounded-xl p-3 transition-all bg-white">
               <div class="flex items-center justify-center gap-2 mb-1.5 min-w-0">
-                <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" :style="'background-color:' + pieColor(idx)"></span>
+                <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" :style="'background-color:' + branchColor(b.branch)"></span>
                 <span class="text-base font-semibold text-slate-700 truncate" x-text="b.branch"></span>
               </div>
               <p class="text-2xl font-bold text-slate-800 leading-none" x-text="b.count"></p>
@@ -1710,11 +1768,11 @@
                         <template x-for="g in chipGroups('live', r)" :key="g.branch">
                           <div>
                             <div x-show="!chipFlat" class="px-3 py-1.5 bg-slate-100 text-[11px] font-bold text-slate-600 uppercase tracking-wide flex items-center justify-between sticky top-0">
-                              <span x-text="g.branch"></span><span x-text="g.students.length"></span>
+                              <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" :style="'background:' + branchColor(g.branch)"></span><span x-text="g.branch"></span></span><span x-text="g.students.length"></span>
                             </div>
                             <template x-for="s in g.students" :key="s.Enrollment_No">
                               <div class="flex items-center justify-between gap-2 px-3 py-1.5 text-sm border-b border-slate-50">
-                                <span class="min-w-0 truncate" x-text="s.Student_Name + ' (' + s.Enrollment_No + ')'"></span>
+                                <span class="min-w-0 flex items-center gap-2"><span class="w-6 h-6 rounded-full text-[10px] font-bold text-white flex items-center justify-center flex-shrink-0" :style="'background:' + branchColor(s.Branch)" x-text="initials(s.Student_Name)"></span><span class="truncate" x-text="s.Student_Name + ' (' + s.Enrollment_No + ')'"></span></span>
                                 <span class="text-xs text-slate-500 flex-shrink-0" x-text="(s.Result || 'Pending') + (chipFlat && s.Branch ? ' · ' + s.Branch : '')"></span>
                               </div>
                             </template>
@@ -1842,11 +1900,11 @@
                     <template x-for="g in chipGroups('drive', r)" :key="g.branch">
                       <div>
                         <div x-show="!chipFlat" class="px-3 py-1.5 bg-slate-100 text-[11px] font-bold text-slate-600 uppercase tracking-wide flex items-center justify-between sticky top-0">
-                          <span x-text="g.branch"></span><span x-text="g.students.length"></span>
+                          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" :style="'background:' + branchColor(g.branch)"></span><span x-text="g.branch"></span></span><span x-text="g.students.length"></span>
                         </div>
                         <template x-for="s in g.students" :key="s.Enrollment_No">
                           <div class="flex items-center justify-between gap-2 px-3 py-1.5 text-sm border-b border-slate-50">
-                            <span class="min-w-0 truncate" x-text="s.Student_Name + ' (' + s.Enrollment_No + ')'"></span>
+                            <span class="min-w-0 flex items-center gap-2"><span class="w-6 h-6 rounded-full text-[10px] font-bold text-white flex items-center justify-center flex-shrink-0" :style="'background:' + branchColor(s.Branch)" x-text="initials(s.Student_Name)"></span><span class="truncate" x-text="s.Student_Name + ' (' + s.Enrollment_No + ')'"></span></span>
                             <span class="text-xs text-slate-500 flex-shrink-0" x-text="(s.Result || 'Pending') + (chipFlat && s.Branch ? ' · ' + s.Branch : '')"></span>
                           </div>
                         </template>
@@ -3509,7 +3567,7 @@
                   <template x-for="(b, idx) in branchSummary()" :key="b.branch">
                     <div class="flex items-center justify-between text-sm">
                       <span class="flex items-center gap-2 font-medium text-slate-700 min-w-0">
-                        <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" :style="'background-color:' + pieColor(idx)"></span>
+                        <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" :style="'background-color:' + branchColor(b.branch)"></span>
                         <span x-text="b.branch" class="truncate"></span>
                       </span>
                       <span class="flex-shrink-0"><span class="font-bold text-slate-800" x-text="b.count"></span>
@@ -7509,6 +7567,29 @@ function app() {
     },
 
     // Shared color palette for pie-chart slices, legend dots, and avatar/card accents.
+    // One fixed colour per branch (same branch = same colour on every screen/chart).
+    branchColor(name) {
+      const n = String(name || '').trim().toUpperCase();
+      if (!n || n === 'UNSPECIFIED' || n === 'BRANCH NOT SET') return '#64748b';
+      const palette = ['#2c7cbd', '#0f9d7a', '#d97706', '#c2410c', '#7c3aed', '#0e7490', '#be185d', '#4d7c0f', '#475569', '#b45309'];
+      let h = 0; for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) >>> 0;
+      return palette[h % palette.length];
+    },
+    initials(name) {
+      const p = String(name || '').trim().split(/\s+/).filter(Boolean);
+      if (!p.length) return '?';
+      return (p[0].charAt(0) + (p.length > 1 ? p[p.length - 1].charAt(0) : '')).toUpperCase();
+    },
+    // Counts for the Home stat tiles (all from data the screen already loads).
+    get homeStats() {
+      const cs = this.companies || [];
+      const completed = cs.filter(c => c.Status === 'Completed').length;
+      const top = (this.topPackages || [])[0];
+      const gs = this.globalSummary || { total: 0, branchSummary: [] };
+      return { companies: cs.length, completed: completed, running: cs.length - completed,
+               selected: gs.total || 0, branches: (gs.branchSummary || []).length,
+               topPackage: top ? top.Package : '', topWho: top ? (top.Student_Name || '') : '' };
+    },
     pieColor(idx) {
       const palette = ['#2c7cbd', '#10b981', '#f59e0b', '#de6413', '#4ba3da', '#2789b0', '#f43f5e', '#14b8a6'];
       return palette[idx % palette.length];
@@ -7560,7 +7641,7 @@ function app() {
         const d = 'M ' + cx + ',' + (cy - r) +
           ' A ' + r + ',' + r + ' 0 1,1 ' + cx + ',' + (cy + r) +
           ' A ' + r + ',' + r + ' 0 1,1 ' + cx + ',' + (cy - r) + ' Z';
-        return [{ path: d, color: this.pieColor(0) }];
+        return [{ path: d, color: data[0].branch ? this.branchColor(data[0].branch) : this.pieColor(0) }];
       }
 
       let startAngle = -90; // 12 o'clock
@@ -7576,7 +7657,7 @@ function app() {
           ' L ' + x1.toFixed(3) + ',' + y1.toFixed(3) +
           ' A ' + r + ',' + r + ' 0 ' + largeArc + ',1 ' + x2.toFixed(3) + ',' + y2.toFixed(3) + ' Z';
         startAngle = endAngle;
-        return { path: path, color: this.pieColor(idx) };
+        return { path: path, color: item.branch ? this.branchColor(item.branch) : this.pieColor(idx) };
       });
     },
 

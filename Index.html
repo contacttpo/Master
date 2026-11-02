@@ -3984,7 +3984,7 @@
                         <div class="flex justify-between gap-2"><span class="text-slate-400">Category</span><span class="font-medium text-slate-700 truncate" x-text="s.Category || '—'"></span></div>
                         <div class="flex justify-between gap-2"><span class="text-slate-400">Reference ID</span><span class="font-medium text-slate-700 truncate" x-text="s.Reference_ID || '—'"></span></div>
                         <div class="flex justify-between gap-2"><span class="text-slate-400">Mobile No.</span><span class="font-medium text-slate-700 truncate" x-text="s.Mobile_No || '—'"></span></div>
-                        <div class="flex justify-between gap-2"><span class="text-slate-400">Email ID</span><span class="font-medium text-slate-700 truncate" x-text="s.Email_ID || '—'"></span></div>
+                        <div class="flex justify-between gap-2"><span class="text-slate-400" x-text="s.Personal_Email ? 'Personal Email' : 'Email ID'"></span><span class="font-medium text-slate-700 truncate" :title="s.Personal_Email || s.Email_ID" x-text="s.Personal_Email || s.Email_ID || '—'"></span></div>
 
                         <!-- Offer letter -->
                         <div class="pt-2 mt-2 border-t border-slate-100">

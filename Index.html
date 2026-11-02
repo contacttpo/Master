@@ -4752,10 +4752,28 @@
                 </div>
               </div>
 
+              <!-- Tick students below (works inside any filter tab: All / Pending / Shortlisted / ...), then mark them all at once -->
+              <div x-show="roundStudents.length > 0 && roundSelCount() > 0" x-cloak
+                   class="flex flex-wrap items-center gap-2 mb-2 px-3 py-2 rounded-lg bg-indigo-50 border border-indigo-200 sticky top-0 z-20">
+                <span class="text-sm font-semibold text-indigo-800" x-text="roundSelCount() + ' selected'"></span>
+                <span class="text-xs text-indigo-400 mr-1">Mark as:</span>
+                <button type="button" @click="bulkMarkRoundSelected('Shortlisted')" class="text-xs font-bold px-3 py-1.5 rounded-lg text-white bg-emerald-600 hover:bg-emerald-700">Shortlisted</button>
+                <button type="button" @click="bulkMarkRoundSelected('Selected')" class="text-xs font-bold px-3 py-1.5 rounded-lg text-white bg-blue-600 hover:bg-blue-700">Selected</button>
+                <button type="button" @click="bulkMarkRoundSelected('Rejected')" class="text-xs font-bold px-3 py-1.5 rounded-lg text-white bg-red-600 hover:bg-red-700">Rejected</button>
+                <button type="button" @click="bulkMarkRoundSelected('Absent')" class="text-xs font-bold px-3 py-1.5 rounded-lg text-white bg-slate-500 hover:bg-slate-600">Absent</button>
+                <button type="button" @click="bulkMarkRoundSelected('')" class="text-xs font-bold px-3 py-1.5 rounded-lg text-slate-700 bg-white border border-slate-300 hover:bg-slate-50">Pending</button>
+                <button type="button" @click="clearRoundSel()" class="text-xs text-indigo-600 hover:underline ml-auto">Clear ticks</button>
+              </div>
+
               <div class="overflow-auto max-h-[50vh] border border-slate-100 rounded-lg" x-show="roundStudents.length > 0">
                 <table class="text-sm" style="width:auto; border-collapse:collapse;">
                   <thead class="sticky top-0 z-10">
                     <tr class="text-left text-slate-400 border-b border-slate-200 bg-white">
+                      <th class="py-1.5 pr-2 bg-white w-8">
+                        <input type="checkbox" title="Tick / untick every student shown below"
+                          :checked="allVisibleRoundSelected()" @change="toggleAllVisibleRound($event.target.checked)"
+                          class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                      </th>
                       <th class="py-1.5 pr-2 bg-white">S.No.</th>
                       <th class="py-1.5 pr-2 bg-white">Enrollment No.</th>
                       <th class="py-1.5 pr-2 bg-white">Name</th>
@@ -4769,7 +4787,11 @@
                   </thead>
                   <tbody>
                     <template x-for="(s, idx) in visibleRoundStudents()" :key="s.Enrollment_No">
-                      <tr class="reg-row border-b border-slate-100">
+                      <tr class="reg-row border-b border-slate-100" :class="isRoundSel(s.Enrollment_No) ? 'bg-indigo-50/60' : ''">
+                        <td class="py-1.5 pr-2">
+                          <input type="checkbox" :checked="isRoundSel(s.Enrollment_No)" @change="toggleRoundSel(s.Enrollment_No)"
+                            class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                        </td>
                         <td class="py-1.5 pr-2" x-text="idx + 1"></td>
                         <td class="py-1.5 pr-2 whitespace-nowrap" x-text="s.Enrollment_No"></td>
                         <td class="py-1.5 pr-2">
@@ -5400,6 +5422,8 @@ function app() {
     // to — 'All', 'Pending', 'Shortlisted', 'Selected', or 'Rejected'.
     // Driven by clicking the count badges above the table.
     roundListFilter: 'All',
+    roundSel: {},        // ticked students in the open round: { enrollmentNo: true }
+    roundSelKey: '',     // company|round the ticks belong to (ticks reset when the round changes)
     // Which branch the on-screen round-students table is narrowed to — ''
     // means all branches. Driven by clicking a number in the branch-wise
     // breakdown table (e.g. clicking "141" under Shortlisted for CSE sets
@@ -9271,6 +9295,63 @@ function app() {
     // Which filter tab a student belongs to. Anything that is not Shortlisted / Selected / Rejected / Absent
     // (an empty result, or one marked 'Appeared' by a volunteer) is "Pending" - the same rule the counts use,
     // so the number on the Pending button always matches the rows shown under it.
+    // ---- tick-box multi select for the round student list ----
+    _roundSelCheck() {
+      const k = ((this.detail && this.detail.company && this.detail.company.Company_Name) || '') + '|' + (this.activeRoundName || '');
+      if (this.roundSelKey !== k) { this.roundSelKey = k; this.roundSel = {}; }
+    },
+    isRoundSel(en) { this._roundSelCheck(); return !!this.roundSel[String(en)]; },
+    toggleRoundSel(en) {
+      this._roundSelCheck();
+      const k = String(en), n = Object.assign({}, this.roundSel);
+      if (n[k]) delete n[k]; else n[k] = true;
+      this.roundSel = n;
+    },
+    roundSelCount() {
+      this._roundSelCheck();
+      const have = {}; (this.roundStudents || []).forEach(s => { have[String(s.Enrollment_No)] = true; });
+      return Object.keys(this.roundSel).filter(k => have[k]).length;
+    },
+    allVisibleRoundSelected() {
+      this._roundSelCheck();
+      const v = this.visibleRoundStudents();
+      return v.length > 0 && v.every(s => this.roundSel[String(s.Enrollment_No)]);
+    },
+    toggleAllVisibleRound(on) {
+      this._roundSelCheck();
+      const n = Object.assign({}, this.roundSel);
+      this.visibleRoundStudents().forEach(s => { const k = String(s.Enrollment_No); if (on) n[k] = true; else delete n[k]; });
+      this.roundSel = n;
+    },
+    clearRoundSel() { this.roundSel = {}; },
+    bulkMarkRoundSelected(status) {
+      this._roundSelCheck();
+      const have = {}; (this.roundStudents || []).forEach(s => { have[String(s.Enrollment_No)] = s; });
+      const ens = Object.keys(this.roundSel).filter(k => have[k]);
+      if (!ens.length) { this.showToast('Tick at least one student first', 'error'); return; }
+      const label = status || 'Pending';
+      if (!confirm('Mark ' + ens.length + ' ticked student' + (ens.length > 1 ? 's' : '') + ' as ' + label + ' in ' + this.activeRoundName + '?')) return;
+      const company = this.detail.company.Company_Name;
+      const roundName = this.activeRoundName;
+      const before = {};
+      ens.forEach(en => { before[en] = have[en].Result; have[en].Result = status; });   // show it straight away
+      const revert = () => ens.forEach(en => { if (have[en]) have[en].Result = before[en]; });
+      const touchedSelected = status === 'Selected' || ens.some(en => before[en] === 'Selected');
+      this.rsWritePending++; this.rsLastWrite = Date.now();
+      google.script.run
+        .withSuccessHandler(res => {
+          this.rsWritePending--; this.rsLastWrite = Date.now();
+          if (!res || !res.success) { revert(); this.showToast((res && res.message) || 'Failed to update', 'error'); return; }
+          this.roundSel = {};
+          this.showToast(ens.length + ' student(s) marked ' + label);
+          this.refreshRoundCounts();
+          if (touchedSelected) this.refreshSelectedStudents();
+          this.loadRoundStudents();
+        })
+        .withFailureHandler(err => { this.rsWritePending--; this.rsLastWrite = Date.now(); revert(); this.showToast('Error: ' + err.message, 'error'); })
+        .bulkSetRoundStatus(company, roundName, ens, status, this.adminToken);
+    },
+
     roundResultGroup(s) {
       const r = (s && s.Result) ? String(s.Result).trim() : '';
       return (r === 'Shortlisted' || r === 'Selected' || r === 'Rejected' || r === 'Absent') ? r : 'Pending';

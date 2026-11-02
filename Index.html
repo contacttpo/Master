@@ -7147,7 +7147,7 @@ function app() {
         const rf = this.downloadModal.resultFilter;
         const rows = (!rf || rf === 'All')
           ? this.roundStudents
-          : this.roundStudents.filter(s => (s.Result || 'Pending') === rf);
+          : this.roundStudents.filter(s => this.roundResultGroup(s) === rf);
         if (rows.length === 0) {
           this.downloadModal.exporting = false;
           this.showToast('No students match "' + rf + '" in this round', 'error');
@@ -9268,9 +9268,17 @@ function app() {
     // position in THIS filtered list, so a filtered "Rejected" view numbers
     // 1..N over just the rejected students, not their position in the full
     // round.
+    // Which filter tab a student belongs to. Anything that is not Shortlisted / Selected / Rejected / Absent
+    // (an empty result, or one marked 'Appeared' by a volunteer) is "Pending" - the same rule the counts use,
+    // so the number on the Pending button always matches the rows shown under it.
+    roundResultGroup(s) {
+      const r = (s && s.Result) ? String(s.Result).trim() : '';
+      return (r === 'Shortlisted' || r === 'Selected' || r === 'Rejected' || r === 'Absent') ? r : 'Pending';
+    },
+
     visibleRoundStudents() {
       const f = this.roundListFilter;
-      let list = (!f || f === 'All') ? this.roundStudents : this.roundStudents.filter(s => (s.Result || 'Pending') === f);
+      let list = (!f || f === 'All') ? this.roundStudents : this.roundStudents.filter(s => this.roundResultGroup(s) === f);
       if (this.roundListBranch) {
         const b = this.roundListBranch;
         list = list.filter(s => ((s.Branch || '').trim() || 'Unspecified') === b);

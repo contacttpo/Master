@@ -319,7 +319,116 @@
   .bv-toggle button { flex: 1 1 auto; }
   @media (max-width: 480px) { .bv-toggle button { padding-left: 10px; padding-right: 10px; font-size: 13px; } }
 </style>
+<style id="brand-theme">
+/* BRAND THEME: navy #21314e / blue #2f7fc1 / orange #f28c28 (Live + warnings only). Last block wins; delete to revert. */
+:root{--navy:#21314e;--blue:#2f7fc1;--blue-d:#256ea8;--orange:#f28c28;--ink:#1b2a41;--mute:#64748b;--line:#e3e9f0;--surf:#fff;--bg:#f3f6fa;--r:18px;--sh:0 1px 2px rgba(33,49,78,.05),0 8px 24px -12px rgba(33,49,78,.18)}
+body.bg-slate-50{background:var(--bg)}
+main{--pad:1.5rem}
+main h2.brand-heading,section h2.brand-heading{background:none;-webkit-text-fill-color:currentColor;color:var(--navy);font-size:1.75rem;line-height:1.2}
+main h3.brand-heading{border-left:0;padding-left:0;color:var(--navy);font-size:1.125rem}
+main .text-xs.text-slate-400,main .text-xs.text-slate-500{color:var(--mute)}
+/* cards: rounder, softer, more air */
+main .bg-white.border.rounded-2xl,main section>.bg-white.border.rounded-2xl,main section>.bg-white.border.rounded-2xl:nth-of-type(n){border:1px solid var(--line)!important;border-radius:var(--r);box-shadow:var(--sh);padding:1.5rem}
+main .bg-white.border.rounded-xl:not(.border-l-4){border-color:var(--line);border-radius:14px;box-shadow:none}
+/* sidebar: navy, one blue accent */
+aside.bg-white{background:var(--navy)!important;box-shadow:none}
+aside nav button.bg-indigo-50{background:rgba(255,255,255,.12);color:#fff;box-shadow:none}
+aside nav button.bg-indigo-50 svg{background:var(--blue)!important;color:#fff!important}
+nav.fixed.bottom-0{border-top:1px solid var(--line);box-shadow:0 -8px 24px -14px rgba(33,49,78,.3)}
+nav.fixed.bottom-0 button{min-height:56px}
+nav.fixed.bottom-0 button.text-indigo-700{color:var(--blue)}
+.dark-toggle{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surf);color:var(--navy);display:inline-flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.dark-toggle::before{content:'\263E'}html.dark .dark-toggle::before{content:'\2600'}
+aside .dark-toggle{width:100%;border-radius:8px;height:auto;padding:.6rem;margin-bottom:.5rem;background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3);color:#fff;font-size:.875rem;font-weight:500}
+aside .dark-toggle::after{content:' Dark mode';margin-left:6px}
+/* indigo utilities -> brand blue; secondary buttons -> grey outline */
+.bg-indigo-50{background-color:#eaf2fa}.border-indigo-200{border-color:#c9dcee}
+.text-indigo-700,.text-indigo-600,.text-indigo-800{color:#1f5f96}
+.bg-gradient-to-r.from-indigo-600.to-indigo-500,.bg-indigo-600{background-image:none;background-color:var(--blue);box-shadow:none;border-radius:10px;font-weight:600}
+.bg-gradient-to-r.from-indigo-600.to-indigo-500:hover,.bg-indigo-600:hover{background-color:var(--blue-d);background-image:none}
+main button.border-indigo-200,main label.border-indigo-200,main button.border-emerald-300,main button.border-emerald-200{border-color:#cbd5e1;color:#334155;background:#fff;border-radius:10px}
+main button.border-indigo-200:hover,main button.border-emerald-300:hover,main button.border-emerald-200:hover{background:#f1f5f9}
+input:focus,select:focus,textarea:focus{border-color:var(--blue)!important;box-shadow:0 0 0 3px rgba(47,127,193,.22)}
+.dot-live{background:var(--orange)}.dot-live::after{border-color:var(--orange)}
+/* numbers: single dominant colour */
+.text-6xl.font-extrabold.text-indigo-600{background:none;-webkit-text-fill-color:currentColor;color:var(--navy)}
+p.text-5xl[style*="#E65100"],p.text-2xl[style*="#E65100"]{color:var(--blue)!important}
+[style*="background-color:#FFB74D"],[style*="background-color:#E65100"].h-full{background:var(--blue)!important}
+div.rounded-xl.text-center[style*="#FFF3E0"],div.rounded-xl.border[style*="#FFB74D"]{background:#f1f6fb!important;border-color:#d9e6f2!important}
+div.rounded-xl.text-center[style*="#FFF3E0"] p.text-2xl{color:var(--navy)!important}
+/* tables: sticky header, soft stripes, pill results */
+.overflow-auto thead th,.overflow-x-auto thead th{position:sticky;top:0;z-index:5;background:#f6f9fc!important;color:var(--mute);font-size:12px;font-weight:600;padding:10px 8px}
+tbody tr.reg-row:nth-child(even){background:#f8fafd}
+tbody tr.reg-row:hover{background:#eef4fa}
+tbody td{padding-top:10px;padding-bottom:10px}
+select[\@change*="updateRoundResult"]{appearance:none;-webkit-appearance:none;border-radius:999px;padding:4px 26px 4px 12px;font-weight:600;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2364748b'%3E%3Cpath d='M5 7l5 6 5-6z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;background-size:12px}
+.drow-appeared,.drow-shortlisted,.drow-rejected,.drow-selected,.drow-absent{border-radius:10px}
+/* toasts */
+.toast{display:flex;align-items:center;gap:10px;background:var(--surf);color:var(--ink);border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:14px;box-shadow:0 12px 32px -12px rgba(33,49,78,.35);padding:12px 16px;font-size:14px;font-weight:500}
+.toast svg{width:20px;height:20px;flex-shrink:0;color:var(--blue)}.toast-err{border-left-color:var(--orange)}.toast-err svg{color:var(--orange)}
+/* company cards by status: Running = blue, Completed = green */
+.st-run{border-left-color:var(--blue)!important}.st-done{border-left-color:#16a34a!important}
+/* Home */
+.home-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:1.5rem}
+.home-head p{color:var(--mute);font-size:.875rem;margin-top:2px}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:1.75rem}
+@media(min-width:1024px){.kpis{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:var(--surf);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:1.25rem 1.25rem 1.1rem}
+.kpi small{display:block;color:var(--mute);font-size:.8125rem;font-weight:500}
+.kpi b{display:block;font-size:2.25rem;line-height:1.1;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums;margin:.35rem 0 .15rem}
+.kpi span{font-size:.75rem;color:var(--mute)}
+.kpi.kpi-main{background:var(--navy);border-color:var(--navy)}.kpi.kpi-main small,.kpi.kpi-main span{color:#b8c6dc}.kpi.kpi-main b{color:#fff}
+.sec-title{display:flex;align-items:center;gap:8px;font-size:1.125rem;font-weight:700;color:var(--navy);margin-bottom:.9rem}
+.live-pill{display:inline-flex;align-items:center;gap:6px;background:#fff4e6;color:#b45f0b;font-size:.6875rem;font-weight:700;border-radius:999px;padding:3px 10px}
+.drives{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));margin-bottom:1.75rem}
+.drive-card{background:var(--surf);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:1.1rem 1.25rem;text-align:left;width:100%;animation:cardIn .35s ease both}
+@keyframes cardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.drive-top{display:flex;align-items:center;gap:10px;margin-bottom:1rem}
+.drive-av{width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.drive-top div{min-width:0;flex:1}.drive-top strong{display:block;color:var(--navy);font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.drive-top em{font-style:normal;color:var(--mute);font-size:.75rem}
+.stepper{display:flex;margin-bottom:.9rem}
+.step{flex:1;min-width:0;text-align:center;position:relative;padding-top:20px}
+.step::before{content:'';position:absolute;top:6px;left:-50%;width:100%;height:2px;background:var(--line)}
+.step:first-child::before{display:none}
+.step .dot{position:absolute;top:0;left:50%;margin-left:-7px;width:14px;height:14px;border-radius:50%;background:var(--surf);border:2px solid var(--line);z-index:1}
+.step-done::before,.step-now::before{background:var(--blue)}
+.step-done .dot{background:var(--blue);border-color:var(--blue)}
+.step-now .dot{border-color:var(--blue);box-shadow:0 0 0 4px rgba(47,127,193,.2)}
+.step b{display:block;font-size:.95rem;color:var(--navy);font-variant-numeric:tabular-nums}
+.step small{display:block;font-size:.6875rem;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px}
+.bar{height:6px;border-radius:99px;background:#e8eef5;overflow:hidden}.bar i{display:block;height:100%;background:var(--blue);border-radius:99px;transition:width .6s ease}
+.empty{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;color:var(--mute);font-size:.875rem;padding:2rem 1rem;background:var(--surf);border:1px dashed #cbd5e1;border-radius:var(--r);margin-bottom:1.75rem}
+.empty svg{width:72px;height:72px}.empty strong{color:var(--navy)}
+@media(max-width:639px){.drives{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;margin-right:-1rem;padding-right:1rem}.drive-card{flex:0 0 88%;scroll-snap-align:start}.kpi b{font-size:1.85rem}main h2.brand-heading{font-size:1.5rem}button,select{min-height:40px}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+/* DARK MODE */
+html.dark{--navy:#e8eef7;--ink:#e5ecf6;--mute:#9aa9bf;--line:#26364f;--surf:#16233a;--bg:#0e1625;--sh:0 1px 2px rgba(0,0,0,.3),0 8px 24px -12px rgba(0,0,0,.6);color-scheme:dark}
+html.dark body.bg-slate-50{background:var(--bg);color:#e5ecf6}
+html.dark .bg-white,html.dark .pz-modal{background-color:var(--surf)}
+html.dark .bg-slate-50:not(body):not(.min-h-screen),html.dark div.min-h-screen.bg-slate-50{background-color:#111d31}
+html.dark .bg-slate-100,html.dark .bg-slate-200{background-color:#1d2b44}
+html.dark .text-slate-800,html.dark .text-slate-700{color:#e5ecf6}
+html.dark .text-slate-600,html.dark .text-slate-500{color:#aab8cc}
+html.dark .text-slate-400,html.dark .text-slate-300{color:#8190a8}
+html.dark .border-slate-100,html.dark .border-slate-200,html.dark .border-slate-300{border-color:var(--line)}
+html.dark input,html.dark select,html.dark textarea{background-color:#101a2b;color:#e5ecf6;border-color:#2c3e5a}
+html.dark main button.border-l-4{background:var(--surf)}
+html.dark main button.border-indigo-200,html.dark main label.border-indigo-200,html.dark main button.border-emerald-300{background:transparent;color:#d5deec;border-color:#34476a}
+html.dark main button.border-indigo-200:hover{background:#1d2b44}
+html.dark .overflow-auto thead th,html.dark .overflow-x-auto thead th{background:#1a2840!important}
+html.dark tbody tr.reg-row:nth-child(even){background:#131f35}html.dark tbody tr.reg-row:hover{background:#1c2c47}
+html.dark .skeleton{background:linear-gradient(90deg,#1d2b44 25%,#26364f 37%,#1d2b44 63%);background-size:400% 100%}
+html.dark .bar{background:#26364f}html.dark .step small{color:#9aa9bf}
+html.dark .kpi.kpi-main{background:#21314e;border-color:#2f4469}html.dark .kpi.kpi-main b{color:#fff}
+html.dark .live-pill{background:#3a2a14;color:#f6b25f}
+html.dark .toast{color:#e5ecf6}
+html.dark .drow-appeared{background:#15304a!important}html.dark .drow-shortlisted{background:#12372a!important}html.dark .drow-rejected{background:#3b1d24!important}html.dark .drow-selected{background:#3a2f14!important}html.dark .drow-absent{background:#1d2b44!important}
+html.dark div.rounded-xl.text-center[style*="#FFF3E0"],html.dark div.rounded-xl.border[style*="#FFB74D"]{background:#1a2840!important;border-color:#2c3e5a!important}
+html.dark .text-indigo-700,html.dark .text-indigo-600{color:#6fb0e6}html.dark .bg-indigo-50{background-color:#17304d}
+</style>
 </head>
+<script>try{if(localStorage.getItem('cpt_dark')==='1')document.documentElement.classList.add('dark')}catch(e){}
+function toggleDark(){var d=document.documentElement.classList.toggle('dark');try{localStorage.setItem('cpt_dark',d?'1':'0')}catch(e){}var m=document.querySelector('meta[name=theme-color]');if(m)m.content=d?'#0e1625':'#21314e'}</script>
 <body class="bg-slate-50 min-h-screen text-slate-800" x-data="app()" x-init="init()" x-cloak>
 
   <!-- ===================== LOGIN GATE ===================== -->
@@ -387,6 +496,7 @@
       </svg>
     </button>
     <h1 class="brand-heading text-base leading-none flex-1 truncate">Campus Processes</h1>
+    <button type="button" onclick="toggleDark()" class="dark-toggle" aria-label="Toggle dark mode"></button>
   </div>
 
   <!-- Mobile drawer backdrop. The pointer-events binding below is a
@@ -452,6 +562,7 @@
       </nav>
       <div class="mt-auto pt-4 border-t border-slate-100">
         <p class="text-xs text-slate-400 px-1 mb-2" x-show="currentAdmin.name">Signed in as <span class="font-medium text-slate-600" x-text="currentAdmin.name"></span></p>
+        <button type="button" onclick="toggleDark()" class="dark-toggle" aria-label="Toggle dark mode"></button>
         <button @click="passwordResetForm = { current: '', next: '', confirm: '' }; passwordResetError = ''; showPasswordReset = true"
           class="w-full text-sm font-medium text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 border border-slate-300 rounded-lg px-3 py-2.5 transition-colors mb-2">
           Change Password
@@ -611,9 +722,12 @@
   <div x-show="loggedIn" class="flex-1 min-w-0">
 
   <!-- ===================== TOAST ===================== -->
-  <div x-show="toast.show" x-transition @click="toast.show = false"
-       class="fixed top-4 left-4 right-4 sm:left-auto sm:right-6 sm:top-6 z-[60] sm:max-w-md px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white cursor-pointer"
-       :class="toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'" x-text="toast.message"></div>
+  <div x-show="toast.show" x-transition @click="toast.show = false" role="status"
+       class="toast fixed top-4 left-4 right-4 sm:left-auto sm:right-6 sm:top-6 z-[60] sm:max-w-md cursor-pointer"
+       :class="toast.type === 'error' ? 'toast-err' : ''">
+    <svg x-show="toast.type !== 'error'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <svg x-show="toast.type === 'error'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+    <span x-text="toast.message"></span></div>
 
 
   <main x-show="loggedIn" class="max-w-6xl mx-auto px-4 py-5 pb-24 md:px-6 md:py-8 md:pb-8">
@@ -673,49 +787,35 @@
 
     <!-- ===================== HOME VIEW ===================== -->
     <section x-show="view === 'home'" class="fade-in" x-cloak>
-      <h2 class="brand-heading text-2xl mb-5">Home</h2>
-
-      <!-- At-a-glance stat tiles -->
-      <div x-show="!loading" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <div  class="stat-tile bg-white border border-slate-200 rounded-2xl shadow-sm p-4 flex items-start gap-3 text-left">
-          <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center flex-shrink-0">
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg>
-          </div>
-          <div class="min-w-0">
-            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Companies</p>
-            <p class="text-2xl sm:text-3xl font-extrabold text-slate-800 leading-tight tabular-nums truncate" x-text="homeStats.companies"></p>
-            <p class="text-xs text-slate-500 truncate" x-text="homeStats.completed + ' completed'"></p>
-          </div>
+      <div class="home-head" x-init="$watch('companies', () => loadHomeDrives()); $watch('view', v => { if (v === 'home') loadHomeDrives() }); loadHomeDrives()">
+        <div><h2 class="brand-heading">Gyan Ganga Group of Institutions</h2><p x-text="'Campus placements · ' + todayLabel"></p></div>
+        <button type="button" onclick="toggleDark()" class="dark-toggle hidden md:inline-flex" aria-label="Toggle dark mode"></button>
+      </div>
+      <div x-show="!loading" class="kpis">
+        <div class="kpi kpi-main"><small>Active drives</small><b x-text="homeStats.running"></b><span x-text="homeStats.completed + ' completed'"></span></div>
+        <div class="kpi"><small>Registered</small><b x-text="homeRate.registered"></b><span>students across drives</span></div>
+        <div class="kpi"><small>Selected</small><b x-text="homeStats.selected"></b><span x-text="homeStats.branches + ' branch(es)'"></span></div>
+        <div class="kpi"><small>Placement rate</small><b x-text="homeRate.percent + '%'"></b><span x-text="homeRate.selected + ' of ' + homeRate.registered + ' placed'"></span></div>
+      </div>
+      <div x-show="!loading">
+        <div class="sec-title">Running drives <span class="live-pill" x-show="runningDrives.length"><span class="dot-live"></span>Live</span></div>
+        <div class="empty" x-show="!runningDrives.length">
+          <svg viewBox="0 0 72 72" fill="none"><rect x="10" y="18" width="52" height="38" rx="8" fill="#eaf2fa" stroke="#2f7fc1" stroke-width="2"/><path d="M22 34h28M22 44h16" stroke="#2f7fc1" stroke-width="2" stroke-linecap="round"/><circle cx="54" cy="20" r="8" fill="#f28c28"/></svg>
+          <strong>No drives running</strong>Add a company or start a drive to see it here.
         </div>
-        <button type="button" @click="goToLiveOverview()" class="stat-tile bg-white border border-slate-200 rounded-2xl shadow-sm p-4 flex items-start gap-3 text-left">
-          <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-          </div>
-          <div class="min-w-0">
-            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Running drives<span class="dot-live align-middle" style="margin-left:14px"></span></p>
-            <p class="text-2xl sm:text-3xl font-extrabold text-slate-800 leading-tight tabular-nums truncate" x-text="homeStats.running"></p>
-            <p class="text-xs text-slate-500 truncate" x-text="homeStats.running ? 'Tap for Live Overview' : 'No drive running'"></p>
-          </div>
-        </button>
-        <div  class="stat-tile bg-white border border-slate-200 rounded-2xl shadow-sm p-4 flex items-start gap-3 text-left">
-          <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0">
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.42a12 12 0 01.67 6.47c-.6.38-3.6 2.45-6.83 2.45s-6.23-2.07-6.83-2.45a12 12 0 01.67-6.47L12 14z"/></svg>
-          </div>
-          <div class="min-w-0">
-            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Students selected</p>
-            <p class="text-2xl sm:text-3xl font-extrabold text-slate-800 leading-tight tabular-nums truncate" x-text="homeStats.selected"></p>
-            <p class="text-xs text-slate-500 truncate" x-text="homeStats.branches + ' branch(es)'"></p>
-          </div>
-        </div>
-        <div  class="stat-tile bg-white border border-slate-200 rounded-2xl shadow-sm p-4 flex items-start gap-3 text-left">
-          <div class="w-10 h-10 rounded-xl bg-orange-100 text-orange-700 flex items-center justify-center flex-shrink-0">
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8m-4-4v4m-5-18h10v6a5 5 0 01-10 0V3zm10 2h3a2 2 0 01-2 4m-11-4H4a2 2 0 002 4"/></svg>
-          </div>
-          <div class="min-w-0">
-            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Top package</p>
-            <p class="text-2xl sm:text-3xl font-extrabold text-slate-800 leading-tight tabular-nums truncate" x-text="(homeStats.topPackage || '—')"></p>
-            <p class="text-xs text-slate-500 truncate" x-text="(homeStats.topWho || 'Not recorded yet')"></p>
-          </div>
+        <div class="drives" x-show="runningDrives.length">
+          <template x-for="c in runningDrives" :key="c.Company_Name">
+            <button type="button" class="drive-card" @click="openQuickView(c.Company_Name)">
+              <div class="drive-top"><span class="drive-av" x-text="(c.Company_Name || '?').charAt(0).toUpperCase()"></span>
+                <div><strong x-text="c.Company_Name"></strong><em x-text="c.Current_Stage || 'In progress'"></em></div>
+                <span class="live-pill"><span class="dot-live"></span>Live</span></div>
+              <template x-if="driveSteps(c)">
+                <div><div class="stepper"><template x-for="s in driveSteps(c).steps" :key="s.name"><div class="step" :class="'step-' + s.state"><span class="dot"></span><b x-text="s.count"></b><small x-text="s.name"></small></div></template></div>
+                <div class="bar"><i :style="'width:' + driveSteps(c).pct + '%'"></i></div></div>
+              </template>
+              <div x-show="!driveSteps(c)"><div class="skeleton h-4 w-full mb-3"></div><div class="skeleton h-2 w-full"></div></div>
+            </button>
+          </template>
         </div>
       </div>
 
@@ -762,7 +862,7 @@
           <template x-for="(c, idx) in companies" :key="c.Company_Name">
             <button type="button" @click="openQuickView(c.Company_Name)"
               class="text-left bg-white border border-slate-200 border-l-4 rounded-xl p-3 hover:shadow-md hover:-translate-y-0.5 transition"
-              :class="cardAccent(idx)">
+              :class="c.Status === 'Completed' ? 'st-done' : 'st-run'">
               <div class="flex items-center gap-1.5 mb-1.5 min-w-0">
                 <div class="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs flex-shrink-0"
                   :style="'background-color:' + pieColor(idx)" x-text="(c.Company_Name || '?').charAt(0).toUpperCase()"></div>
@@ -943,7 +1043,7 @@
         <template x-for="(c, idx) in filteredCompanies()" :key="c.Company_Name">
           <div @click="openCompany(c.Company_Name)"
                class="bg-white border border-slate-200 border-l-4 rounded-2xl p-5 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition"
-               :class="cardAccent(idx)">
+               :class="c.Status === 'Completed' ? 'st-done' : 'st-run'">
             <div class="flex items-start justify-between mb-2">
               <div class="flex items-center gap-2.5 min-w-0">
                 <div class="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
@@ -4551,13 +4651,8 @@
                   <button @click="openRoundStudentForm()" class="text-sm font-medium border border-indigo-200 text-indigo-700 hover:bg-indigo-50 bg-white px-4 py-2 rounded-lg transition-colors">
                     + Add Manually
                   </button>
-                  <label class="cursor-pointer text-sm bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg">
-                    Upload CSV or Excel
-                    <input type="file" accept=".csv,.xlsx,.xls" class="hidden" @change="handleRoundStudentsCSVUpload($event)">
-                  </label>
-                  <button @click="openDownloadModal('round')" class="text-sm font-medium border border-indigo-200 text-indigo-700 hover:bg-indigo-50 bg-white px-4 py-2 rounded-lg transition-colors">
-                    ⬇ Download
-                  </button>
+                  
+                  
 
                   <!-- Less-common / destructive actions tucked behind a "More" menu so they don't compete for attention with the everyday buttons above. -->
                   <div class="relative ml-auto" x-data="{ open: false }" @click.outside="open = false">
@@ -4567,7 +4662,13 @@
                     </button>
                     <div x-show="open" x-cloak x-transition @click="open = false"
                       class="absolute z-20 mt-1 right-0 w-60 bg-white border border-slate-200 rounded-lg shadow-lg py-1">
-                      <label class="flex items-center justify-between px-3 py-2 text-sm text-amber-700 hover:bg-amber-50 cursor-pointer" :class="replacingRound ? 'opacity-50 pointer-events-none' : ''">
+                      <label class="flex items-center px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 cursor-pointer">Upload CSV or Excel
+                        <input type="file" accept=".csv,.xlsx,.xls" class="hidden" @change="handleRoundStudentsCSVUpload($event)"></label>
+                      <button @click="openDownloadModal('round')" class="block w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">Download</button>
+                      <button @click="markAllRoundResults('Shortlisted')" :disabled="markingAllRoundResult" class="block w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50 border-t border-slate-100">Select All</button>
+                      <button @click="markAllRoundResults('Rejected')" :disabled="markingAllRoundResult" class="block w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50">Reject All</button>
+                      <button @click="showBulkResultTray = !showBulkResultTray" class="block w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50" x-text="showBulkResultTray ? 'Hide Bulk Result Tray' : 'Bulk Result from a List'"></button>
+                      <label class="flex items-center justify-between px-3 py-2 text-sm text-amber-700 hover:bg-amber-50 cursor-pointer border-t border-slate-100" :class="replacingRound ? 'opacity-50 pointer-events-none' : ''">
                         <span x-text="replacingRound ? 'Replacing...' : 'Replace with File'"></span>
                         <input type="file" accept=".csv,.xlsx,.xls" class="hidden" @change="handleReplaceRoundStudentsUpload($event)" :disabled="replacingRound">
                       </label>
@@ -4581,20 +4682,6 @@
 
                 <!-- Row 2: decide results -->
                 <div class="flex gap-2 flex-wrap items-center">
-                  <span class="text-xs font-semibold text-slate-400 uppercase tracking-wide mr-0.5">Mark results:</span>
-                  <button @click="markAllRoundResults('Shortlisted')" :disabled="markingAllRoundResult"
-                    class="text-sm border border-emerald-300 text-emerald-700 hover:bg-emerald-50 px-4 py-2 rounded-lg disabled:opacity-50">
-                    Select All
-                  </button>
-                  <button @click="markAllRoundResults('Rejected')" :disabled="markingAllRoundResult"
-                    class="text-sm border border-red-300 text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg disabled:opacity-50">
-                    Reject All
-                  </button>
-                  <button @click="showBulkResultTray = !showBulkResultTray"
-                    class="text-sm font-medium border px-4 py-2 rounded-lg transition-colors"
-                    :class="showBulkResultTray ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-indigo-200 text-indigo-700 hover:bg-indigo-50 bg-white'">
-                    <span x-text="showBulkResultTray ? 'Hide Bulk Result Tray' : 'Bulk Result from a List'"></span>
-                  </button>
                   <button @click="pushRoundToSelected()" :disabled="pushingToSelected"
                     class="text-sm border border-emerald-300 text-emerald-700 hover:bg-emerald-50 px-4 py-2 rounded-lg disabled:opacity-50 ml-auto">
                     <span x-text="pushingToSelected ? 'Pushing...' : 'Push Shortlisted/Selected to Selected Students'"></span>
@@ -5362,6 +5449,7 @@ function app() {
     packageAnalytics: { overall: null, byBranch: [], byCompany: [] },
     packageAnalyticsLoading: false,
     placementRate: { overall: null, byBranch: [] },
+    homeDrives: {},
     placementRateLoading: false,
     showStudentsModal: false,
     // ---- Create Poster ----
@@ -7661,6 +7749,25 @@ function app() {
       return (p[0].charAt(0) + (p.length > 1 ? p[p.length - 1].charAt(0) : '')).toUpperCase();
     },
     // Counts for the Home stat tiles (all from data the screen already loads).
+    get todayLabel() { return new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); },
+    get homeRate() { const o = this.placementRate && this.placementRate.overall; return o || { registered: 0, selected: 0, percent: 0 }; },
+    get runningDrives() { return (this.companies || []).filter(c => c.Status !== 'Completed').slice(0, 8); },
+    driveSteps(c) {
+      const d = this.homeDrives[c.Company_Name];
+      if (!d || !d.rounds || !d.rounds.length) return null;
+      let cur = 0; d.rounds.forEach((r, i) => { if ((r.Students_Appeared || 0) > 0) cur = i; });
+      return { pct: Math.round((cur + 1) / d.rounds.length * 100),
+        steps: d.rounds.map((r, i) => ({ name: r.Round_Name, count: r.Students_Appeared || 0, state: i < cur ? 'done' : (i === cur ? 'now' : 'next') })) };
+    },
+    loadHomeDrives() {
+      this.runningDrives.forEach(c => {
+        const n = c.Company_Name, old = this.homeDrives[n];
+        if (old && old._t > Date.now() - 30000) return;
+        google.script.run.withSuccessHandler(res => {
+          if (res && res.success) this.homeDrives = Object.assign({}, this.homeDrives, { [n]: { rounds: res.rounds || [], _t: Date.now() } });
+        }).withFailureHandler(() => {}).getCompanyQuickSummary(n);
+      });
+    },
     get homeStats() {
       const cs = this.companies || [];
       const completed = cs.filter(c => c.Status === 'Completed').length;

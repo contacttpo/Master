@@ -1579,17 +1579,36 @@
 
                             <div class="max-h-64 overflow-y-auto border border-slate-200 rounded-lg bg-white divide-y divide-slate-100">
                               <template x-for="c in placementVisibleCompanies()" :key="c.name">
-                                <div class="flex items-center justify-between gap-3 px-3 py-2 border-l-4"
-                                  :class="isPlacementBlocked(c.name) ? 'bg-red-50 border-l-rose-500' : 'bg-white border-l-emerald-500'">
-                                  <div class="min-w-0">
-                                    <p class="text-sm truncate" :class="isPlacementBlocked(c.name) ? 'text-red-700' : 'text-slate-800'" x-text="c.name"></p>
-                                    <p class="text-xs text-slate-400" x-text="c.count === null ? (placementCountsLoading ? 'counting selected students…' : 'not counted yet') : (c.count === 0 ? 'no selected students yet' : c.count + (c.count === 1 ? ' selected student' : ' selected students'))"></p>
+                                <div class="border-l-4"
+                                  :class="placementMode(c.name) === 'block' ? 'bg-red-50 border-l-rose-500' : (placementMode(c.name) === 'only' ? 'bg-amber-50 border-l-amber-500' : 'bg-white border-l-emerald-500')">
+                                  <div class="flex items-center justify-between gap-3 px-3 py-2">
+                                    <div class="min-w-0">
+                                      <p class="text-sm truncate" :class="placementMode(c.name) === 'block' ? 'text-red-700' : 'text-slate-800'" x-text="c.name"></p>
+                                      <p class="text-xs text-slate-400" x-text="c.count === null ? (placementCountsLoading ? 'counting selected students…' : 'not counted yet') : (c.count === 0 ? 'no selected students yet' : c.count + (c.count === 1 ? ' selected student' : ' selected students'))"></p>
+                                    </div>
+                                    <div class="flex shrink-0 rounded-lg overflow-hidden border border-slate-300 text-xs font-medium">
+                                      <button @click="setPlacementMode(c.name, 'allow')" class="px-3 py-1.5"
+                                        :class="placementMode(c.name) === 'allow' ? 'bg-emerald-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'">Allow</button>
+                                      <button x-show="placementPkgOptions(c.name).length > 1" @click="setPlacementMode(c.name, 'only')" class="px-3 py-1.5 border-l border-slate-300"
+                                        :class="placementMode(c.name) === 'only' ? 'bg-amber-500 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'">By package</button>
+                                      <button @click="setPlacementMode(c.name, 'block')" class="px-3 py-1.5 border-l border-slate-300"
+                                        :class="placementMode(c.name) === 'block' ? 'bg-red-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'">Block</button>
+                                    </div>
                                   </div>
-                                  <div class="flex shrink-0 rounded-lg overflow-hidden border border-slate-300 text-xs font-medium">
-                                    <button @click="setPlacementBlocked(c.name, false)" class="px-3 py-1.5"
-                                      :class="!isPlacementBlocked(c.name) ? 'bg-emerald-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'">Allow</button>
-                                    <button @click="setPlacementBlocked(c.name, true)" class="px-3 py-1.5 border-l border-slate-300"
-                                      :class="isPlacementBlocked(c.name) ? 'bg-red-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'">Block</button>
+                                  <div x-show="placementMode(c.name) === 'only'" x-cloak class="px-3 pb-3">
+                                    <p class="text-xs text-amber-800 mb-1">Allow only students selected in <b x-text="c.name"></b> at these packages (all others are blocked):</p>
+                                    <div class="flex flex-wrap gap-2">
+                                      <template x-for="o in placementPkgOptions(c.name)" :key="o.p">
+                                        <label class="flex items-center gap-1.5 text-xs border rounded-lg px-2 py-1 cursor-pointer"
+                                          :class="isPlacementPkgAllowed(c.name, o.p) ? 'bg-emerald-50 border-emerald-400 text-emerald-800' : 'bg-white border-slate-300 text-slate-600'">
+                                          <input type="checkbox" :checked="isPlacementPkgAllowed(c.name, o.p)" @change="togglePlacementPkg(c.name, o.p)">
+                                          <span x-text="pkgLabel(o.p) + ' · ' + o.count + (o.count === 1 ? ' student' : ' students')"></span>
+                                        </label>
+                                      </template>
+                                    </div>
+                                    <p x-show="placementPkgUnrecorded(c.name) > 0" class="text-xs text-red-600 mt-1"
+                                      x-text="placementPkgUnrecorded(c.name) + ' selected student(s) have no package recorded — they will be blocked.'"></p>
+                                    <p x-show="!(placementAllowOnly[c.name] || []).length" class="text-xs text-red-600 mt-1">Tick at least one package.</p>
                                   </div>
                                 </div>
                               </template>
@@ -1597,10 +1616,11 @@
                             </div>
 
                             <p class="text-xs mt-2"
-                              :class="placementBlockedList.length ? 'text-red-600' : 'text-emerald-700'"
-                              x-text="placementBlockedList.length
-                                ? ('Blocking selected students of ' + placementBlockedList.length + ' of ' + placementCompanies.length + ' companies')
-                                : 'Allowing selected students of every company'"></p>
+                              :class="placementBlockedList.length ? 'text-red-600' : (Object.keys(placementAllowOnly).length ? 'text-amber-700' : 'text-emerald-700')"
+                              x-text="(placementBlockedList.length
+                                  ? ('Blocking selected students of ' + placementBlockedList.length + ' of ' + placementCompanies.length + ' companies')
+                                  : 'Allowing selected students of every company')
+                                  + (Object.keys(placementAllowOnly).length ? (' · package rule on ' + Object.keys(placementAllowOnly).join(', ')) : '')"></p>
                           </div>
                         </div>
                       </div>
@@ -1644,7 +1664,13 @@
                                 <p x-show="sess.Placement_Rule_Set && sess.Blocked_Companies && sess.Blocked_Companies.length" class="text-xs text-red-600 mt-1">
                                   Blocked (selected in): <span x-text="(sess.Blocked_Companies || []).join(', ')"></span>
                                 </p>
-                                <p x-show="sess.Placement_Rule_Set && (!sess.Blocked_Companies || !sess.Blocked_Companies.length)" class="text-xs text-emerald-700 mt-1">
+                                <p x-show="sess.Placement_Rule_Set && sess.AllowOnly_Packages && Object.keys(sess.AllowOnly_Packages).length" class="text-xs text-amber-700 mt-1">
+                                  Only these packages allowed:
+                                  <template x-for="nm in Object.keys(sess.AllowOnly_Packages || {})" :key="nm">
+                                    <span class="mr-2"><b x-text="nm"></b> (<span x-text="sess.AllowOnly_Packages[nm].map(x => pkgLabel(x)).join(', ')"></span>)</span>
+                                  </template>
+                                </p>
+                                <p x-show="sess.Placement_Rule_Set && (!sess.Blocked_Companies || !sess.Blocked_Companies.length) && (!sess.AllowOnly_Packages || !Object.keys(sess.AllowOnly_Packages).length)" class="text-xs text-emerald-700 mt-1">
                                   All selected students allowed
                                 </p>
                               </div>
@@ -3258,6 +3284,44 @@
                         <p class="text-xs text-slate-400 mt-1">
                           Students selected in any company NOT listed above — plus every unplaced student — can still register.
                         </p>
+                        <div class="mt-4 pt-3 border-t border-slate-200">
+                          <p class="text-xs font-medium text-slate-500 mb-1">Allow only certain packages of a company</p>
+                          <p class="text-xs text-slate-400 mb-2">
+                            For a company that has more than one package (e.g. TCS), tick the package(s) that may register.
+                            Students selected in that company at any other package are blocked.
+                          </p>
+                          <template x-for="name in Object.keys(regFormAllowOnly)" :key="name">
+                            <div class="bg-white border border-amber-300 rounded-lg p-3 mb-2">
+                              <div class="flex items-center justify-between mb-2">
+                                <p class="text-sm font-medium text-slate-700" x-text="name"></p>
+                                <button type="button" @click="removeRegFormPkgRule(name)" class="text-xs text-red-500 hover:underline">Remove</button>
+                              </div>
+                              <div class="flex flex-wrap gap-2">
+                                <template x-for="o in regFormPkgOptions(name)" :key="o.p">
+                                  <label class="flex items-center gap-1.5 text-xs border rounded-lg px-2 py-1 cursor-pointer"
+                                    :class="isRegFormPkgAllowed(name, o.p) ? 'bg-emerald-50 border-emerald-400 text-emerald-800' : 'bg-white border-slate-300 text-slate-600'">
+                                    <input type="checkbox" :checked="isRegFormPkgAllowed(name, o.p)" @change="toggleRegFormPkg(name, o.p)">
+                                    <span x-text="pkgLabel(o.p) + ' · ' + o.count + (o.count === 1 ? ' student' : ' students')"></span>
+                                  </label>
+                                </template>
+                              </div>
+                              <p x-show="!(regFormAllowOnly[name] || []).length" class="text-xs text-red-600 mt-1">Tick at least one package.</p>
+                            </div>
+                          </template>
+                          <div class="flex gap-2 items-center">
+                            <select x-model="regFormAddPkgCompany" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white">
+                              <option value="">Add a company…</option>
+                              <template x-for="e in regFormPkgCompanyChoices()" :key="e.name">
+                                <option :value="e.name" x-text="e.name"></option>
+                              </template>
+                            </select>
+                            <button type="button" @click="addRegFormPkgRule()" :disabled="!regFormAddPkgCompany"
+                              class="text-xs px-3 py-1.5 rounded-lg border border-amber-400 text-amber-700 hover:bg-amber-50 disabled:opacity-50">Add package rule</button>
+                          </div>
+                          <p x-show="regFormPkgCompanyChoices().length === 0 && !Object.keys(regFormAllowOnly).length" class="text-xs text-slate-400 mt-1">
+                            No company has more than one package recorded yet.
+                          </p>
+                        </div>
                       </div>
                     </div>
 
@@ -5477,6 +5541,8 @@ function app() {
     // already-placed student outright, regardless of that list.
     regFormPlacedAllowedStr: 'yes',
     regFormExcludedCompaniesText: '',
+    // Company + package rule for this drive's form: { 'TCS': [3.46] } -> students selected in TCS may register only at 3.46 LPA.
+    regFormAllowOnly: {}, regFormAddPkgCompany: '',
     // Bound to a <input type="datetime-local">, so it's always a plain
     // "YYYY-MM-DDTHH:mm" string in the admin's own local time — converted
     // to/from an absolute ISO timestamp only when talking to the server
@@ -9939,6 +10005,7 @@ function app() {
       this.showRegistrationFormModal = true;
       this.regFormLoading = true;
       this.regFormLink = '';
+      this.loadPlacementPackages();
       const company = this.detail.company.Company_Name;
 
       // The two reads are independent, so they run at the same time (they used to run one after the
@@ -9960,6 +10027,8 @@ function app() {
           this.regFormCompanyDescription = cfgRes.companyDescription || '';
           this.regFormPlacedAllowedStr = cfgRes.placedAllowed === false ? 'no' : 'yes';
           this.regFormExcludedCompaniesText = (cfgRes.excludedCompanies || []).join(', ');
+          this.regFormAllowOnly = cfgRes.allowOnlyPackages || {};
+          this.regFormAddPkgCompany = '';
           this.regFormClosesAtLocal = this.isoToClosesAtLocal_(cfgRes.closesAt || '');
           this.regFormCustomQuestions = (cfgRes.customQuestions && cfgRes.customQuestions.length ? cfgRes.customQuestions : this.defaultCustomQuestions_())
             .map(q => ({ enabled: !!q.enabled, label: q.label || '', type: q.type || 'text', required: !!q.required, optionsText: (q.options || []).join(', ') }));
@@ -9976,6 +10045,8 @@ function app() {
           this.regFormCompanyDescription = '';
           this.regFormPlacedAllowedStr = 'yes';
           this.regFormExcludedCompaniesText = '';
+          this.regFormAllowOnly = {};
+          this.regFormAddPkgCompany = '';
           this.regFormClosesAtLocal = '';
           this.regFormCustomQuestions = this.defaultCustomQuestions_();
         }
@@ -10005,6 +10076,15 @@ function app() {
       const company = this.detail.company.Company_Name;
       this.regFormSaving = true;
       const placedAllowed = this.regFormPlacedAllowedStr !== 'no';
+      if (placedAllowed) {
+        const emptyPkg = Object.keys(this.regFormAllowOnly).filter(n => !(this.regFormAllowOnly[n] || []).length);
+        if (emptyPkg.length) {
+          this.regFormSaving = false;
+          this.showToast('Tick at least one package for ' + emptyPkg.join(', ') + ' (or remove that package rule).', 'error');
+          return;
+        }
+      }
+      this.regFormSaving = true;
       google.script.run
         .withSuccessHandler(res => {
           this.regFormSaving = false;
@@ -10023,7 +10103,7 @@ function app() {
           this.regFormCompanyDescription, placedAllowed, this.regFormExcludedCompaniesText,
           this.closesAtLocalToIso_(this.regFormClosesAtLocal),
           this.regFormCustomQuestions.map(q => ({ enabled: q.enabled, label: q.label, type: q.type, required: q.required, options: q.optionsText })),
-          this.regFormEligibleCourses);
+          this.regFormEligibleCourses, placedAllowed ? this.regFormAllowOnly : {});
     },
 
     copyRegistrationFormLink() {
@@ -10926,6 +11006,9 @@ function volunteerManager() {
     // company with selected students is listed; anything not in the blocked
     // list is allowed.
     placementCompanies: [], placementBlockedList: [], placementSearch: '', placementLoading: false,
+    // Company + package rule: placementAllowOnly = { 'TCS': [3.46] } -> only those packages of that company may register.
+    // placementPackages = { tcs: { name, packages: [{p, count}], unrecorded } } straight from the sheet.
+    placementAllowOnly: {}, placementPackages: {},
     placementCountsLoading: false, placementHideEmpty: true,
     shorteningSessionId: null, deletingSessionId: null,
 
@@ -11123,6 +11206,8 @@ function volunteerManager() {
       this.newSessionRegistrationMode = 'prior';
       this.placementBlockedList = [];
       this.placementSearch = '';
+      this.placementAllowOnly = {};
+      this.loadPlacementPackages();
       this.loadPlacementCompanies();
       this.loadAttendanceSessions();
     },
@@ -11166,8 +11251,72 @@ function volunteerManager() {
         (!q || c.name.toLowerCase().indexOf(q) > -1) &&
         !(this.placementHideEmpty && c.count === 0));
     },
-    blockAllPlacementCompanies() { this.placementBlockedList = this.placementCompanies.map(c => c.name); },
-    allowAllPlacementCompanies() { this.placementBlockedList = []; },
+    blockAllPlacementCompanies() { this.placementAllowOnly = {}; this.placementBlockedList = this.placementCompanies.map(c => c.name); },
+    allowAllPlacementCompanies() { this.placementAllowOnly = {}; this.placementBlockedList = []; },
+
+    // ---- Company + package rule -------------------------------------------
+    pkgLabel(p) { return p >= 1000 ? ('₹' + Number(p).toLocaleString('en-IN')) : ((Math.round(p * 100) / 100) + ' LPA'); },
+    loadPlacementPackages() {
+      google.script.run
+        .withSuccessHandler(res => { if (res && res.success) this.placementPackages = res.packages || {}; })
+        .withFailureHandler(() => {})
+        .getPlacementPackageMap();
+    },
+    placementPkgEntry(name) { return this.placementPackages[String(name || '').toLowerCase()] || null; },
+    placementPkgOptions(name) { const e = this.placementPkgEntry(name); return e ? e.packages : []; },
+    placementPkgUnrecorded(name) { const e = this.placementPkgEntry(name); return e ? (e.unrecorded || 0) : 0; },
+    placementMode(name) {
+      if (this.placementBlockedList.indexOf(name) > -1) return 'block';
+      if (Object.prototype.hasOwnProperty.call(this.placementAllowOnly, name)) return 'only';
+      return 'allow';
+    },
+    setPlacementMode(name, mode) {
+      const rest = Object.assign({}, this.placementAllowOnly);
+      delete rest[name];
+      this.placementBlockedList = this.placementBlockedList.filter(n => n !== name);
+      if (mode === 'block') this.placementBlockedList = this.placementBlockedList.concat([name]);
+      if (mode === 'only') rest[name] = [];
+      this.placementAllowOnly = rest;
+    },
+    isPlacementPkgAllowed(name, p) { return (this.placementAllowOnly[name] || []).some(x => Math.abs(x - p) < 0.005); },
+    togglePlacementPkg(name, p) {
+      const cur = this.placementAllowOnly[name] || [];
+      const has = cur.some(x => Math.abs(x - p) < 0.005);
+      const next = has ? cur.filter(x => Math.abs(x - p) >= 0.005) : cur.concat([p]);
+      this.placementAllowOnly = Object.assign({}, this.placementAllowOnly, { [name]: next });
+    },
+    // Registration-form version of the same rule
+    regFormPkgOptions(name) {
+      const e = this.placementPkgEntry(name);
+      const opts = e ? e.packages.map(o => ({ p: o.p, count: o.count })) : [];
+      (this.regFormAllowOnly[name] || []).forEach(p => { if (!opts.some(o => Math.abs(o.p - p) < 0.005)) opts.push({ p: p, count: 0 }); });
+      return opts.sort((a, b) => a.p - b.p);
+    },
+    regFormPkgCompanyChoices() {
+      const used = {};
+      Object.keys(this.regFormAllowOnly).forEach(n => { used[n.toLowerCase()] = true; });
+      return Object.keys(this.placementPackages).map(k => this.placementPackages[k])
+        .filter(e => e.packages.length > 1 && !used[e.name.toLowerCase()])
+        .sort((a, b) => a.name.localeCompare(b.name));
+    },
+    addRegFormPkgRule() {
+      const n = this.regFormAddPkgCompany;
+      if (!n) return;
+      this.regFormAllowOnly = Object.assign({}, this.regFormAllowOnly, { [n]: [] });
+      this.regFormAddPkgCompany = '';
+    },
+    removeRegFormPkgRule(name) {
+      const rest = Object.assign({}, this.regFormAllowOnly);
+      delete rest[name];
+      this.regFormAllowOnly = rest;
+    },
+    isRegFormPkgAllowed(name, p) { return (this.regFormAllowOnly[name] || []).some(x => Math.abs(x - p) < 0.005); },
+    toggleRegFormPkg(name, p) {
+      const cur = this.regFormAllowOnly[name] || [];
+      const has = cur.some(x => Math.abs(x - p) < 0.005);
+      const next = has ? cur.filter(x => Math.abs(x - p) >= 0.005) : cur.concat([p]);
+      this.regFormAllowOnly = Object.assign({}, this.regFormAllowOnly, { [name]: next });
+    },
 
     loadAttendanceSessions() {
       if (!this.selCompany) { this.attendanceSessions = []; return; }
@@ -11190,6 +11339,15 @@ function volunteerManager() {
       // "not chosen", so prior-list sessions keep using the company's
       // Registration Form setting exactly as before.
       const blockedCompanies = mode === 'spot' ? JSON.parse(JSON.stringify(this.placementBlockedList)) : null;
+      let allowOnlyPackages = null;
+      if (mode === 'spot') {
+        const empty = Object.keys(this.placementAllowOnly).filter(n => !(this.placementAllowOnly[n] || []).length);
+        if (empty.length) {
+          alert('Tick at least one package for: ' + empty.join(', ') + ' (or set it to Allow / Block).');
+          return;
+        }
+        allowOnlyPackages = JSON.parse(JSON.stringify(this.placementAllowOnly));
+      }
       this.creatingAttendanceSession = true;
       google.script.run
         .withSuccessHandler(res => {
@@ -11197,6 +11355,7 @@ function volunteerManager() {
           if (res.success) {
             this.newAttendanceSessionName = '';
             this.placementBlockedList = [];
+            this.placementAllowOnly = {};
             this.placementSearch = '';
             this.loadAttendanceSessions();
           } else {
@@ -11210,7 +11369,7 @@ function volunteerManager() {
         // Volunteer mobiles are no longer declared per-session — access is
         // now granted via the single Round_Volunteers list (Round: Attendance)
         // in Manage Volunteers, checked by verifyVolunteerMobile in Code.gs.
-        .createAttendanceSession(company, this.newAttendanceSessionName || 'Attendance', '', [], mode, blockedCompanies);
+        .createAttendanceSession(company, this.newAttendanceSessionName || 'Attendance', '', [], mode, blockedCompanies, allowOnlyPackages);
     },
 
     endAttendanceSession(sessionId) {

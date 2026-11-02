@@ -4208,10 +4208,24 @@
                             <span class="text-slate-400 text-xs" x-text="r.Submitted_At + '  ·  avg ' + r.Avg_Rating"></span>
                           </div>
                           <div class="text-slate-500 text-xs mb-1" x-text="'Recruit again: ' + (r.Recruit_Again || '—') + '  ·  Recommend: ' + (r.Recommend_Score === '' ? '—' : r.Recommend_Score + '/10') + '  ·  Offers: ' + (r.Offers_Made === '' ? '—' : r.Offers_Made) + '  ·  vs other colleges: ' + (r.Compared_To_Other_Colleges || '—')"></div>
+                          <details open class="my-2">
+                            <summary class="text-xs font-semibold text-slate-500 cursor-pointer select-none">Ratings given</summary>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5 mt-1.5">
+                              <template x-for="q in efQuestions" :key="q.key">
+                                <div x-show="r[q.key]" class="flex justify-between items-center text-xs border-b border-slate-100 py-0.5">
+                                  <span class="text-slate-600" x-text="q.label"></span>
+                                  <span class="font-bold tabular-nums" :class="Number(r[q.key]) >= 4 ? 'text-emerald-600' : (Number(r[q.key]) >= 3 ? 'text-amber-600' : 'text-red-600')" x-text="r[q.key] + ' / 5'"></span>
+                                </div>
+                              </template>
+                            </div>
+                          </details>
                           <div x-show="r.Went_Well"><span class="text-emerald-700 font-semibold">Went well:</span> <span x-text="r.Went_Well"></span></div>
                           <div x-show="r.To_Improve"><span class="text-amber-700 font-semibold">Improve:</span> <span x-text="r.To_Improve"></span></div>
                           <div x-show="r.Skill_Gaps"><span class="text-indigo-700 font-semibold">Skill gaps:</span> <span x-text="r.Skill_Gaps"></span></div>
                           <div x-show="r.Other_Remarks"><span class="text-slate-600 font-semibold">Other:</span> <span x-text="r.Other_Remarks"></span></div>
+                          <div x-show="!r.Went_Well && !r.To_Improve && !r.Skill_Gaps && !r.Other_Remarks" class="text-xs text-slate-400 italic">No written comments were given.</div>
+                          <div x-show="r.Next_Year_Roles || r.Next_Year_Hiring" class="mt-1"><span class="text-sky-700 font-semibold">Next year:</span> <span x-text="[r.Next_Year_Roles, r.Next_Year_Hiring ? ('about ' + r.Next_Year_Hiring + ' students') : ''].filter(Boolean).join(' · ')"></span></div>
+                          <div x-show="r.Email || r.Phone" class="text-xs text-slate-400 mt-1" x-text="[r.Email, r.Phone].filter(Boolean).join(' · ')"></div>
                         </div>
                       </template>
                     </div>

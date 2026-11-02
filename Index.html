@@ -1020,7 +1020,9 @@
                       <th class="text-left px-3 py-1.5 font-medium">Round</th>
                       <th class="text-right px-3 py-1.5 font-medium">Appeared</th>
                       <th class="text-right px-3 py-1.5 font-medium">Shortlisted</th>
+                      <th class="text-right px-3 py-1.5 font-medium">Selected</th>
                       <th class="text-right px-3 py-1.5 font-medium">Rejected</th>
+                      <th class="text-right px-3 py-1.5 font-medium">Absent</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1029,7 +1031,9 @@
                         <td class="px-3 py-1.5 text-slate-700 font-medium truncate max-w-[140px]" x-text="r.Round_Name"></td>
                         <td class="px-3 py-1.5 text-right text-slate-600" x-text="r.Students_Appeared || 0"></td>
                         <td class="px-3 py-1.5 text-right text-emerald-700" x-text="r.Students_Shortlisted || 0"></td>
+                        <td class="px-3 py-1.5 text-right text-blue-600 font-semibold" x-text="r.Students_Selected || 0"></td>
                         <td class="px-3 py-1.5 text-right text-red-500" x-text="r.Students_Rejected || 0"></td>
+                        <td class="px-3 py-1.5 text-right text-slate-400" x-text="r.Students_Absent || 0"></td>
                       </tr>
                     </template>
                   </tbody>

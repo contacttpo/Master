@@ -394,6 +394,16 @@
     background-repeat:no-repeat; background-position:right 8px center; background-size:12px; }
   select.result-pill:hover { box-shadow:0 0 0 3px rgba(44,124,189,.15); }
 
+  /* --- selected-student cards: long emails/names must never spill out of the card on a phone --- */
+  [id^="student-card-"] { min-width: 0; max-width: 100%; }
+  [id^="student-card-"] .space-y-1\.5 > .flex.justify-between { min-width: 0; }
+  [id^="student-card-"] .space-y-1\.5 > .flex.justify-between > span:first-child { flex-shrink: 0; white-space: nowrap; }
+  [id^="student-card-"] .space-y-1\.5 > .flex.justify-between > span:last-child { min-width: 0; flex: 1 1 auto; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @media (max-width: 480px) {
+    /* on a phone the email may wrap onto 2 lines so it can be read in full */
+    [id^="student-card-"] .space-y-1\.5 > .flex.justify-between > span[title] { white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
+  }
+
   /* --- dark mode toggle button (sidebar) --- */
   .theme-toggle { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; margin-bottom:8px; }
 
@@ -2009,6 +2019,20 @@
                 </div>
               </div>
               <button @click="openRegisteredStudentsModal()" class="text-sm font-semibold text-indigo-700 border border-indigo-200 hover:bg-indigo-50 rounded-lg px-3 py-1.5 whitespace-nowrap">Manage Attendance</button>
+            </div>
+
+            <!-- Round stepper: the whole drive at a glance -->
+            <div class="bg-white border border-slate-200 rounded-xl px-4 py-4" x-show="detail.rounds.length > 1">
+              <div class="drv-steps">
+                <template x-for="(r, idx) in detail.rounds" :key="'stp-' + r.Round_Name">
+                  <div class="drv-step" :class="stageStepState(r, idx)">
+                    <div class="drv-dot"><span x-show="stageStepState(r, idx) === 'done'">✓</span></div>
+                    <div class="drv-rn" x-text="r.Round_Name"></div>
+                    <div class="drv-rc" x-text="((r.Students_Shortlisted || 0) + (r.Students_Selected || 0)) + ' / ' + (r.Students_Appeared || 0)"></div>
+                  </div>
+                </template>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-2 text-center">Under each round: shortlisted + selected / appeared</p>
             </div>
 
             <div class="flex justify-center text-slate-300" x-show="detail.rounds.length">
@@ -9454,6 +9478,12 @@ function app() {
       const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', this.darkMode ? '#0f1829' : '#21314e');
     },
     // ---- Home: running drives with a round stepper (built from the Live Overview data) ----
+    stageStepState(r, idx) {
+      if (r.Round_Status === 'Completed') return 'done';
+      const rounds = (this.detail && this.detail.rounds) || [];
+      const firstOpen = rounds.findIndex(x => x.Round_Status !== 'Completed');
+      return idx === firstOpen ? 'active' : '';
+    },
     driveSteps(c) { return (c.rounds || []).filter(r => !r.isAttendance); },
     driveStepState(r, idx, steps) {
       const k = r.counts || {};

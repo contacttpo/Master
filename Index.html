@@ -7734,16 +7734,22 @@ function app() {
 
     // Shared by loadCompanyDetail's success handler and the cache-hit path
     // in openCompany above, so both apply the response the exact same way.
-    applyCompanyDetail(res, fromCache) {
+    applyCompanyDetail(res, fromCache, isBackgroundRefresh) {
       this.detail = { company: res.company, rounds: res.rounds, students: res.students,
         funnel: res.funnel || { registered: 0, appeared: 0, shortlisted: 0, selected: 0 } };
-      this.resetRoundForm();
-      this.showRoundForm = false;
-      this.studentForm._show = false;
-      this.showStudentsModal = false;
-      this.showRoundStudentsModal = false;
-      this.summaryText = (res.company && res.company.Final_Summary) || '';
-      this.$nextTick(() => { if (this.$refs.summaryEditor) this.$refs.summaryEditor.innerHTML = this.summaryText; });
+      // A silent background refresh (after painting from cache) must NOT
+      // close modals/forms the user just opened — that was making the
+      // Selected Students modal (opened from Global Search) vanish as soon
+      // as the fresh server copy arrived.
+      if (!isBackgroundRefresh) {
+        this.resetRoundForm();
+        this.showRoundForm = false;
+        this.studentForm._show = false;
+        this.showStudentsModal = false;
+        this.showRoundStudentsModal = false;
+        this.summaryText = (res.company && res.company.Final_Summary) || '';
+        this.$nextTick(() => { if (this.$refs.summaryEditor) this.$refs.summaryEditor.innerHTML = this.summaryText; });
+      }
       // Registered Students (for the Present/Absent counts on the card) are
       // only re-fetched on a real server response — re-running it against
       // a cache hit would just fire the exact same request loadCompanyDetail
@@ -7785,7 +7791,7 @@ function app() {
             this.companyDetailCache[name] = res;
             // Only apply if the user hasn't since navigated to a different
             // company while this background refresh was in flight.
-            if (this.selectedCompanyName === name) this.applyCompanyDetail(res, false);
+            if (this.selectedCompanyName === name) this.applyCompanyDetail(res, false, !!silent);
           } else if (!silent) {
             this.showToast(res.message || 'Failed to load company', 'error');
           }

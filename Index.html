@@ -437,6 +437,10 @@
   html.dark .bg-gray-50, html.dark .bg-gray-100 { background-color:#1c2a45; }
   html.dark .shadow-sm, html.dark .shadow-lg, html.dark .shadow-xl { --tw-shadow-color: rgba(0,0,0,.5); }
   html.dark select.result-pill { background-color:#1c2a45; }
+  /* Home "Companies" quick-view cards: the light-mode white gradient was winning over dark mode */
+  html.dark main button.border-l-4 { background: linear-gradient(135deg, #1a2843 0%, #17233b 100%); border-top-color:#2b3a56; border-right-color:#2b3a56; border-bottom-color:#2b3a56; box-shadow:0 6px 18px -10px rgba(0,0,0,.6); color:#e2e8f0; }
+  html.dark main button.border-l-4:hover { background: linear-gradient(135deg, #223253 0%, #1a2843 100%); }
+  html.dark main .bg-white.border.rounded-xl:not(.border-l-4) { border-color:#2b3a56; box-shadow:0 8px 24px -10px rgba(0,0,0,.6); }
   /* coloured text/tints that stayed light-mode (dark text on dark cards) */
   html.dark .text-indigo-600, html.dark .text-indigo-700, html.dark .text-indigo-800, html.dark .text-indigo-900, html.dark .text-blue-600, html.dark .text-blue-700, html.dark .text-sky-700, html.dark .text-violet-700, html.dark .text-purple-700 { color:#9cc6e8 !important; }
   html.dark .text-indigo-500 { color:#7fb6e6 !important; }

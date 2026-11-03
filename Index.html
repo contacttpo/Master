@@ -441,6 +441,9 @@
   html.dark .pkg-card { background-color:#3a2a1c !important; border-color:#7a5a2e !important; }
   html.dark .pkg-card.pkg-top { background-color:#4d3620 !important; border-color:#FFB74D !important; }
   html.dark .pkg-tile { background:#3a2a1c !important; }
+  /* Average/Median/Highest/Lowest keep their pastel gradient tiles in dark mode, so their small labels must be DARK to be readable on them */
+  html.dark div.rounded-xl.text-center.pkg-tile .text-slate-400,
+  html.dark div.rounded-xl.text-center.pkg-tile .text-slate-500 { color:#475569 !important; }
   html.dark .pkg-card .text-slate-800, html.dark .pkg-card .font-semibold { color:#f1f5f9 !important; }
   html.dark .pkg-card .text-slate-500 { color:#c4cfdf !important; }
   /* Home "Companies" quick-view cards: the light-mode white gradient was winning over dark mode */
@@ -530,6 +533,7 @@
       </svg>
     </button>
     <h1 class="brand-heading text-base leading-none flex-1 truncate">Campus Processes</h1>
+    <span x-show="currentBatch" x-cloak class="text-[11px] font-semibold px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 flex-shrink-0" x-text="'Batch ' + currentBatch"></span>
   </div>
 
   <!-- Mobile drawer backdrop. The pointer-events binding below is a
@@ -562,6 +566,13 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
           </svg>
         </button>
+      </div>
+      <div x-show="batches.length > 0" x-cloak class="mb-4">
+        <label class="block text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">Batch</label>
+        <select x-model="currentBatch" @change="switchBatch($event.target.value)"
+                class="w-full text-sm font-medium border border-slate-300 rounded-lg px-3 py-2 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-300">
+          <template x-for="b in batches" :key="b"><option :value="b" x-text="'Batch ' + b" :selected="b === currentBatch"></option></template>
+        </select>
       </div>
       <nav class="flex flex-col gap-1">
         <button @click="goToHome()" class="w-full text-left text-sm font-medium rounded-lg px-3 py-2.5 transition-colors flex items-center gap-2.5" :class="view === 'home' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'">
@@ -5457,6 +5468,26 @@ function readFileAsCsvText_(file) {
 const BRANCH_COLORS = ['#2c7cbd', '#0f9d7a', '#d97706', '#dc2626', '#7c3aed', '#0e7490', '#be185d', '#65a30d',
   '#475569', '#b45309', '#2563eb', '#059669', '#ea580c', '#9333ea', '#0891b2', '#db2777',
   '#4d7c0f', '#334155', '#ca8a04', '#4f46e5', '#0d9488', '#e11d48', '#a16207', '#6d28d9'];
+// ---- Batch routing -------------------------------------------------
+// Every server call goes through the server's rpc(fnName, args, batch)
+// dispatcher so the server knows which batch (2026 / 2027 / ...) to use.
+window.__batch = (function () {
+  try { return sessionStorage.getItem('cpt_batch') || localStorage.getItem('cpt_batch') || ''; } catch (e) { return ''; }
+})();
+(function () {
+  function mk(b) {
+    return new Proxy({}, {
+      get: function (_, prop) {
+        if (prop === 'withSuccessHandler' || prop === 'withFailureHandler' || prop === 'withUserObject') {
+          return function () { return mk(b[prop].apply(b, arguments)); };
+        }
+        return function () { return b.rpc(String(prop), Array.prototype.slice.call(arguments), window.__batch || ''); };
+      }
+    });
+  }
+  Object.defineProperty(window, 'GSR', { get: function () { return mk(google.script.run); } });
+})();
+
 const BRANCH_REG = (function () { try { return JSON.parse(localStorage.getItem('cpt_branch_colors') || '{}'); } catch (e) { return {}; } })();
 function branchColorFor(name) {
   const n = String(name || '').trim().toUpperCase();
@@ -5552,6 +5583,8 @@ function app() {
     // happens on that company (loadCompanyDetail always refreshes the
     // cache entry with the latest server data after fetching).
     companyDetailCache: {},
+    batches: [],
+    currentBatch: '',
     topPackages: [],
     topPackagesLoading: false,
     packageAnalytics: { overall: null, byBranch: [], byCompany: [] },
@@ -5963,7 +5996,31 @@ function app() {
       }
     },
 
+    loadBatches() {
+      window.GSR.withSuccessHandler(res => {
+        if (!res || !res.success) return;
+        this.batches = (res.batches || []).map(b => b.name);
+        let pick = window.__batch;
+        if (!pick || this.batches.indexOf(pick) === -1) pick = res.default || this.batches[0] || '';
+        const changed = !!window.__batch && pick !== window.__batch;
+        window.__batch = pick;
+        this.currentBatch = pick;
+        try { sessionStorage.setItem('cpt_batch', pick); localStorage.setItem('cpt_batch', pick); } catch (e) {}
+        // The stored batch no longer exists/was removed: reload data for the fallback batch
+        if (changed) location.reload();
+      }).withFailureHandler(() => {}).getBatches();
+    },
+    switchBatch(name) {
+      if (!name || name === window.__batch) return;
+      try {
+        sessionStorage.setItem('cpt_batch', name); localStorage.setItem('cpt_batch', name);
+        sessionStorage.removeItem('cpt_view'); localStorage.removeItem('cpt_view');
+      } catch (e) {}
+      // A clean reload is the safest way to guarantee nothing from the old batch lingers on screen.
+      location.reload();
+    },
     loadAllInitialData() {
+      this.loadBatches();
       this.loadDashboard();
       this.loadGlobalSummary();
       this.loadTopPackages();
@@ -5974,7 +6031,7 @@ function app() {
     },
 
     loadBranchCourseGroups() {
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.engineeringBranches = res.engineering || [];
@@ -5987,7 +6044,7 @@ function app() {
 
     loadTopPackages() {
       this.topPackagesLoading = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.topPackagesLoading = false;
           if (res.success) this.topPackages = res.data;
@@ -6001,7 +6058,7 @@ function app() {
 
     loadPackageAnalytics() {
       this.packageAnalyticsLoading = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.packageAnalyticsLoading = false;
           if (res.success) this.packageAnalytics = { overall: res.overall, byBranch: res.byBranch, byCompany: res.byCompany };
@@ -6016,7 +6073,7 @@ function app() {
 
     loadPlacementRate() {
       this.placementRateLoading = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.placementRateLoading = false;
           if (res.success) this.placementRate = { overall: res.overall, byBranch: res.byBranch };
@@ -6048,7 +6105,7 @@ function app() {
       }
       this.loginLoading = true;
       this.loginError = '';
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.loginLoading = false;
           if (res.success) {
@@ -6079,7 +6136,7 @@ function app() {
             this.mobileNavOpen = false;
             this.loadAllInitialData();
             // Audit row is written after login so it doesn't slow the login itself
-            try { google.script.run.withSuccessHandler(() => {}).withFailureHandler(() => {}).logLoginActivity(res.token); } catch (e) {}
+            try { window.GSR.withSuccessHandler(() => {}).withFailureHandler(() => {}).logLoginActivity(res.token); } catch (e) {}
           } else {
             this.loginError = res.message || 'Invalid email or password.';
           }
@@ -6106,7 +6163,7 @@ function app() {
         return;
       }
       this.passwordResetLoading = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.passwordResetLoading = false;
           if (res.success) {
@@ -6227,7 +6284,7 @@ function app() {
     liveFabLoad() {
       if (this.liveFab.busy) return;
       this.liveFab.busy = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.liveFab.busy = false;
           if (res && res.success) { this.liveFab.rows = res.data || []; this.liveFab.updatedAt = new Date(); }
@@ -6272,7 +6329,7 @@ function app() {
       const setMsg = m => { this.chipMsg = { ...this.chipMsg, [k]: m }; };
       this.chipLoading = { ...this.chipLoading, [k]: true };
       setMsg('');
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.chipLoading = { ...this.chipLoading, [k]: false };
           if (res && res.success) {
@@ -6333,7 +6390,7 @@ function app() {
 
     loadActivityLog() {
       this.activityLog.loading = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.activityLog.loading = false;
           if (res.success) {
@@ -6434,7 +6491,7 @@ function app() {
       if (!this.driveBoard) return;
       const startedAt = Date.now();
       this.driveBoardLoading = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.driveBoardLoading = false;
           if (!this.driveBoard) return;
@@ -6527,7 +6584,7 @@ function app() {
       });
       this.driveBoardSelected = {};
       this.drivePending++;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.drivePending--;
           this.driveLastWrite = Date.now();
@@ -6544,7 +6601,7 @@ function app() {
       if (s) s.Result = status;                       // instant; put back if the server refuses
       const revert = () => { if (s) s.Result = prev; };
       this.drivePending++;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.drivePending--;
           this.driveLastWrite = Date.now();
@@ -6562,7 +6619,7 @@ function app() {
       this.driveBoardStudents.forEach(s => { if (s.Enrollment_No) { before[s.Enrollment_No] = s.Result; s.Result = 'Appeared'; } });
       const revert = () => this.driveBoardStudents.forEach(s => { if (s.Enrollment_No in before) s.Result = before[s.Enrollment_No]; });
       this.drivePending++;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.drivePending--;
           this.driveLastWrite = Date.now();
@@ -6576,7 +6633,7 @@ function app() {
       this.driveLastWrite = Date.now();
       const size = Math.max(1, parseInt(this.driveBoardGroupSizeInput, 10) || 1);
       if (!confirm('This randomly re-shuffles every student in this round into fresh groups of ' + size + '. Continue?')) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (!res.success) { alert(res.message); return; }
           this.loadDriveBoard();
@@ -6591,7 +6648,7 @@ function app() {
     // equally good for building a Manual round from scratch or just
     // mopping up the odd leftover from a Random round.
     openRollCall() {
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (!res.success) { alert(res.message); return; }
           // The "Group size" box on the Live Board wins over the size saved
@@ -6632,7 +6689,7 @@ function app() {
     // spreadsheet down.
     rollCallPoll() {
       if (!this.rollCall.active || this.rollCall.pending > 0) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => { if (res.success && this.rollCall.pending === 0 && !this.rollCall.busy) this.rollCall.counts = res.counts || {}; })
         .withFailureHandler(() => {})
         .getGDRollCallCounts(this.driveBoard.Company_Name, this.driveBoard.Round_Name);
@@ -6645,7 +6702,7 @@ function app() {
       if (rc.listBusy || rc.pending > 0 || rc.busy || !this.driveBoard) return;
       rc.listBusy = true;
       const seq = rc.addSeq;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           rc.listBusy = false;
           if (!res || !res.success || rc.pending > 0 || rc.addSeq !== seq) return;
@@ -6674,7 +6731,7 @@ function app() {
     },
     saveRollCallSize_(n, silent) {
       if (!this.driveBoard) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => { if (!res.success && !silent) this.rollCall.error = res.message || 'Could not save group size.'; })
         .withFailureHandler(() => {})
         .setGDGroupSize(this.driveBoard.Company_Name, this.driveBoard.Round_Name, n, this.adminToken, '', '');
@@ -6728,7 +6785,7 @@ function app() {
       rc.inFlight = jobs.length;
       const done = () => { rc.queue.splice(0, jobs.length); rc.pending = Math.max(0, rc.pending - jobs.length); rc.draining = false; rc.inFlight = 0; this.driveLastWrite = Date.now(); };
       const items = jobs.map(j => ({ enrollmentNo: j.student.Enrollment_No, groupNo: j.groupNo, groupSize: j.size }));
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           done();
           if (!res || !res.success || !res.results) {
@@ -6759,7 +6816,7 @@ function app() {
       rc.inFlight = 1;
       const job = rc.queue[0];
       const finish = () => { rc.queue.shift(); rc.pending = Math.max(0, rc.pending - 1); rc.draining = false; rc.inFlight = 0; this.driveLastWrite = Date.now(); };
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           finish();
           if (!res || !res.success) this.rollCallRevert_(job, res, '');
@@ -6797,7 +6854,7 @@ function app() {
       }
       if (qi >= 0) { rc.error = 'Saving that student right now - tap Undo again in a moment.'; return; }
       rc.busy = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           rc.busy = false;
           if (!res.success) { rc.error = res.message; return; }
@@ -6814,7 +6871,7 @@ function app() {
       this.driveLastWrite = Date.now();
       const en = prompt('Enrollment number to add to Group ' + groupNo + ':');
       if (!en) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (!res.success) { alert(res.message); return; }
           this.loadDriveBoard();
@@ -6824,7 +6881,7 @@ function app() {
     },
     removeFromDriveGroup(enrollmentNo) {
       this.driveLastWrite = Date.now();
-      google.script.run
+      window.GSR
         .withSuccessHandler(() => this.loadDriveBoard())
         .withFailureHandler(err => alert('Error: ' + err.message))
         .removeStudentFromGDGroup(this.driveBoard.Company_Name, this.driveBoard.Round_Name, enrollmentNo, this.adminToken);
@@ -6833,7 +6890,7 @@ function app() {
       this.driveLastWrite = Date.now();
       const target = prompt('Move this student to which group number?');
       if (!target) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (!res.success) { alert(res.message); return; }
           this.loadDriveBoard();
@@ -6864,7 +6921,7 @@ function app() {
       this.driveBoardGroupingLeftovers = true;
       const company = this.driveBoard.Company_Name, round = this.driveBoard.Round_Name, token = this.adminToken;
       // One batch call (setStudentsGDGroup) instead of one call per student.
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.driveBoardGroupingLeftovers = false;
           if (!res.success) alert(res.message);
@@ -6878,7 +6935,7 @@ function app() {
       if (!confirm('Remove every student in this round from their group, back to Ungrouped? This does not touch their Shortlisted/Rejected status.')) return;
       const ens = this.driveBoardStudents.filter(s => s.Group_No !== '' && s.Group_No !== null && s.Group_No !== undefined).map(s => s.Enrollment_No);
       if (!ens.length) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (!res.success) { alert(res.message); return; }
           this.loadDriveBoard();
@@ -6932,7 +6989,7 @@ function app() {
       });
 
       this.driveBoardDownloadingAllGroups = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.driveBoardDownloadingAllGroups = false;
           if (!res.success) { alert(res.message || 'Export failed'); return; }
@@ -6976,7 +7033,7 @@ function app() {
       }));
 
       this.driveBoardDownloadingAllGroups = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.driveBoardDownloadingAllGroups = false;
           if (!res.success) { alert(res.message || 'Export failed'); return; }
@@ -7013,7 +7070,7 @@ function app() {
       const reader = new FileReader();
       reader.onload = e => {
         this.driveBoardCsvUploading = true;
-        google.script.run
+        window.GSR
           .withSuccessHandler(res => {
             this.driveBoardCsvUploading = false;
             if (!res.success) { alert(res.message); return; }
@@ -7029,7 +7086,7 @@ function app() {
     // ---------- Branch View ----------
     // Combined into ONE round trip (branches + colleges + companies
     // together — see getBranchViewFilters() in Code.gs) instead of the two
-    // separate google.script.run calls this used to make.
+    // separate window.GSR calls this used to make.
     //
     // Also cached client-side: this data barely ever changes mid-session
     // (only a Students_Master CSV import, or a company's first-ever offer,
@@ -7039,7 +7096,7 @@ function app() {
     // refetch anyway.
     loadBranchViewFilters(force) {
       if (!force && this.branchViewFiltersLoaded) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.branchList = res.branches;
@@ -7055,7 +7112,7 @@ function app() {
     // Kept around for the couple of call sites that only need branches +
     // colleges (not companies) — see getBranchAndCollegeLists() in Code.gs.
     loadBranchAndCollegeLists() {
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.branchList = res.branches;
@@ -7067,7 +7124,7 @@ function app() {
     },
 
     loadCompanyList() {
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) this.companyList = res.data;
         })
@@ -7080,7 +7137,7 @@ function app() {
       this.branchView.loading = true;
       const fn = this.branchView.mode === 'selections' ? 'getBranchSelections'
         : (this.branchView.mode === 'none' ? 'getBranchNoOffers' : 'getBranchRoster');
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.branchView.loading = false;
           if (res.success) {
@@ -7119,7 +7176,7 @@ function app() {
       if (!file) return;
       readFileAsCsvText_(file).then(csvText => {
         this.masterUploading = true;
-        google.script.run
+        window.GSR
           .withSuccessHandler(res => {
             this.masterUploading = false;
             if (res.success) {
@@ -7155,7 +7212,7 @@ function app() {
       this.studentMasterSaving = true;
       const payload = { ...this.studentMasterForm };
       delete payload._isEdit;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.studentMasterSaving = false;
           if (res.success) {
@@ -7197,7 +7254,7 @@ function app() {
         this.downloadModal.fields = [];
         this.downloadModal.loadingFields = true;
         this.downloadModal.show = true;
-        google.script.run
+        window.GSR
           .withSuccessHandler(res => {
             this.downloadModal.loadingFields = false;
             const fieldSet = (res.success && res.fields && res.fields.length) ? res.fields : this.registeredStudentFields;
@@ -7222,7 +7279,7 @@ function app() {
         this.downloadModal.fields = [];
         this.downloadModal.loadingFields = true;
         this.downloadModal.show = true;
-        google.script.run
+        window.GSR
           .withSuccessHandler(res => {
             this.downloadModal.loadingFields = false;
             const fieldSet = (res.success && res.fields && res.fields.length) ? res.fields : this.roundStudentFields;
@@ -7341,7 +7398,7 @@ function app() {
 
         // Excel / PDF — built server-side so it comes out properly formatted
         // (title banner, colored header, borders) rather than a plain grid.
-        google.script.run
+        window.GSR
           .withSuccessHandler(res => {
             this.downloadModal.exporting = false;
             if (res.success) {
@@ -7381,7 +7438,7 @@ function app() {
         }
         finish(rows);
       } else {
-        google.script.run
+        window.GSR
           .withSuccessHandler(res => {
             if (res.success) {
               finish(res.data);
@@ -7441,7 +7498,7 @@ function app() {
     // ---------- Dashboard ----------
     loadDashboard() {
       this.loading = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.loading = false;
           if (res.success) {
@@ -7458,7 +7515,7 @@ function app() {
     },
 
     loadGlobalSummary() {
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.globalSummary = { total: res.total, branchSummary: res.branchSummary };
@@ -7529,14 +7586,14 @@ function app() {
       delete payload._team;
       this.saving = true;
 
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.saving = false;
           if (res.success) {
             const savedName = payload.Company_Name;
             // The visiting team is saved by its own call so it is stored even
             // if the main save does not know about that column.
-            google.script.run
+            window.GSR
               .withSuccessHandler(tr => {
                 this.saving = false;
                 this.showToast(tr && tr.success === false ? 'Company saved, but the team was not: ' + tr.message : res.message, tr && tr.success === false ? 'error' : 'success');
@@ -7574,7 +7631,7 @@ function app() {
       const newName = (prompt('Rename "' + oldName + '" to:', oldName) || '').trim();
       if (!newName || newName === oldName) return;
       this.saving = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.saving = false;
           if (res.success) {
@@ -7596,7 +7653,7 @@ function app() {
 
     confirmDeleteCompany() {
       if (!confirm('Delete "' + this.detail.company.Company_Name + '" and all its rounds/students? This cannot be undone.')) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             delete this.companyDetailCache[this.detail.company.Company_Name];
@@ -7620,7 +7677,7 @@ function app() {
       this.quickView.loading = true;
       this.quickView.companyName = name;
       this.quickView.data = null;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.quickView.loading = false;
           if (res.success) {
@@ -7664,7 +7721,7 @@ function app() {
       // from cache immediately (view switches with zero perceived delay)
       // while a fresh copy loads quietly in the background — instead of
       // every single company-to-company switch waiting on a fresh
-      // google.script.run round trip before anything shows up.
+      // window.GSR round trip before anything shows up.
       const cached = this.companyDetailCache[name];
       if (cached) {
         this.applyCompanyDetail(cached, /*fromCache*/ true);
@@ -7705,7 +7762,7 @@ function app() {
       }
       const seq = this._gsSeq = (this._gsSeq || 0) + 1;
       this.globalSearchTimer = setTimeout(() => {
-        google.script.run
+        window.GSR
           .withSuccessHandler(res => {
             // Ignore stale replies (an older query finishing after a newer one)
             if (seq !== this._gsSeq || !res || !res.success) return;
@@ -7811,7 +7868,7 @@ function app() {
     // simply swaps in the fresh data (and updates the cache) once it
     // arrives, silently, unless the company has actually changed under it.
     loadCompanyDetail(name, silent) {
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.companyDetailCache[name] = res;
@@ -8019,7 +8076,7 @@ function app() {
         return;
       }
       if (renaming) {
-        google.script.run
+        window.GSR
           .withSuccessHandler(res => {
             if (!res.success) { this.showToast(res.message || 'Could not rename round', 'error'); return; }
             this.roundForm._origName = roundName;
@@ -8050,7 +8107,7 @@ function app() {
         payload.Group_Mode = this.roundForm.Group_Mode || 'Random';
         payload.GD_Group_Size = Math.max(1, parseInt(this.roundForm.GD_Group_Size, 10) || 20);
       }
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.showToast(doneMsg);
@@ -8066,7 +8123,7 @@ function app() {
 
     removeRound(roundName) {
       if (!confirm('Delete round "' + roundName + '"?')) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.showToast('Round deleted');
@@ -8115,7 +8172,7 @@ function app() {
     saveRoundOrder() {
       if (!this.detail.company) return;
       const orderedNames = this.detail.rounds.map(r => r.Round_Name);
-      google.script.run
+      window.GSR
         .withFailureHandler(err => this.showToast('Could not save round order: ' + err.message, 'error'))
         .reorderRounds(this.detail.company.Company_Name, orderedNames, this.adminToken);
     },
@@ -8170,7 +8227,7 @@ function app() {
         Photo_File_Name: this.studentForm.Photo_File_Name,
         Photo_URL: this.studentForm.Photo_URL
       };
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.showToast('Student saved');
@@ -8189,7 +8246,7 @@ function app() {
       const file = event.target.files[0];
       if (!file) return;
       readFileAsCsvText_(file).then(csvText => {
-        google.script.run
+        window.GSR
           .withSuccessHandler(res => {
             if (res.success) {
               this.showToast(res.count + ' student(s) uploaded');
@@ -8207,7 +8264,7 @@ function app() {
 
     removeStudent(enrollmentNo) {
       if (!confirm('Remove this student from the selected list?')) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.showToast('Student removed');
@@ -8225,7 +8282,7 @@ function app() {
       const file = event.target.files[0];
       if (!file) return;
 
-      const maxBytes = 15 * 1024 * 1024; // 15MB — keeps base64 payload reasonable for google.script.run
+      const maxBytes = 15 * 1024 * 1024; // 15MB — keeps base64 payload reasonable for window.GSR
       if (file.size > maxBytes) {
         this.showToast('File is too large (max 15MB). Try compressing it or use a smaller file.', 'error');
         event.target.value = '';
@@ -8236,7 +8293,7 @@ function app() {
       reader.onload = (e) => {
         const base64 = e.target.result.split(',')[1]; // strip "data:...;base64," prefix
         this.jdUploading = true;
-        google.script.run
+        window.GSR
           .withSuccessHandler(res => {
             this.jdUploading = false;
             if (res.success) {
@@ -8259,7 +8316,7 @@ function app() {
 
     removeJD() {
       if (!confirm('Remove the job description link? (The file itself will stay in Drive.)')) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.showToast('Job description removed');
@@ -8283,7 +8340,7 @@ function app() {
       const file = event.target.files[0];
       if (!file) return;
 
-      const maxBytes = 15 * 1024 * 1024; // 15MB — keeps base64 payload reasonable for google.script.run
+      const maxBytes = 15 * 1024 * 1024; // 15MB — keeps base64 payload reasonable for window.GSR
       if (file.size > maxBytes) {
         this.showToast('File is too large (max 15MB). Try compressing it or use a smaller file.', 'error');
         event.target.value = '';
@@ -8294,7 +8351,7 @@ function app() {
       reader.onload = (e) => {
         const base64 = e.target.result.split(',')[1];
         this.offerLetterUploadingFor = enrollmentNo;
-        google.script.run
+        window.GSR
           .withSuccessHandler(res => {
             this.offerLetterUploadingFor = null;
             if (res.success) {
@@ -8317,7 +8374,7 @@ function app() {
 
     removeOfferLetter(enrollmentNo) {
       if (!confirm('Remove this offer letter link? (The file itself will stay in Drive.)')) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.showToast('Offer letter removed');
@@ -8380,7 +8437,7 @@ function app() {
     closePosterModal() { this.posterModal = false; this.posterSel = { type: '', id: '' }; },
     posterLoadLogos(force) {
       if (this.posterLogosLoaded && !force) { this.posterEnsureLogos(); return; }
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (!res.success) { this.showToast(res.message || 'Could not read the logo folder', 'error'); return; }
           this.posterLogos = res.logos; this.posterLogosLoaded = true;
@@ -8395,7 +8452,7 @@ function app() {
     posterEnsureLogos() {
       const need = Array.from(new Set(this.posterForm.logos.map(id => String(id).split('#')[0]))).filter(id => !PosterEngine.hasLogo(id));
       if (!need.length) { this.posterQueueRender(); return; }
-      google.script.run
+      window.GSR
         .withSuccessHandler(async res => {
           if (res.success) { for (const l of res.logos) await PosterEngine.addLogo(l.id, l.dataUrl); }
           this.posterQueueRender();
@@ -8410,7 +8467,7 @@ function app() {
     },
     posterLoadData(company) {
       this.posterLoading = true; this.posterStatus = 'Loading students...';
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (!res.success) { this.posterLoading = false; this.posterStatus = ''; this.showToast(res.message || 'Could not load students', 'error'); return; }
           this.posterStudents = res.students; this.posterWithoutPhoto = res.withoutPhoto;
@@ -8425,7 +8482,7 @@ function app() {
       if (!ids.length) { this.posterLoading = false; this.posterStatus = ''; this.posterQueueRender(); return; }
       const batch = ids.slice(0, 5), rest = ids.slice(5);
       this.posterStatus = 'Loading photos ' + done + ' / ' + total + '...';
-      google.script.run
+      window.GSR
         .withSuccessHandler(async res => {
           if (res.success) { for (const p of res.photos) await PosterEngine.addPhoto(p.fileId, p.dataUrl); }
           this.posterQueueRender();
@@ -8522,7 +8579,7 @@ function app() {
       return (cfg.size === 'A3' ? 420 : cfg.size === 'A5' ? 210 : 297) / 25.4;
     },
     posterLoadAssets() {
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (!res.success) { this.showToast(res.message || 'Could not read the assets folder', 'error'); return; }
           this.posterBgs = res.backgrounds; this.posterElems = res.elements; this.posterAssetsLoaded = true; this.posterAssetsUrl = res.folderUrl;
@@ -8537,7 +8594,7 @@ function app() {
     posterEnsureAssets() {
       const f = this.posterForm, need = Array.from(new Set([f.design.bgImage].concat(f.elems).map(id => id && String(id).split('#')[0]))).filter(id => id && !PosterEngine.hasLogo(id));
       if (!need.length) { this.posterQueueRender(); return; }
-      google.script.run
+      window.GSR
         .withSuccessHandler(async res => { if (res.success) { for (const l of res.logos) await PosterEngine.addLogo(l.id, l.dataUrl); } this.posterQueueRender(); })
         .withFailureHandler(err => this.showToast('Error: ' + err.message, 'error'))
         .getPosterLogosData(need);
@@ -8549,7 +8606,7 @@ function app() {
       this.posterEnsureAssets();
     },
     posterSendAsset(kind, name, b64, mime) {
-      return new Promise((ok, bad) => google.script.run.withSuccessHandler(ok).withFailureHandler(bad).uploadPosterAsset(kind, name, b64, mime));
+      return new Promise((ok, bad) => window.GSR.withSuccessHandler(ok).withFailureHandler(bad).uploadPosterAsset(kind, name, b64, mime));
     },
     async posterUploadAsset(kind, ev) {
       const file = ev.target.files && ev.target.files[0]; ev.target.value = ''; if (!file) return;
@@ -8655,7 +8712,7 @@ function app() {
           const canvas = await PosterEngine.render(cfg, this.posterPageItems(p), { dpi: Math.min(300, 5000 / this.posterLongIn(cfg)) });
           const b64 = canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
           const name = this.posterFileBase() + (n > 1 ? '_' + (p + 1) : '') + '.jpg';
-          const res = await new Promise((resolve, reject) => google.script.run
+          const res = await new Promise((resolve, reject) => window.GSR
             .withSuccessHandler(resolve).withFailureHandler(reject).savePosterToDrive(company, name, b64, 'image/jpeg'));
           if (!res.success) throw new Error(res.message);
           saved++;
@@ -9002,7 +9059,7 @@ function app() {
     askForPhoto() {
       if (!this.detail.company) return;
       this.askingForPhoto = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.askingForPhoto = false;
           if (res.success) {
@@ -9021,7 +9078,7 @@ function app() {
     askForPhotoSingle(student) {
       if (!this.detail.company) return;
       this.askingForPhotoFor = student.Enrollment_No;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.askingForPhotoFor = null;
           if (res.success) {
@@ -9040,7 +9097,7 @@ function app() {
     downloadAllPhotos() {
       if (!this.detail.company) return;
       this.downloadingPhotos = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.downloadingPhotos = false;
           if (res.success) {
@@ -9074,7 +9131,7 @@ function app() {
       reader.onload = (e) => {
         const base64 = e.target.result.split(',')[1];
         this.initialMailUploading = true;
-        google.script.run
+        window.GSR
           .withSuccessHandler(res => {
             this.initialMailUploading = false;
             if (res.success) {
@@ -9097,7 +9154,7 @@ function app() {
 
     removeInitialMail() {
       if (!confirm('Remove the initial mail link? (The file itself will stay in Drive.)')) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.showToast('Initial mail removed');
@@ -9114,7 +9171,7 @@ function app() {
     downloadDriveSummary() {
       const company = this.detail.company.Company_Name;
       this.summaryReportGenerating = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.summaryReportGenerating = false;
           if (res.success) {
@@ -9147,7 +9204,7 @@ function app() {
       reader.onload = (e) => {
         const base64 = e.target.result.split(',')[1];
         this.finalMailUploading = true;
-        google.script.run
+        window.GSR
           .withSuccessHandler(res => {
             this.finalMailUploading = false;
             if (res.success) {
@@ -9170,7 +9227,7 @@ function app() {
 
     removeFinalSelectionsMail() {
       if (!confirm('Remove the final selections mail link? (The file itself will stay in Drive.)')) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.showToast('Final selections mail removed');
@@ -9199,7 +9256,7 @@ function app() {
       reader.onload = (e) => {
         const base64 = e.target.result.split(',')[1];
         this.companyListUploading = true;
-        google.script.run
+        window.GSR
           .withSuccessHandler(res => {
             this.companyListUploading = false;
             if (res.success) {
@@ -9222,7 +9279,7 @@ function app() {
 
     removeSelectionListFromCompany() {
       if (!confirm('Remove the list received from company link? (The file itself will stay in Drive.)')) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.showToast('List received from company removed');
@@ -9237,7 +9294,7 @@ function app() {
 
     // ---------- Process Photos (multiple per company, in Process Summary) ----------
     // Handles a multi-file selection: uploads each photo one at a time
-    // (Apps Script's google.script.run can't take an array of files in one
+    // (Apps Script's window.GSR can't take an array of files in one
     // call), refreshing the gallery after each so partial progress is
     // never lost if a later photo in the batch fails.
     handleProcessPhotosUpload(event) {
@@ -9264,7 +9321,7 @@ function app() {
         const reader = new FileReader();
         reader.onload = (e) => {
           const base64 = e.target.result.split(',')[1];
-          google.script.run
+          window.GSR
             .withSuccessHandler(res => {
               if (!res.success) this.showToast((file.name + ': ' + (res.message || 'Upload failed')), 'error');
               if (res.warning) this.showToast(res.warning, 'error');
@@ -9283,7 +9340,7 @@ function app() {
 
     removeProcessPhoto(photoUrl) {
       if (!confirm('Remove this photo? (The file itself will stay in Drive.)')) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.showToast('Photo removed');
@@ -9325,7 +9382,7 @@ function app() {
       // this can't safely work around — see the comment on
       // pullPresentStudentsIntoRound in Code.gs).
       if (this.activeRoundIndex() === 0) {
-        google.script.run
+        window.GSR
           .withSuccessHandler(res => {
             if (res.success) {
               this.showToast('Pull ran: ' + res.count + ' added, ' + res.totalPresent + ' total Present found, ' + res.skippedNoEnrollment + ' skipped (no enrollment no.)');
@@ -9349,7 +9406,7 @@ function app() {
     // finished after it was requested (same stale-overwrite fix as above).
     loadRoundStudents(silent) {
       const startedAt = Date.now();
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             if (silent && (this.rsWritePending > 0 || this.rsLastWrite >= startedAt)) return;
@@ -9370,7 +9427,7 @@ function app() {
     // even when the summary table isn't currently visible.
     refreshRoundCounts() {
       if (!this.detail || !this.detail.company) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (!res.success || !this.detail) return;
           const byName = {};
@@ -9403,7 +9460,7 @@ function app() {
         : 'Reopen "' + r.Round_Name + '"? Volunteers will be able to make changes to it again.';
       if (!confirm(msg)) return;
       const company = this.detail.company.Company_Name;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             const newStatus = res.completed ? 'Completed' : '';
@@ -9430,7 +9487,7 @@ function app() {
     // instead of the round-count numbers.
     refreshSelectedStudents() {
       if (!this.detail || !this.detail.company) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (!res.success || !this.detail) return;
           this.detail.students = res.students;
@@ -9574,7 +9631,7 @@ function app() {
       const revert = () => ens.forEach(en => { if (have[en]) have[en].Result = before[en]; });
       const touchedSelected = status === 'Selected' || ens.some(en => before[en] === 'Selected');
       this.rsWritePending++; this.rsLastWrite = Date.now();
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.rsWritePending--; this.rsLastWrite = Date.now();
           if (!res || !res.success) { revert(); this.showToast((res && res.message) || 'Failed to update', 'error'); return; }
@@ -9625,12 +9682,12 @@ function app() {
       };
 
       if (!prevRound) {
-        google.script.run
+        window.GSR
           .withSuccessHandler(handleResult)
           .withFailureHandler(err => { this.roundPulling = false; this.showToast('Error: ' + err.message, 'error'); })
           .pullPresentStudentsIntoRoundFast(company, this.activeRoundName, this.adminToken);
       } else {
-        google.script.run
+        window.GSR
           .withSuccessHandler(handleResult)
           .withFailureHandler(err => { this.roundPulling = false; this.showToast('Error: ' + err.message, 'error'); })
           .pullShortlistedFromPreviousRound(company, this.activeRoundName, prevRound, this.adminToken);
@@ -9643,7 +9700,7 @@ function app() {
       const prevResult = student.Result;
       student.Result = newResult; // optimistic update
       this.rsWritePending++; this.rsLastWrite = Date.now();
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.rsWritePending--; this.rsLastWrite = Date.now();
           if (!res.success) {
@@ -9668,7 +9725,7 @@ function app() {
       if (!confirm('Mark ALL students in ' + this.activeRoundName + ' as ' + label + '? This overwrites any Result already set for this round.')) return;
       const company = this.detail.company.Company_Name;
       this.markingAllRoundResult = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.markingAllRoundResult = false;
           if (res.success) {
@@ -9701,7 +9758,7 @@ function app() {
         const company = this.detail.company.Company_Name;
         const restAs = this.bulkResultRestAs === 'none' ? '' : this.bulkResultRestAs;
         this.bulkResultUploading = true;
-        google.script.run
+        window.GSR
           .withSuccessHandler(res => {
             this.bulkResultUploading = false;
             if (res.success) {
@@ -9733,7 +9790,7 @@ function app() {
     pushRoundToSelected() {
       const company = this.detail.company.Company_Name;
       this.pushingToSelected = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.pushingToSelected = false;
           if (res.success) {
@@ -9767,7 +9824,7 @@ function app() {
       const enrollment = this.roundStudentForm.Enrollment_No;
       if (!enrollment || this.roundStudentForm._isEdit) return;
       this.roundStudentForm._checking = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.roundStudentForm._checking = false;
           if (res.success) {
@@ -9823,7 +9880,7 @@ function app() {
       this.regExtraFieldDefs.forEach(f => {
         payload[f.key] = this.roundStudentForm[f.key] !== undefined ? this.roundStudentForm[f.key] : '';
       });
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.showToast('Student saved');
@@ -9844,7 +9901,7 @@ function app() {
 
     removeRoundStudent(enrollmentNo) {
       if (!confirm('Remove this student from this round\'s tracking?')) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.showToast('Removed');
@@ -9862,7 +9919,7 @@ function app() {
       const file = event.target.files[0];
       if (!file) return;
       readFileAsCsvText_(file).then(csvText => {
-        google.script.run
+        window.GSR
           .withSuccessHandler(res => {
             if (res.success) {
               this.showToast(res.count + ' student(s) added to ' + this.activeRoundName);
@@ -9895,14 +9952,14 @@ function app() {
       const round = this.activeRoundName;
       readFileAsCsvText_(file).then(csvText => {
         this.replacingRound = true;
-        google.script.run
+        window.GSR
           .withSuccessHandler(clearRes => {
             if (!clearRes.success) {
               this.replacingRound = false;
               this.showToast(clearRes.message || 'Failed to clear existing data', 'error');
               return;
             }
-            google.script.run
+            window.GSR
               .withSuccessHandler(res => {
                 this.replacingRound = false;
                 if (res.success) {
@@ -9937,7 +9994,7 @@ function app() {
       const company = this.detail.company.Company_Name;
       const round = this.activeRoundName;
       this.removingAllRound = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.removingAllRound = false;
           if (res.success) {
@@ -9961,7 +10018,7 @@ function app() {
     loadRegExtraFieldDefs() {
       const company = this.detail.company.Company_Name;
       this.regExtraFieldDefsLoading = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.regExtraFieldDefsLoading = false;
           this.regExtraFieldDefs = (res.success && res.fields) ? res.fields : [];
@@ -10196,7 +10253,7 @@ function app() {
           this.regFormCustomQuestions = (cfgRes.customQuestions && cfgRes.customQuestions.length ? cfgRes.customQuestions : this.defaultCustomQuestions_())
             .map(q => ({ enabled: !!q.enabled, label: q.label || '', type: q.type || 'text', required: !!q.required, optionsText: (q.options || []).join(', ') }));
           // The link is just text joined together (instant, done in the browser).
-          google.script.run
+          window.GSR
             .withSuccessHandler(url => { this.regFormLink = url; })
             .withFailureHandler(() => {})
             .getRegistrationFormUrl(company);
@@ -10219,11 +10276,11 @@ function app() {
         this.showToast('Error loading ' + what + ': ' + (err && err.message ? err.message : err), 'error');
       };
 
-      google.script.run
+      window.GSR
         .withSuccessHandler(r => { optRes = r || { success: false }; finish(); })
         .withFailureHandler(fail('form fields'))
         .getRegistrationFormFieldOptions();
-      google.script.run
+      window.GSR
         .withSuccessHandler(r => { cfgRes = r || { success: false }; finish(); })
         .withFailureHandler(fail('current setup'))
         .getRegistrationFormConfig(company);
@@ -10237,7 +10294,7 @@ function app() {
       const company = this.detail.company.Company_Name;
       this.regFormSaving = true;
       const placedAllowed = this.regFormPlacedAllowedStr !== 'no';
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.regFormSaving = false;
           if (res.success) {
@@ -10274,7 +10331,7 @@ function app() {
     // the poll went out — the next tick then brings the correct data.
     loadRegisteredStudents(silent) {
       const startedAt = Date.now();
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             if (silent && (this.regWritePending > 0 || this.regLastWrite >= startedAt)) return;
@@ -10336,7 +10393,7 @@ function app() {
       const prevValue = student.Attendance;
       student.Attendance = value; // optimistic update
       this.regWritePending++; this.regLastWrite = Date.now();
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.regWritePending--; this.regLastWrite = Date.now();
           if (!res.success) {
@@ -10362,7 +10419,7 @@ function app() {
       if (!confirm('Mark ALL registered students as ' + label + '? This overwrites any attendance already marked.')) return;
       const company = this.detail.company.Company_Name;
       this.markingAllAttendance = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.markingAllAttendance = false;
           if (res.success) {
@@ -10391,7 +10448,7 @@ function app() {
         const company = this.detail.company.Company_Name;
         const restAs = this.bulkAttendanceRestAs === 'none' ? '' : this.bulkAttendanceRestAs;
         this.bulkAttendanceUploading = true;
-        google.script.run
+        window.GSR
           .withSuccessHandler(res => {
             this.bulkAttendanceUploading = false;
             if (res.success) {
@@ -10463,7 +10520,7 @@ function app() {
       if (this.registeredStudentForm._isEdit) {
         payload.Original_Enrollment_No = this.registeredStudentForm._originalEnrollment;
       }
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.showToast('Student saved');
@@ -10479,7 +10536,7 @@ function app() {
 
     removeRegisteredStudent(enrollmentNo) {
       if (!confirm('Remove this student from the registered list?')) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.showToast('Removed');
@@ -10496,7 +10553,7 @@ function app() {
       const file = event.target.files[0];
       if (!file) return;
       readFileAsCsvText_(file).then(csvText => {
-        google.script.run
+        window.GSR
           .withSuccessHandler(res => {
             if (res.success) {
               this.showToast(res.updated ? (res.added + ' added, ' + res.updated + ' updated (duplicate enrollment no.)') : (res.added + ' student(s) added to the registered list'));
@@ -10527,14 +10584,14 @@ function app() {
       const company = this.detail.company.Company_Name;
       readFileAsCsvText_(file).then(csvText => {
         this.replacingRegistered = true;
-        google.script.run
+        window.GSR
           .withSuccessHandler(clearRes => {
             if (!clearRes.success) {
               this.replacingRegistered = false;
               this.showToast(clearRes.message || 'Failed to clear existing data', 'error');
               return;
             }
-            google.script.run
+            window.GSR
               .withSuccessHandler(res => {
                 this.replacingRegistered = false;
                 if (res.success) {
@@ -10566,7 +10623,7 @@ function app() {
       if (!confirm('Remove ALL Registered Students for this company? This cannot be undone.')) return;
       const company = this.detail.company.Company_Name;
       this.removingAllRegistered = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.removingAllRegistered = false;
           if (res.success) {
@@ -10586,12 +10643,12 @@ function app() {
     // Zips every registered student's CV for this company (built
     // server-side from the individual files already saved to Drive) and
     // opens the resulting zip's download link — a real browser download,
-    // not something that comes back through google.script.run, so it
+    // not something that comes back through window.GSR, so it
     // works no matter how many/how large the CVs are.
     downloadAllCVs() {
       const company = this.detail.company.Company_Name;
       this.downloadingAllCVs = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.downloadingAllCVs = false;
           if (res.success) {
@@ -10628,7 +10685,7 @@ function app() {
       this.testLinkCopied = false;
       const company = this.detail.company.Company_Name;
 
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.testModalLoading = false;
           if (res.success) {
@@ -10648,7 +10705,7 @@ function app() {
         })
         .getTestConfig(company);
 
-      google.script.run
+      window.GSR
         .withSuccessHandler(url => { this.testLink = url; })
         .withFailureHandler(() => {})
         .getTestUrl(company);
@@ -10668,7 +10725,7 @@ function app() {
       const company = this.detail.company.Company_Name;
 
       readFileAsCsvText_(file).then(fileText => {
-        google.script.run
+        window.GSR
           .withSuccessHandler(res => {
             this.questionBankUploading = false;
             if (res.success) {
@@ -10694,7 +10751,7 @@ function app() {
     saveTestConfigForCompany() {
       const company = this.detail.company.Company_Name;
       this.testConfigSaving = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.testConfigSaving = false;
           if (res.success) {
@@ -10719,7 +10776,7 @@ function app() {
     },
 
     loadTestResultsFor(company) {
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => { this.testResults = res.success ? res.data : []; })
         .withFailureHandler(() => { this.testResults = []; })
         .getTestResults(company);
@@ -10728,7 +10785,7 @@ function app() {
     downloadTestResults(format) {
       const company = this.detail.company.Company_Name;
       this.showToast('Preparing download…');
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.downloadBase64File(res.base64, res.fileName, res.mimeType);
@@ -10787,7 +10844,7 @@ function app() {
       this.efRefreshDraft();
     },
     efReloadInfo() {
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => { if (res.success) { this.ef.info = res; } })
         .withFailureHandler(() => {})
         .getEmployerFeedbackInfo(this.detail.company.Company_Name, this.adminToken);
@@ -10796,7 +10853,7 @@ function app() {
     efOpen() {
       if (this.ef.info) { this.efStart(); return; }
       this.ef.loading = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.ef.loading = false;
           if (!res.success) { this.showToast(res.message || 'Could not load', 'error'); return; }
@@ -10821,7 +10878,7 @@ function app() {
     efRefreshDraft() {
       const seq = this._efSeq = (this._efSeq || 0) + 1;
       this.ef.drafting = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (seq !== this._efSeq) return;
           this.ef.drafting = false;
@@ -10841,7 +10898,7 @@ function app() {
     efSavePref(k, v) { try { localStorage.setItem('cpt_ef_' + k, v || ''); } catch (e) {} },
     // Fetches the ready-made message (subject / HTML / plain text), then runs cb(draft).
     efWithDraft(cb) {
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => { if (!res.success) { this.showToast(res.message || 'Could not build the email', 'error'); return; } cb(res); })
         .withFailureHandler(err => this.showToast('Error: ' + err.message, 'error'))
         .getEmployerFeedbackEmailDraft(this.detail.company.Company_Name, this.ef.signature, this.adminToken, { subject: this.ef.subject, note: this.ef.note }, this.ef.recipient);
@@ -10887,7 +10944,7 @@ function app() {
       });
     },
     efMarkSent() {
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => { if (res.success) { this.showToast('Marked as requested'); this.efReloadInfo(); } })
         .withFailureHandler(() => {})
         .markEmployerFeedbackRequested(this.detail.company.Company_Name, this.ef.email, this.adminToken, this.ef.recipient);
@@ -10896,7 +10953,7 @@ function app() {
       if (!this.ef.email) { this.showToast('Enter the HR / POC email first', 'error'); return; }
       if (this.ef.mode === 'own' && !this.ef.orgEmail) { this.showToast('Enter your organisational email first', 'error'); return; }
       this.ef.sending = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.ef.sending = false;
           if (!res.success) { this.showToast(res.message || 'Could not send', 'error'); return; }
@@ -10912,7 +10969,7 @@ function app() {
       if (this.ef.mode === 'own' && !this.ef.orgEmail) { this.showToast('Enter your organisational email first', 'error'); return; }
       if (!window.confirm('Send the feedback request to ' + (r.name || r.email) + ' (' + r.email + ') only?')) return;
       this.ef.sending = true; this.ef.sendingId = r.id;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.ef.sending = false; this.ef.sendingId = '';
           if (!res.success) { this.showToast(res.message || 'Could not send', 'error'); return; }
@@ -10933,7 +10990,7 @@ function app() {
         const r = list[i];
         this.ef.sendAllMsg = 'Sending ' + (i + 1) + ' of ' + list.length + '…';
         try {
-          const res = await new Promise((resolve, reject) => google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)
+          const res = await new Promise((resolve, reject) => window.GSR.withSuccessHandler(resolve).withFailureHandler(reject)
             .sendEmployerFeedbackRequest(this.detail.company.Company_Name, r.email, this.adminToken, this.ef.replyTo, this.ef.cc, this.ef.signature, { subject: this.ef.subject, note: this.ef.note }, this.ef.mode === 'own' ? this.ef.orgEmail : '', r.id));
           if (res.success) { ok++; this.efTick(r.id, false); } else failed.push((r.name || r.email) + ': ' + (res.message || 'failed'));
         } catch (e) { failed.push((r.name || r.email) + ': ' + e.message); }
@@ -10947,7 +11004,7 @@ function app() {
       this.ef.showResponses = !this.ef.showResponses;
       if (!this.ef.showResponses) return;
       this.ef.respLoading = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.ef.respLoading = false;
           if (!res.success) { this.showToast(res.message || 'Could not load', 'error'); return; }
@@ -10958,7 +11015,7 @@ function app() {
     },
     // PDF laid out like the card: averages, then one boxed block per respondent.
     downloadEmployerFeedbackPdf() {
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (!res.success) { this.showToast(res.message || 'Export failed', 'error'); return; }
           const b = atob(res.base64), n = new Uint8Array(b.length);
@@ -10986,7 +11043,7 @@ function app() {
         { key: 'To_Improve', label: 'To Improve' }, { key: 'Skill_Gaps', label: 'Skill Gaps' }, { key: 'Other_Remarks', label: 'Remarks' }
       ]);
       const title = ['GYAN GANGA INSTITUTE OF TECHNOLOGY & SCIENCES, JABALPUR', this.detail.company.Company_Name, 'Employer Feedback'];
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (!res.success) { this.showToast(res.message || 'Export failed', 'error'); return; }
           const b = atob(res.base64), n = new Uint8Array(b.length);
@@ -11007,12 +11064,12 @@ function app() {
       this.feedbackReport = { sections: [], totalRespondents: 0 };
       const company = this.detail.company.Company_Name;
 
-      google.script.run
+      window.GSR
         .withSuccessHandler(url => { this.feedbackLink = url; })
         .withFailureHandler(() => {})
         .getFeedbackFormUrl(company);
 
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.feedbackLoading = false;
           if (res.success) {
@@ -11045,7 +11102,7 @@ function app() {
       this.showToast('Preparing download…');
 
       if (format === 'csv') {
-        google.script.run
+        window.GSR
           .withSuccessHandler(res => {
             if (res.success) {
               const fields = [
@@ -11065,7 +11122,7 @@ function app() {
         return;
       }
 
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.downloadBase64File(res.base64, res.fileName, res.mimeType);
@@ -11088,7 +11145,7 @@ function app() {
 
     saveSummary() {
       this.summarySaving = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.summarySaving = false;
           if (res.success) {
@@ -11167,7 +11224,7 @@ function volunteerManager() {
     // there instead.
     loadPortalUrl() {
       if (this.portalUrl) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(url => { this.portalUrl = url; })
         .withFailureHandler(() => {})
         .getVolunteerPortalUrl();
@@ -11187,7 +11244,7 @@ function volunteerManager() {
     },
 
     loadCompanies() {
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (!res.success) { alert(res.message); return; }
           this.companies = res.companies;
@@ -11242,7 +11299,7 @@ function volunteerManager() {
       this.assignGroupAllotted = [];
       this.assignGroupsChecked = false;
       if (!this.selCompany || !this.soleGDRound) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.assignGroupOptions = res.success ? res.groupNumbers : [];
           this.assignGroupAllotted = res.success ? (res.allottedGroupNumbers || []) : [];
@@ -11263,7 +11320,7 @@ function volunteerManager() {
       if (!this.selCompany || !this.soleGDRound) return;
       const size = Math.max(1, parseInt(this.gdSize, 10) || 1);
       this.creatingGroups = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.creatingGroups = false;
           if (!res.success) { this.assignErr = res.message || 'Could not create groups.'; return; }
@@ -11276,7 +11333,7 @@ function volunteerManager() {
 
     loadAssignments() {
       if (!this.selCompany) { this.assignments = []; return; }
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => { this.assignments = res.success ? res.data : []; })
         .withFailureHandler(() => {})
         .getRoundVolunteerAssignments(this.selCompany);
@@ -11287,7 +11344,7 @@ function volunteerManager() {
     // successful save), so it only grows richer over time with zero extra
     // effort from the admin.
     loadVolunteerPool() {
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => { this.volunteerPool = res.success ? res.volunteers : []; })
         .withFailureHandler(() => {})
         .getVolunteerPool();
@@ -11365,7 +11422,7 @@ function volunteerManager() {
     // ones whose count is already known.
     loadPlacementCompanies() {
       if (!this.placementCompanies.length) this.placementLoading = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.placementLoading = false;
           if (!res || !res.success) { this.placementCompanies = []; return; }
@@ -11378,7 +11435,7 @@ function volunteerManager() {
 
     refreshPlacementCounts(force) {
       this.placementCountsLoading = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.placementCountsLoading = false;
           if (res && res.success) this.placementCompanies = res.companies;
@@ -11403,7 +11460,7 @@ function volunteerManager() {
 
     loadAttendanceSessions() {
       if (!this.selCompany) { this.attendanceSessions = []; return; }
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) {
             this.attendanceSessions = res.data;
@@ -11423,7 +11480,7 @@ function volunteerManager() {
       // Registration Form setting exactly as before.
       const blockedCompanies = mode === 'spot' ? JSON.parse(JSON.stringify(this.placementBlockedList)) : null;
       this.creatingAttendanceSession = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.creatingAttendanceSession = false;
           if (res.success) {
@@ -11447,7 +11504,7 @@ function volunteerManager() {
 
     endAttendanceSession(sessionId) {
       if (!confirm('End this attendance session? The QR code will stop accepting check-ins.')) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) this.loadAttendanceSessions();
           else alert(res.message || 'Failed to end session');
@@ -11457,7 +11514,7 @@ function volunteerManager() {
     },
 
     reopenAttendanceSession(sessionId) {
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (res.success) this.loadAttendanceSessions();
           else alert(res.message || 'Failed to reopen session');
@@ -11473,7 +11530,7 @@ function volunteerManager() {
     deleteAttendanceSession(sessionId) {
       if (!confirm('Delete this attendance session? This cannot be undone — the Kiosk Link will stop working immediately. Present/Absent marks already recorded for students are not affected.')) return;
       this.deletingSessionId = sessionId;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.deletingSessionId = null;
           if (res.success) this.loadAttendanceSessions();
@@ -11506,7 +11563,7 @@ function volunteerManager() {
     // seeing rather than just silently keeping the long link forever.
     retryShortenKioskLink(sess) {
       this.shorteningSessionId = sess.Session_ID;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.shorteningSessionId = null;
           if (res.success) {
@@ -11535,11 +11592,11 @@ function volunteerManager() {
       // regardless, but still guard here in case that hasn't run yet.
       if (this.volRole !== 'Admin' && !this.selRounds.length) { this.assignErr = 'Select at least one round to assign.'; return; }
       if (!this.volMobile.trim()) { this.assignErr = "Enter the volunteer's mobile number."; return; }
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (!res.success) { this.assignErr = res.message; return; }
           // Remember this volunteer for next time — any drive, any admin.
-          google.script.run.withFailureHandler(() => {}).saveVolunteerToPool(this.volMobile, this.volName);
+          window.GSR.withFailureHandler(() => {}).saveVolunteerToPool(this.volMobile, this.volName);
           this.volMobile = ''; this.volName = ''; this.selectedPoolMobile = ''; this.assignedGroupsSelected = []; this.volRole = 'Volunteer';
           this.onAssignRoundsChange(); // clears selRounds too, refreshes "Allotted" pills
           this.loadAssignments();
@@ -11560,7 +11617,7 @@ function volunteerManager() {
 
     removeAssignment(roundName, mobile) {
       if (!confirm('Remove this volunteer from "' + roundName + '"?')) return;
-      google.script.run
+      window.GSR
         .withSuccessHandler(() => this.loadAssignments())
         .withFailureHandler(err => alert('Error: ' + err.message))
         .deleteRoundVolunteerAssignment(this.selCompany, roundName, mobile, this.$root.adminToken);
@@ -11575,7 +11632,7 @@ function volunteerManager() {
     setVolunteerAccessStatus(a, status) {
       const previous = a.Access_Status;
       a.Access_Status = status; // optimistic — snapped back on failure below
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           if (!res.success) { a.Access_Status = previous; alert(res.message); return; }
           a.Access_Status = res.status;
@@ -11588,7 +11645,7 @@ function volunteerManager() {
 
     loadLive(manual) {
       if (manual) this.liveRefreshing = true;
-      google.script.run
+      window.GSR
         .withSuccessHandler(res => {
           this.liveRefreshing = false;
           if (res.success) { this.live = res.data; this.liveUpdatedAt = new Date(); }

@@ -437,6 +437,12 @@
   html.dark .bg-gray-50, html.dark .bg-gray-100 { background-color:#1c2a45; }
   html.dark .shadow-sm, html.dark .shadow-lg, html.dark .shadow-xl { --tw-shadow-color: rgba(0,0,0,.5); }
   html.dark select.result-pill { background-color:#1c2a45; }
+  /* Top Packages cards + package stat tiles (pale orange stayed light in dark mode) */
+  html.dark .pkg-card { background-color:#3a2a1c !important; border-color:#7a5a2e !important; }
+  html.dark .pkg-card.pkg-top { background-color:#4d3620 !important; border-color:#FFB74D !important; }
+  html.dark .pkg-tile { background:#3a2a1c !important; }
+  html.dark .pkg-card .text-slate-800, html.dark .pkg-card .font-semibold { color:#f1f5f9 !important; }
+  html.dark .pkg-card .text-slate-500 { color:#c4cfdf !important; }
   /* Home "Companies" quick-view cards: the light-mode white gradient was winning over dark mode */
   html.dark main button.border-l-4 { background: #17233b linear-gradient(135deg, #1a2843 0%, #17233b 100%) !important; border-top-color:#2b3a56; border-right-color:#2b3a56; border-bottom-color:#2b3a56; box-shadow:0 6px 18px -10px rgba(0,0,0,.6); color:#e2e8f0; }
   html.dark main button.border-l-4:hover { background: #1a2843 linear-gradient(135deg, #223253 0%, #1a2843 100%) !important; }
@@ -967,7 +973,7 @@
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3" x-show="!topPackagesLoading && topPackages.length > 0">
           <template x-for="(p, idx) in topPackages" :key="p.Student_Name + p.Company_Name + idx">
-            <div class="rounded-xl p-4 border" :style="'background-color:' + (idx === 0 ? '#FFE0B2' : '#FFF3E0') + '; border-color:#FFB74D'">
+            <div class="rounded-xl p-4 border pkg-card" :class="idx === 0 ? 'pkg-top' : ''" :style="'background-color:' + (idx === 0 ? '#FFE0B2' : '#FFF3E0') + '; border-color:#FFB74D'">
               <div class="flex items-center justify-between mb-2">
                 <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 text-white" style="background-color:#E65100" x-text="idx + 1"></span>
                 <span class="text-sm font-extrabold flex-shrink-0" style="color:#E65100" x-text="fmtPackage(p.Package)"></span>
@@ -993,19 +999,19 @@
           <div>
             <!-- Overall stat tiles -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-              <div class="rounded-xl p-4 text-center" style="background-color:#FFF3E0">
+              <div class="rounded-xl p-4 text-center pkg-tile" style="background-color:#FFF3E0">
                 <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Average</p>
                 <p class="text-2xl font-extrabold" style="color:#E65100" x-text="fmtLPA(packageAnalytics.overall.avg)"></p>
               </div>
-              <div class="rounded-xl p-4 text-center" style="background-color:#FFF3E0">
+              <div class="rounded-xl p-4 text-center pkg-tile" style="background-color:#FFF3E0">
                 <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Median</p>
                 <p class="text-2xl font-extrabold" style="color:#E65100" x-text="fmtLPA(packageAnalytics.overall.median)"></p>
               </div>
-              <div class="rounded-xl p-4 text-center" style="background-color:#FFF3E0">
+              <div class="rounded-xl p-4 text-center pkg-tile" style="background-color:#FFF3E0">
                 <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Highest</p>
                 <p class="text-2xl font-extrabold" style="color:#E65100" x-text="fmtLPA(packageAnalytics.overall.max)"></p>
               </div>
-              <div class="rounded-xl p-4 text-center" style="background-color:#FFF3E0">
+              <div class="rounded-xl p-4 text-center pkg-tile" style="background-color:#FFF3E0">
                 <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Lowest</p>
                 <p class="text-2xl font-extrabold" style="color:#E65100" x-text="fmtLPA(packageAnalytics.overall.min)"></p>
               </div>
@@ -4157,7 +4163,7 @@
                       :class="highlightEnrollmentNo === s.Enrollment_No ? 'ring-2 ring-indigo-400 ring-offset-2' : ''"
                       style="border-color:#FFB74D">
                       <!-- Card header: name + package badge, brand orange -->
-                      <div class="px-4 py-3 flex items-start justify-between gap-2" style="background-color:#FFF3E0">
+                      <div class="px-4 py-3 flex items-start justify-between gap-2 pkg-tile" style="background-color:#FFF3E0">
                         <div class="min-w-0">
                           <p class="font-semibold text-slate-800 truncate" x-text="s.Student_Name || '(no name)'"></p>
                           <p class="text-xs text-slate-500 truncate" x-text="'S.No. ' + (s.S_No || '—') + ' · ' + s.Enrollment_No"></p>

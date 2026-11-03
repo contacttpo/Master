@@ -6,6 +6,7 @@
 <link rel="icon" href="/icon-192.png">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#21314e">
+<script>try{if(localStorage.getItem("pt-theme")==="dark")document.documentElement.classList.add("dark");}catch(e){}</script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Placements">
@@ -319,6 +320,114 @@
   .bv-toggle button { flex: 1 1 auto; }
   @media (max-width: 480px) { .bv-toggle button { padding-left: 10px; padding-right: 10px; font-size: 13px; } }
 </style>
+<style id="brand-theme">
+  /* ===================================================================
+     BRAND THEME (pass 1) - one dominant palette: navy #21314e, brand blue #246498 / #2c7cbd, orange #de6413 only as a highlight.
+     Pure CSS + a few small markup additions. Delete this block (and the pt-theme script in <head>) to revert.
+     =================================================================== */
+  :root { --navy:#21314e; --blue:#246498; --blue-2:#2c7cbd; --orange:#de6413; --ink:#0f2a43; --soft:#f1f5f9; }
+
+  /* --- utilities the compiled Tailwind stylesheet lacks (used by the tick-box bar, live panel, etc.) --- */
+  .bg-slate-500{background-color:#64748b}
+  .hover\:bg-slate-600:hover{background-color:#475569}
+  .hover\:bg-blue-700:hover{background-color:#1d4ed8}
+  .hover\:bg-emerald-700:hover{background-color:#047857}
+  .hover\:bg-red-700:hover{background-color:#b91c1c}
+  .text-indigo-400{color:#539bd7}
+  .text-blue-600{color:#2871ad}
+  .w-8{width:2rem}
+  .bg-indigo-50\/60{background-color:rgba(236,243,249,.7)}
+  .min-h-0{min-height:0}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0}
+  @keyframes ptPulse{0%,100%{opacity:1}50%{opacity:.45}}
+  .animate-pulse{animation:ptPulse 2s cubic-bezier(.4,0,.6,1) infinite}
+
+  /* --- cards, buttons, type --- */
+  main .bg-white.border.rounded-2xl { border-radius: 18px; border-color: #e3eaf3; box-shadow: 0 1px 2px rgba(15,35,60,.04), 0 10px 28px -16px rgba(33,49,78,.28); }
+  main section > .bg-white.border.rounded-2xl,
+  main section > .bg-white.border.rounded-2xl:nth-of-type(n) { border-top: 3px solid var(--blue-2) !important; }
+  main h3.brand-heading { border-left: 0; padding-left: 0; color: var(--ink); font-family: 'Inter', system-ui, sans-serif; font-weight: 700; letter-spacing: -.01em; }
+  .bg-indigo-600, .bg-gradient-to-r.from-indigo-600.to-indigo-500 { background-image: none !important; background-color: var(--blue); box-shadow: 0 4px 12px -6px rgba(36,100,152,.6); }
+  .bg-indigo-600:hover, .bg-gradient-to-r.from-indigo-600.to-indigo-500:hover { background-color: #1e5581 !important; }
+  label.bg-slate-800 { background-color: var(--navy); }
+  main button, main label.cursor-pointer { transition: background-color .15s ease, box-shadow .15s ease, transform .1s ease; }
+  main button:active { transform: scale(.98); }
+
+  /* --- Home header --- */
+  .home-hero { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:1.25rem;
+    padding:16px 20px; border-radius:18px; color:#fff;
+    background: linear-gradient(120deg, #21314e 0%, #246498 100%); box-shadow: 0 14px 30px -18px rgba(33,49,78,.7); }
+  .home-hero .hero-kicker { font-size:11px; letter-spacing:.12em; text-transform:uppercase; font-weight:700; color:#f6c58f; margin:0 0 2px; }
+  .home-hero h2 { margin:0; color:#fff !important; background:none !important; -webkit-text-fill-color:#fff; font-size:1.5rem; line-height:1.2; }
+  .home-hero .hero-date { margin:0; font-size:.85rem; color:#cfe0f1; font-weight:500; }
+
+  /* --- Home stat tiles: one calm blue family; the running-drives tile is the single orange highlight --- */
+  .stat-tile > div:first-child { background:#e6f0f9 !important; color:#246498 !important; }
+  button.stat-tile > div:first-child { background:#ffedd5 !important; color:#c2410c !important; }
+
+  /* --- Running drives (home) with a round stepper --- */
+  .drv-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:14px; }
+  .drv-card { background:#fff; border:1px solid #e3eaf3; border-radius:16px; padding:16px; box-shadow:0 10px 26px -18px rgba(33,49,78,.45); }
+  .drv-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
+  .drv-name { font-weight:700; color:var(--ink); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .drv-tag { font-size:11px; font-weight:700; color:#c2410c; background:#ffedd5; border-radius:999px; padding:2px 9px; white-space:nowrap; }
+  .drv-bar { height:6px; border-radius:999px; background:#e6eef7; overflow:hidden; margin-bottom:14px; }
+  .drv-bar > i { display:block; height:100%; border-radius:999px; background:linear-gradient(90deg,#246498,#2c7cbd); transition:width .4s ease; }
+  .drv-steps { display:flex; align-items:flex-start; overflow-x:auto; padding-bottom:2px; }
+  .drv-step { flex:1 0 74px; text-align:center; position:relative; min-width:74px; }
+  .drv-step::before { content:''; position:absolute; top:11px; left:-50%; width:100%; height:2px; background:#d5e0ec; z-index:0; }
+  .drv-step:first-child::before { display:none; }
+  .drv-step.done::before, .drv-step.active::before { background:#2c7cbd; }
+  .drv-dot { position:relative; z-index:1; width:24px; height:24px; margin:0 auto; border-radius:50%; background:#fff; border:2px solid #cbd5e1; color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; }
+  .drv-step.done .drv-dot { background:#246498; border-color:#246498; }
+  .drv-step.active .drv-dot { border-color:#de6413; box-shadow:0 0 0 4px rgba(222,100,19,.18); background:#fff; }
+  .drv-step.active .drv-dot::after { content:''; width:8px; height:8px; border-radius:50%; background:#de6413; }
+  .drv-rn { font-size:11px; font-weight:600; color:#334155; margin-top:6px; line-height:1.2; padding:0 2px; overflow-wrap:anywhere; }
+  .drv-rc { font-size:11px; color:#64748b; margin-top:2px; font-variant-numeric:tabular-nums; }
+
+  /* --- tables: softer stripes + result shown as a pill --- */
+  .reg-table tbody tr.reg-row:nth-child(even) { background:#f7f9fc; }
+  .reg-table tbody tr.reg-row:hover { background:#eaf2fa; }
+  select.result-pill { -webkit-appearance:none; appearance:none; cursor:pointer; border-radius:999px; font-weight:700; padding:4px 26px 4px 12px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 8px center; background-size:12px; }
+  select.result-pill:hover { box-shadow:0 0 0 3px rgba(44,124,189,.15); }
+
+  /* --- dark mode toggle button (sidebar) --- */
+  .theme-toggle { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; margin-bottom:8px; }
+
+  /* ===================== DARK MODE ===================== */
+  html.dark body.bg-slate-50, html.dark body { background:#0f1829; color:#e2e8f0; }
+  html.dark .bg-slate-50:not(body):not(.min-h-screen) { background-color:#131d33; }
+  html.dark .bg-white, html.dark .drv-card { background-color:#17233b; }
+  html.dark main .bg-white.border.rounded-2xl, html.dark .drv-card { border-color:#26344f; box-shadow:0 10px 28px -16px rgba(0,0,0,.6); }
+  html.dark .text-slate-800, html.dark .text-slate-700, html.dark .drv-name, html.dark main h2.brand-heading, html.dark main h3.brand-heading { color:#f1f5f9 !important; }
+  html.dark .text-slate-600, html.dark .text-slate-500, html.dark .drv-rn { color:#b6c3d6; }
+  html.dark .text-slate-400, html.dark .drv-rc { color:#8da0bb; }
+  html.dark .border-slate-100, html.dark .border-slate-200, html.dark .border-slate-300, html.dark .border { border-color:#2b3a56; }
+  html.dark .divide-y > :not([hidden]) ~ :not([hidden]) { border-color:#2b3a56; }
+  html.dark .bg-slate-100, html.dark .bg-slate-50 { background-color:#1c2a45; }
+  html.dark input, html.dark select, html.dark textarea { background-color:#101b30; color:#e2e8f0; border-color:#33445f; }
+  html.dark input::placeholder, html.dark textarea::placeholder { color:#7a8da8; }
+  html.dark thead, html.dark thead th, html.dark .sticky.bg-white, html.dark th.bg-white { background-color:#17233b !important; }
+  html.dark .reg-table tbody tr.reg-row:nth-child(even) { background:#1a2843; }
+  html.dark .reg-table tbody tr.reg-row:hover, html.dark .reg-row:hover { background:#223253; }
+  html.dark .hover\:bg-slate-50:hover, html.dark .hover\:bg-indigo-50:hover { background-color:#223253; }
+  html.dark .bg-indigo-50 { background-color:#1d2e4d; }
+  html.dark .drv-bar { background:#26344f; }
+  html.dark .drv-dot { background:#17233b; border-color:#3b4c6b; }
+  html.dark .drv-step::before { background:#33445f; }
+  html.dark .stat-tile > div:first-child { background:#1d2e4d !important; color:#7fb6e6 !important; }
+  html.dark button.stat-tile > div:first-child { background:#3a2a1c !important; color:#f6a35c !important; }
+  html.dark .home-hero { background:linear-gradient(120deg,#16233f 0%,#1d4f7c 100%); }
+  html.dark .skeleton { background:linear-gradient(90deg,#1c2a45 25%,#26344f 37%,#1c2a45 63%); background-size:400% 100%; }
+  html.dark nav.fixed.bottom-0 { background:#17233b; border-color:#2b3a56; }
+  html.dark .live-panel, html.dark .pz-modal { background:#17233b; color:#e2e8f0; }
+  html.dark .bg-gray-50, html.dark .bg-gray-100 { background-color:#1c2a45; }
+  html.dark .shadow-sm, html.dark .shadow-lg, html.dark .shadow-xl { --tw-shadow-color: rgba(0,0,0,.5); }
+  html.dark select.result-pill { background-color:#1c2a45; }
+</style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800" x-data="app()" x-init="init()" x-cloak>
 
@@ -452,6 +561,9 @@
       </nav>
       <div class="mt-auto pt-4 border-t border-slate-100">
         <p class="text-xs text-slate-400 px-1 mb-2" x-show="currentAdmin.name">Signed in as <span class="font-medium text-slate-600" x-text="currentAdmin.name"></span></p>
+        <button type="button" @click="toggleDark()" class="theme-toggle text-sm font-medium text-slate-500 border border-slate-300 rounded-lg px-3 py-2.5 transition-colors">
+          <span x-text="darkMode ? '☀ Light mode' : '🌙 Dark mode'"></span>
+        </button>
         <button @click="passwordResetForm = { current: '', next: '', confirm: '' }; passwordResetError = ''; showPasswordReset = true"
           class="w-full text-sm font-medium text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 border border-slate-300 rounded-lg px-3 py-2.5 transition-colors mb-2">
           Change Password
@@ -673,7 +785,13 @@
 
     <!-- ===================== HOME VIEW ===================== -->
     <section x-show="view === 'home'" class="fade-in" x-cloak>
-      <h2 class="brand-heading text-2xl mb-5">Home</h2>
+      <div class="home-hero">
+        <div>
+          <p class="hero-kicker">Gyan Ganga Group of Institutions</p>
+          <h2 class="brand-heading">Training &amp; Placement Cell</h2>
+        </div>
+        <p class="hero-date" x-text="new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })"></p>
+      </div>
 
       <!-- At-a-glance stat tiles -->
       <div x-show="!loading" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
@@ -744,6 +862,35 @@
               <p class="text-2xl font-bold text-slate-800 leading-none" x-text="b.count"></p>
               <p class="text-xs text-slate-400 mt-1" x-text="b.percent + '% of selections'"></p>
             </button>
+          </template>
+        </div>
+      </div>
+
+      <!-- Running drives: one card per live company with a round-by-round stepper (data = Live Overview) -->
+      <div x-show="!loading && liveFab.rows.length" x-cloak class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mb-6">
+        <div class="flex items-center justify-between gap-2 mb-1">
+          <h3 class="brand-heading text-lg text-slate-800">Running drives</h3>
+          <button type="button" @click="goToLiveOverview()" class="text-xs font-semibold text-indigo-600 hover:underline">Open Live Overview</button>
+        </div>
+        <p class="text-xs text-slate-400 mb-4">Where each drive is right now. Blue = round finished, orange = round in progress.</p>
+        <div class="drv-grid">
+          <template x-for="c in liveFabGroups()" :key="c.Company_Name">
+            <div class="drv-card">
+              <div class="drv-head">
+                <span class="drv-name" x-text="c.Company_Name"></span>
+                <span class="drv-tag" x-text="drivePct(c) + '% done'"></span>
+              </div>
+              <div class="drv-bar"><i :style="'width:' + drivePct(c) + '%'"></i></div>
+              <div class="drv-steps">
+                <template x-for="(r, i) in driveSteps(c)" :key="r.Round_Name">
+                  <div class="drv-step" :class="driveStepState(r, i, driveSteps(c))">
+                    <div class="drv-dot"><span x-show="driveStepState(r, i, driveSteps(c)) === 'done'">✓</span></div>
+                    <div class="drv-rn" x-text="r.Round_Name"></div>
+                    <div class="drv-rc" x-text="(r.counts.Shortlisted + r.counts.Selected) + ' / ' + r.total"></div>
+                  </div>
+                </template>
+              </div>
+            </div>
           </template>
         </div>
       </div>
@@ -1579,36 +1726,17 @@
 
                             <div class="max-h-64 overflow-y-auto border border-slate-200 rounded-lg bg-white divide-y divide-slate-100">
                               <template x-for="c in placementVisibleCompanies()" :key="c.name">
-                                <div class="border-l-4"
-                                  :class="placementMode(c.name) === 'block' ? 'bg-red-50 border-l-rose-500' : (placementMode(c.name) === 'only' ? 'bg-amber-50 border-l-amber-500' : 'bg-white border-l-emerald-500')">
-                                  <div class="flex items-center justify-between gap-3 px-3 py-2">
-                                    <div class="min-w-0">
-                                      <p class="text-sm truncate" :class="placementMode(c.name) === 'block' ? 'text-red-700' : 'text-slate-800'" x-text="c.name"></p>
-                                      <p class="text-xs text-slate-400" x-text="c.count === null ? (placementCountsLoading ? 'counting selected students…' : 'not counted yet') : (c.count === 0 ? 'no selected students yet' : c.count + (c.count === 1 ? ' selected student' : ' selected students'))"></p>
-                                    </div>
-                                    <div class="flex shrink-0 rounded-lg overflow-hidden border border-slate-300 text-xs font-medium">
-                                      <button @click="setPlacementMode(c.name, 'allow')" class="px-3 py-1.5"
-                                        :class="placementMode(c.name) === 'allow' ? 'bg-emerald-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'">Allow</button>
-                                      <button x-show="placementPkgOptions(c.name).length > 1" @click="setPlacementMode(c.name, 'only')" class="px-3 py-1.5 border-l border-slate-300"
-                                        :class="placementMode(c.name) === 'only' ? 'bg-amber-500 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'">By package</button>
-                                      <button @click="setPlacementMode(c.name, 'block')" class="px-3 py-1.5 border-l border-slate-300"
-                                        :class="placementMode(c.name) === 'block' ? 'bg-red-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'">Block</button>
-                                    </div>
+                                <div class="flex items-center justify-between gap-3 px-3 py-2 border-l-4"
+                                  :class="isPlacementBlocked(c.name) ? 'bg-red-50 border-l-rose-500' : 'bg-white border-l-emerald-500'">
+                                  <div class="min-w-0">
+                                    <p class="text-sm truncate" :class="isPlacementBlocked(c.name) ? 'text-red-700' : 'text-slate-800'" x-text="c.name"></p>
+                                    <p class="text-xs text-slate-400" x-text="c.count === null ? (placementCountsLoading ? 'counting selected students…' : 'not counted yet') : (c.count === 0 ? 'no selected students yet' : c.count + (c.count === 1 ? ' selected student' : ' selected students'))"></p>
                                   </div>
-                                  <div x-show="placementMode(c.name) === 'only'" x-cloak class="px-3 pb-3">
-                                    <p class="text-xs text-amber-800 mb-1">Allow only students selected in <b x-text="c.name"></b> at these packages (all others are blocked):</p>
-                                    <div class="flex flex-wrap gap-2">
-                                      <template x-for="o in placementPkgOptions(c.name)" :key="o.p">
-                                        <label class="flex items-center gap-1.5 text-xs border rounded-lg px-2 py-1 cursor-pointer"
-                                          :class="isPlacementPkgAllowed(c.name, o.p) ? 'bg-emerald-50 border-emerald-400 text-emerald-800' : 'bg-white border-slate-300 text-slate-600'">
-                                          <input type="checkbox" :checked="isPlacementPkgAllowed(c.name, o.p)" @change="togglePlacementPkg(c.name, o.p)">
-                                          <span x-text="pkgLabel(o.p) + ' · ' + o.count + (o.count === 1 ? ' student' : ' students')"></span>
-                                        </label>
-                                      </template>
-                                    </div>
-                                    <p x-show="placementPkgUnrecorded(c.name) > 0" class="text-xs text-red-600 mt-1"
-                                      x-text="placementPkgUnrecorded(c.name) + ' selected student(s) have no package recorded — they will be blocked.'"></p>
-                                    <p x-show="!(placementAllowOnly[c.name] || []).length" class="text-xs text-red-600 mt-1">Tick at least one package.</p>
+                                  <div class="flex shrink-0 rounded-lg overflow-hidden border border-slate-300 text-xs font-medium">
+                                    <button @click="setPlacementBlocked(c.name, false)" class="px-3 py-1.5"
+                                      :class="!isPlacementBlocked(c.name) ? 'bg-emerald-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'">Allow</button>
+                                    <button @click="setPlacementBlocked(c.name, true)" class="px-3 py-1.5 border-l border-slate-300"
+                                      :class="isPlacementBlocked(c.name) ? 'bg-red-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'">Block</button>
                                   </div>
                                 </div>
                               </template>
@@ -1616,11 +1744,10 @@
                             </div>
 
                             <p class="text-xs mt-2"
-                              :class="placementBlockedList.length ? 'text-red-600' : (Object.keys(placementAllowOnly).length ? 'text-amber-700' : 'text-emerald-700')"
-                              x-text="(placementBlockedList.length
-                                  ? ('Blocking selected students of ' + placementBlockedList.length + ' of ' + placementCompanies.length + ' companies')
-                                  : 'Allowing selected students of every company')
-                                  + (Object.keys(placementAllowOnly).length ? (' · package rule on ' + Object.keys(placementAllowOnly).join(', ')) : '')"></p>
+                              :class="placementBlockedList.length ? 'text-red-600' : 'text-emerald-700'"
+                              x-text="placementBlockedList.length
+                                ? ('Blocking selected students of ' + placementBlockedList.length + ' of ' + placementCompanies.length + ' companies')
+                                : 'Allowing selected students of every company'"></p>
                           </div>
                         </div>
                       </div>
@@ -1664,13 +1791,7 @@
                                 <p x-show="sess.Placement_Rule_Set && sess.Blocked_Companies && sess.Blocked_Companies.length" class="text-xs text-red-600 mt-1">
                                   Blocked (selected in): <span x-text="(sess.Blocked_Companies || []).join(', ')"></span>
                                 </p>
-                                <p x-show="sess.Placement_Rule_Set && sess.AllowOnly_Packages && Object.keys(sess.AllowOnly_Packages).length" class="text-xs text-amber-700 mt-1">
-                                  Only these packages allowed:
-                                  <template x-for="nm in Object.keys(sess.AllowOnly_Packages || {})" :key="nm">
-                                    <span class="mr-2"><b x-text="nm"></b> (<span x-text="sess.AllowOnly_Packages[nm].map(x => pkgLabel(x)).join(', ')"></span>)</span>
-                                  </template>
-                                </p>
-                                <p x-show="sess.Placement_Rule_Set && (!sess.Blocked_Companies || !sess.Blocked_Companies.length) && (!sess.AllowOnly_Packages || !Object.keys(sess.AllowOnly_Packages).length)" class="text-xs text-emerald-700 mt-1">
+                                <p x-show="sess.Placement_Rule_Set && (!sess.Blocked_Companies || !sess.Blocked_Companies.length)" class="text-xs text-emerald-700 mt-1">
                                   All selected students allowed
                                 </p>
                               </div>
@@ -3284,44 +3405,6 @@
                         <p class="text-xs text-slate-400 mt-1">
                           Students selected in any company NOT listed above — plus every unplaced student — can still register.
                         </p>
-                        <div class="mt-4 pt-3 border-t border-slate-200">
-                          <p class="text-xs font-medium text-slate-500 mb-1">Allow only certain packages of a company</p>
-                          <p class="text-xs text-slate-400 mb-2">
-                            For a company that has more than one package (e.g. TCS), tick the package(s) that may register.
-                            Students selected in that company at any other package are blocked.
-                          </p>
-                          <template x-for="name in Object.keys(regFormAllowOnly)" :key="name">
-                            <div class="bg-white border border-amber-300 rounded-lg p-3 mb-2">
-                              <div class="flex items-center justify-between mb-2">
-                                <p class="text-sm font-medium text-slate-700" x-text="name"></p>
-                                <button type="button" @click="removeRegFormPkgRule(name)" class="text-xs text-red-500 hover:underline">Remove</button>
-                              </div>
-                              <div class="flex flex-wrap gap-2">
-                                <template x-for="o in regFormPkgOptions(name)" :key="o.p">
-                                  <label class="flex items-center gap-1.5 text-xs border rounded-lg px-2 py-1 cursor-pointer"
-                                    :class="isRegFormPkgAllowed(name, o.p) ? 'bg-emerald-50 border-emerald-400 text-emerald-800' : 'bg-white border-slate-300 text-slate-600'">
-                                    <input type="checkbox" :checked="isRegFormPkgAllowed(name, o.p)" @change="toggleRegFormPkg(name, o.p)">
-                                    <span x-text="pkgLabel(o.p) + ' · ' + o.count + (o.count === 1 ? ' student' : ' students')"></span>
-                                  </label>
-                                </template>
-                              </div>
-                              <p x-show="!(regFormAllowOnly[name] || []).length" class="text-xs text-red-600 mt-1">Tick at least one package.</p>
-                            </div>
-                          </template>
-                          <div class="flex gap-2 items-center">
-                            <select x-model="regFormAddPkgCompany" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white">
-                              <option value="">Add a company…</option>
-                              <template x-for="e in regFormPkgCompanyChoices()" :key="e.name">
-                                <option :value="e.name" x-text="e.name"></option>
-                              </template>
-                            </select>
-                            <button type="button" @click="addRegFormPkgRule()" :disabled="!regFormAddPkgCompany"
-                              class="text-xs px-3 py-1.5 rounded-lg border border-amber-400 text-amber-700 hover:bg-amber-50 disabled:opacity-50">Add package rule</button>
-                          </div>
-                          <p x-show="regFormPkgCompanyChoices().length === 0 && !Object.keys(regFormAllowOnly).length" class="text-xs text-slate-400 mt-1">
-                            No company has more than one package recorded yet.
-                          </p>
-                        </div>
                       </div>
                     </div>
 
@@ -4876,7 +4959,7 @@
                         <td class="py-1.5 pr-2" x-text="s.Display_Email"></td>
                         <td class="py-1.5 pr-2">
                           <select :value="s.Result || ''" @change="updateRoundResult(s, $event.target.value)"
-                            class="text-xs font-medium rounded-lg px-2 py-1 border"
+                            class="result-pill text-xs font-medium rounded-lg px-2 py-1 border"
                             :class="s.Result === 'Shortlisted' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : (s.Result === 'Selected' ? 'bg-blue-50 border-blue-300 text-blue-700' : (s.Result === 'Rejected' ? 'bg-red-50 border-red-300 text-red-600' : (s.Result === 'Absent' ? 'bg-slate-200 border-slate-400 text-slate-700' : 'bg-slate-50 border-slate-300 text-slate-500')))">
                             <option value="">Pending</option>
                             <option value="Shortlisted">Shortlisted</option>
@@ -5490,6 +5573,7 @@ function app() {
     // to — 'All', 'Pending', 'Shortlisted', 'Selected', or 'Rejected'.
     // Driven by clicking the count badges above the table.
     roundListFilter: 'All',
+    darkMode: document.documentElement.classList.contains('dark'),
     roundSel: {},        // ticked students in the open round: { enrollmentNo: true }
     roundSelKey: '',     // company|round the ticks belong to (ticks reset when the round changes)
     // Which branch the on-screen round-students table is narrowed to — ''
@@ -5541,8 +5625,6 @@ function app() {
     // already-placed student outright, regardless of that list.
     regFormPlacedAllowedStr: 'yes',
     regFormExcludedCompaniesText: '',
-    // Company + package rule for this drive's form: { 'TCS': [3.46] } -> students selected in TCS may register only at 3.46 LPA.
-    regFormAllowOnly: {}, regFormAddPkgCompany: '',
     // Bound to a <input type="datetime-local">, so it's always a plain
     // "YYYY-MM-DDTHH:mm" string in the admin's own local time — converted
     // to/from an absolute ISO timestamp only when talking to the server
@@ -9365,6 +9447,26 @@ function app() {
     // Which filter tab a student belongs to. Anything that is not Shortlisted / Selected / Rejected / Absent
     // (an empty result, or one marked 'Appeared' by a volunteer) is "Pending" - the same rule the counts use,
     // so the number on the Pending button always matches the rows shown under it.
+    toggleDark() {
+      this.darkMode = !this.darkMode;
+      document.documentElement.classList.toggle('dark', this.darkMode);
+      try { localStorage.setItem('pt-theme', this.darkMode ? 'dark' : 'light'); } catch (e) {}
+      const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', this.darkMode ? '#0f1829' : '#21314e');
+    },
+    // ---- Home: running drives with a round stepper (built from the Live Overview data) ----
+    driveSteps(c) { return (c.rounds || []).filter(r => !r.isAttendance); },
+    driveStepState(r, idx, steps) {
+      const k = r.counts || {};
+      const decided = (k.Shortlisted || 0) + (k.Selected || 0) + (k.Rejected || 0) + (k.Absent || 0);
+      if (r.total > 0 && (k.Pending || 0) === 0 && decided > 0) return 'done';
+      const prevDone = idx === 0 || this.driveStepState(steps[idx - 1], idx - 1, steps) === 'done';
+      return (prevDone && r.total > 0) ? 'active' : '';
+    },
+    drivePct(c) {
+      const st = this.driveSteps(c); if (!st.length) return 0;
+      return Math.round(100 * st.filter((r, i) => this.driveStepState(r, i, st) === 'done').length / st.length);
+    },
+
     // ---- tick-box multi select for the round student list ----
     _roundSelCheck() {
       const k = ((this.detail && this.detail.company && this.detail.company.Company_Name) || '') + '|' + (this.activeRoundName || '');
@@ -10005,7 +10107,6 @@ function app() {
       this.showRegistrationFormModal = true;
       this.regFormLoading = true;
       this.regFormLink = '';
-      this.loadPlacementPackages();
       const company = this.detail.company.Company_Name;
 
       // The two reads are independent, so they run at the same time (they used to run one after the
@@ -10027,8 +10128,6 @@ function app() {
           this.regFormCompanyDescription = cfgRes.companyDescription || '';
           this.regFormPlacedAllowedStr = cfgRes.placedAllowed === false ? 'no' : 'yes';
           this.regFormExcludedCompaniesText = (cfgRes.excludedCompanies || []).join(', ');
-          this.regFormAllowOnly = cfgRes.allowOnlyPackages || {};
-          this.regFormAddPkgCompany = '';
           this.regFormClosesAtLocal = this.isoToClosesAtLocal_(cfgRes.closesAt || '');
           this.regFormCustomQuestions = (cfgRes.customQuestions && cfgRes.customQuestions.length ? cfgRes.customQuestions : this.defaultCustomQuestions_())
             .map(q => ({ enabled: !!q.enabled, label: q.label || '', type: q.type || 'text', required: !!q.required, optionsText: (q.options || []).join(', ') }));
@@ -10045,8 +10144,6 @@ function app() {
           this.regFormCompanyDescription = '';
           this.regFormPlacedAllowedStr = 'yes';
           this.regFormExcludedCompaniesText = '';
-          this.regFormAllowOnly = {};
-          this.regFormAddPkgCompany = '';
           this.regFormClosesAtLocal = '';
           this.regFormCustomQuestions = this.defaultCustomQuestions_();
         }
@@ -10076,15 +10173,6 @@ function app() {
       const company = this.detail.company.Company_Name;
       this.regFormSaving = true;
       const placedAllowed = this.regFormPlacedAllowedStr !== 'no';
-      if (placedAllowed) {
-        const emptyPkg = Object.keys(this.regFormAllowOnly).filter(n => !(this.regFormAllowOnly[n] || []).length);
-        if (emptyPkg.length) {
-          this.regFormSaving = false;
-          this.showToast('Tick at least one package for ' + emptyPkg.join(', ') + ' (or remove that package rule).', 'error');
-          return;
-        }
-      }
-      this.regFormSaving = true;
       google.script.run
         .withSuccessHandler(res => {
           this.regFormSaving = false;
@@ -10103,7 +10191,7 @@ function app() {
           this.regFormCompanyDescription, placedAllowed, this.regFormExcludedCompaniesText,
           this.closesAtLocalToIso_(this.regFormClosesAtLocal),
           this.regFormCustomQuestions.map(q => ({ enabled: q.enabled, label: q.label, type: q.type, required: q.required, options: q.optionsText })),
-          this.regFormEligibleCourses, placedAllowed ? this.regFormAllowOnly : {});
+          this.regFormEligibleCourses);
     },
 
     copyRegistrationFormLink() {
@@ -11006,9 +11094,6 @@ function volunteerManager() {
     // company with selected students is listed; anything not in the blocked
     // list is allowed.
     placementCompanies: [], placementBlockedList: [], placementSearch: '', placementLoading: false,
-    // Company + package rule: placementAllowOnly = { 'TCS': [3.46] } -> only those packages of that company may register.
-    // placementPackages = { tcs: { name, packages: [{p, count}], unrecorded } } straight from the sheet.
-    placementAllowOnly: {}, placementPackages: {},
     placementCountsLoading: false, placementHideEmpty: true,
     shorteningSessionId: null, deletingSessionId: null,
 
@@ -11206,8 +11291,6 @@ function volunteerManager() {
       this.newSessionRegistrationMode = 'prior';
       this.placementBlockedList = [];
       this.placementSearch = '';
-      this.placementAllowOnly = {};
-      this.loadPlacementPackages();
       this.loadPlacementCompanies();
       this.loadAttendanceSessions();
     },
@@ -11251,72 +11334,8 @@ function volunteerManager() {
         (!q || c.name.toLowerCase().indexOf(q) > -1) &&
         !(this.placementHideEmpty && c.count === 0));
     },
-    blockAllPlacementCompanies() { this.placementAllowOnly = {}; this.placementBlockedList = this.placementCompanies.map(c => c.name); },
-    allowAllPlacementCompanies() { this.placementAllowOnly = {}; this.placementBlockedList = []; },
-
-    // ---- Company + package rule -------------------------------------------
-    pkgLabel(p) { return p >= 1000 ? ('₹' + Number(p).toLocaleString('en-IN')) : ((Math.round(p * 100) / 100) + ' LPA'); },
-    loadPlacementPackages() {
-      google.script.run
-        .withSuccessHandler(res => { if (res && res.success) this.placementPackages = res.packages || {}; })
-        .withFailureHandler(() => {})
-        .getPlacementPackageMap();
-    },
-    placementPkgEntry(name) { return this.placementPackages[String(name || '').toLowerCase()] || null; },
-    placementPkgOptions(name) { const e = this.placementPkgEntry(name); return e ? e.packages : []; },
-    placementPkgUnrecorded(name) { const e = this.placementPkgEntry(name); return e ? (e.unrecorded || 0) : 0; },
-    placementMode(name) {
-      if (this.placementBlockedList.indexOf(name) > -1) return 'block';
-      if (Object.prototype.hasOwnProperty.call(this.placementAllowOnly, name)) return 'only';
-      return 'allow';
-    },
-    setPlacementMode(name, mode) {
-      const rest = Object.assign({}, this.placementAllowOnly);
-      delete rest[name];
-      this.placementBlockedList = this.placementBlockedList.filter(n => n !== name);
-      if (mode === 'block') this.placementBlockedList = this.placementBlockedList.concat([name]);
-      if (mode === 'only') rest[name] = [];
-      this.placementAllowOnly = rest;
-    },
-    isPlacementPkgAllowed(name, p) { return (this.placementAllowOnly[name] || []).some(x => Math.abs(x - p) < 0.005); },
-    togglePlacementPkg(name, p) {
-      const cur = this.placementAllowOnly[name] || [];
-      const has = cur.some(x => Math.abs(x - p) < 0.005);
-      const next = has ? cur.filter(x => Math.abs(x - p) >= 0.005) : cur.concat([p]);
-      this.placementAllowOnly = Object.assign({}, this.placementAllowOnly, { [name]: next });
-    },
-    // Registration-form version of the same rule
-    regFormPkgOptions(name) {
-      const e = this.placementPkgEntry(name);
-      const opts = e ? e.packages.map(o => ({ p: o.p, count: o.count })) : [];
-      (this.regFormAllowOnly[name] || []).forEach(p => { if (!opts.some(o => Math.abs(o.p - p) < 0.005)) opts.push({ p: p, count: 0 }); });
-      return opts.sort((a, b) => a.p - b.p);
-    },
-    regFormPkgCompanyChoices() {
-      const used = {};
-      Object.keys(this.regFormAllowOnly).forEach(n => { used[n.toLowerCase()] = true; });
-      return Object.keys(this.placementPackages).map(k => this.placementPackages[k])
-        .filter(e => e.packages.length > 1 && !used[e.name.toLowerCase()])
-        .sort((a, b) => a.name.localeCompare(b.name));
-    },
-    addRegFormPkgRule() {
-      const n = this.regFormAddPkgCompany;
-      if (!n) return;
-      this.regFormAllowOnly = Object.assign({}, this.regFormAllowOnly, { [n]: [] });
-      this.regFormAddPkgCompany = '';
-    },
-    removeRegFormPkgRule(name) {
-      const rest = Object.assign({}, this.regFormAllowOnly);
-      delete rest[name];
-      this.regFormAllowOnly = rest;
-    },
-    isRegFormPkgAllowed(name, p) { return (this.regFormAllowOnly[name] || []).some(x => Math.abs(x - p) < 0.005); },
-    toggleRegFormPkg(name, p) {
-      const cur = this.regFormAllowOnly[name] || [];
-      const has = cur.some(x => Math.abs(x - p) < 0.005);
-      const next = has ? cur.filter(x => Math.abs(x - p) >= 0.005) : cur.concat([p]);
-      this.regFormAllowOnly = Object.assign({}, this.regFormAllowOnly, { [name]: next });
-    },
+    blockAllPlacementCompanies() { this.placementBlockedList = this.placementCompanies.map(c => c.name); },
+    allowAllPlacementCompanies() { this.placementBlockedList = []; },
 
     loadAttendanceSessions() {
       if (!this.selCompany) { this.attendanceSessions = []; return; }
@@ -11339,15 +11358,6 @@ function volunteerManager() {
       // "not chosen", so prior-list sessions keep using the company's
       // Registration Form setting exactly as before.
       const blockedCompanies = mode === 'spot' ? JSON.parse(JSON.stringify(this.placementBlockedList)) : null;
-      let allowOnlyPackages = null;
-      if (mode === 'spot') {
-        const empty = Object.keys(this.placementAllowOnly).filter(n => !(this.placementAllowOnly[n] || []).length);
-        if (empty.length) {
-          alert('Tick at least one package for: ' + empty.join(', ') + ' (or set it to Allow / Block).');
-          return;
-        }
-        allowOnlyPackages = JSON.parse(JSON.stringify(this.placementAllowOnly));
-      }
       this.creatingAttendanceSession = true;
       google.script.run
         .withSuccessHandler(res => {
@@ -11355,7 +11365,6 @@ function volunteerManager() {
           if (res.success) {
             this.newAttendanceSessionName = '';
             this.placementBlockedList = [];
-            this.placementAllowOnly = {};
             this.placementSearch = '';
             this.loadAttendanceSessions();
           } else {
@@ -11369,7 +11378,7 @@ function volunteerManager() {
         // Volunteer mobiles are no longer declared per-session — access is
         // now granted via the single Round_Volunteers list (Round: Attendance)
         // in Manage Volunteers, checked by verifyVolunteerMobile in Code.gs.
-        .createAttendanceSession(company, this.newAttendanceSessionName || 'Attendance', '', [], mode, blockedCompanies, allowOnlyPackages);
+        .createAttendanceSession(company, this.newAttendanceSessionName || 'Attendance', '', [], mode, blockedCompanies);
     },
 
     endAttendanceSession(sessionId) {

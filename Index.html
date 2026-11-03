@@ -437,6 +437,19 @@
   html.dark .bg-gray-50, html.dark .bg-gray-100 { background-color:#1c2a45; }
   html.dark .shadow-sm, html.dark .shadow-lg, html.dark .shadow-xl { --tw-shadow-color: rgba(0,0,0,.5); }
   html.dark select.result-pill { background-color:#1c2a45; }
+  /* coloured text/tints that stayed light-mode (dark text on dark cards) */
+  html.dark .text-indigo-600, html.dark .text-indigo-700, html.dark .text-indigo-800, html.dark .text-indigo-900, html.dark .text-blue-600, html.dark .text-blue-700, html.dark .text-sky-700, html.dark .text-violet-700, html.dark .text-purple-700 { color:#9cc6e8 !important; }
+  html.dark .text-indigo-500 { color:#7fb6e6 !important; }
+  html.dark .text-emerald-600, html.dark .text-emerald-700, html.dark .text-emerald-800 { color:#6fd4b2 !important; }
+  html.dark .text-amber-600, html.dark .text-amber-700, html.dark .text-orange-700 { color:#ffb74d !important; }
+  html.dark .text-red-600, html.dark .text-red-700, html.dark .text-rose-700 { color:#f5a8a8 !important; }
+  html.dark .bg-emerald-50, html.dark .bg-emerald-100 { background-color:#12352b; }
+  html.dark .bg-amber-50, html.dark .bg-amber-100, html.dark .bg-orange-100 { background-color:#3a2a1c; }
+  html.dark .bg-red-50, html.dark .bg-red-100 { background-color:#3b1f24; }
+  html.dark .bg-blue-50, html.dark .bg-blue-100, html.dark .bg-sky-100 { background-color:#1d2e4d; }
+  html.dark .bg-indigo-100 { background-color:#24365a; }
+  html.dark .border-emerald-100, html.dark .border-emerald-200, html.dark .border-red-100, html.dark .border-red-200, html.dark .border-blue-100, html.dark .border-indigo-200 { border-color:#2b3a56; }
+  html.dark main .bg-white .font-medium, html.dark main .bg-white .font-semibold, html.dark main .bg-white .font-bold { color:inherit; }
 </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800" x-data="app()" x-init="init()" x-cloak>
@@ -741,7 +754,7 @@
   <main x-show="loggedIn" class="max-w-6xl mx-auto px-4 py-5 pb-24 md:px-6 md:py-8 md:pb-8">
 
     <!-- ===================== GLOBAL SEARCH ===================== -->
-    <div class="relative mb-5 z-40" @click.outside="globalSearchOpen = false">
+    <div class="relative mb-5 z-10" @click.outside="globalSearchOpen = false">
       <div class="relative">
         <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
         <input type="text" x-model="globalSearchQuery" @input="onGlobalSearchInput()" @focus="if (globalSearchResults) globalSearchOpen = true"
@@ -6054,6 +6067,8 @@ function app() {
             } catch (e) { /* storage blocked on this device/browser — proceed anyway */ }
             this.mobileNavOpen = false;
             this.loadAllInitialData();
+            // Audit row is written after login so it doesn't slow the login itself
+            try { google.script.run.withSuccessHandler(() => {}).withFailureHandler(() => {}).logLoginActivity(res.token); } catch (e) {}
           } else {
             this.loginError = res.message || 'Invalid email or password.';
           }

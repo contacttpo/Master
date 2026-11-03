@@ -741,7 +741,7 @@
   <main x-show="loggedIn" class="max-w-6xl mx-auto px-4 py-5 pb-24 md:px-6 md:py-8 md:pb-8">
 
     <!-- ===================== GLOBAL SEARCH ===================== -->
-    <div class="relative mb-5" @click.outside="globalSearchOpen = false">
+    <div class="relative mb-5 z-40" @click.outside="globalSearchOpen = false">
       <div class="relative">
         <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
         <input type="text" x-model="globalSearchQuery" @input="onGlobalSearchInput()" @focus="if (globalSearchResults) globalSearchOpen = true"
@@ -753,8 +753,8 @@
         </button>
       </div>
 
-      <div x-show="globalSearchOpen && globalSearchResults" x-transition x-cloak
-        class="absolute z-40 mt-1.5 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+      <div x-show="globalSearchOpen && globalSearchResults" x-cloak @click.stop
+        class="absolute z-50 mt-1.5 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
 
         <template x-if="globalSearchResults && !globalSearchResults.companies.length && !globalSearchResults.students.length">
           <p class="text-sm text-slate-400 text-center py-6">No companies or students match "<span x-text="globalSearchQuery"></span>".</p>
@@ -2936,19 +2936,19 @@
               Company Details
             </h3>
             <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-              <div><p class="text-slate-400">Current Stage</p><p class="font-medium" x-text="detail.company.Current_Stage || '—'"></p></div>
-              <div><p class="text-slate-400">Date of Process</p><p class="font-medium" x-text="detail.company.Date || '—'"></p></div>
-              <div><p class="text-slate-400">Package</p><p class="font-medium" x-text="detail.company.Package || '—'"></p></div>
-              <div><p class="text-slate-400">Eligible Branches</p><p class="font-medium" x-text="detail.company.Eligible_Branches || '—'"></p></div>
+              <div class="min-w-0"><p class="text-slate-400">Current Stage</p><p class="font-medium break-words" x-text="detail.company.Current_Stage || '—'"></p></div>
+              <div class="min-w-0"><p class="text-slate-400">Date of Process</p><p class="font-medium break-words" x-text="detail.company.Date || '—'"></p></div>
+              <div class="min-w-0"><p class="text-slate-400">Package</p><p class="font-medium break-words" x-text="detail.company.Package || '—'"></p></div>
+              <div class="min-w-0"><p class="text-slate-400">Eligible Branches</p><p class="font-medium break-words" x-text="detail.company.Eligible_Branches || '—'"></p></div>
               <div class="col-span-2"><p class="text-slate-400">Criteria</p><p class="font-medium" x-text="detail.company.Criteria || '—'"></p></div>
-              <div><p class="text-slate-400">POC</p><p class="font-medium" x-text="detail.company.POC_Name || '—'"></p></div>
-              <div><p class="text-slate-400">POC Email</p><p class="font-medium" x-text="detail.company.POC_Email || '—'"></p></div>
-              <div><p class="text-slate-400">POC Contact</p><p class="font-medium" x-text="detail.company.POC_Contact || '—'"></p></div>
+              <div class="min-w-0"><p class="text-slate-400">POC</p><p class="font-medium break-words" x-text="detail.company.POC_Name || '—'"></p></div>
+              <div class="min-w-0"><p class="text-slate-400">POC Email</p><p class="font-medium break-words" style="overflow-wrap:anywhere;word-break:break-word" x-text="detail.company.POC_Email || '—'"></p></div>
+              <div class="min-w-0"><p class="text-slate-400">POC Contact</p><p class="font-medium break-words" x-text="detail.company.POC_Contact || '—'"></p></div>
               <div class="col-span-2 md:col-span-3">
                 <p class="text-slate-400">Team Visited for Campus Drive</p>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1 mt-1" x-show="teamList().length">
                   <template x-for="(m, i) in teamList()" :key="i">
-                    <p class="font-medium"><span x-text="(m.name || '—')"></span> <span class="text-slate-400 font-normal" x-text="m.email ? '· ' + m.email : ''"></span></p>
+                    <p class="font-medium min-w-0 break-words" style="overflow-wrap:anywhere"><span x-text="(m.name || '—')"></span> <span class="text-slate-400 font-normal" x-text="m.email ? '· ' + m.email : ''"></span></p>
                   </template>
                 </div>
                 <p class="font-medium text-slate-400" x-show="!teamList().length">None added yet — use Edit to add the team members who visited.</p>
@@ -7677,11 +7677,13 @@ function app() {
         this.globalSearchOpen = false;
         return;
       }
+      const seq = this._gsSeq = (this._gsSeq || 0) + 1;
       this.globalSearchTimer = setTimeout(() => {
         google.script.run
           .withSuccessHandler(res => {
-            if (!res.success) return;
-            this.globalSearchResults = { companies: res.companies, students: res.students };
+            // Ignore stale replies (an older query finishing after a newer one)
+            if (seq !== this._gsSeq || !res || !res.success) return;
+            this.globalSearchResults = { companies: res.companies || [], students: res.students || [] };
             this.globalSearchOpen = true;
           })
           .withFailureHandler(() => { /* silent — search box just stays empty-handed */ })

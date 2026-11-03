@@ -451,6 +451,13 @@
   html.dark main button.border-l-4:hover { background: #1a2843 linear-gradient(135deg, #223253 0%, #1a2843 100%) !important; }
   html.dark main button.border-l-4 .text-slate-800, html.dark main button.border-l-4 span.font-semibold { color:#f1f5f9 !important; }
   html.dark main .bg-white.border.rounded-xl:not(.border-l-4) { border-color:#2b3a56; box-shadow:0 8px 24px -10px rgba(0,0,0,.6); }
+  /* Student edit forms open as a dialog ABOVE everything (they used to render inline,
+     behind the Selected / Round / Registered Students popups they are launched from). */
+  .edit-float-backdrop { position:fixed; inset:0; background:rgba(15,23,42,.55); z-index:65; }
+  .edit-float { position:fixed !important; z-index:70; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:min(94vw,860px); max-height:88vh; overflow-y:auto; margin:0 !important;
+    box-shadow:0 25px 60px -12px rgba(0,0,0,.45); border:1px solid #cbd5e1; background:#f8fafc; }
+  html.dark .edit-float { background:#17233b; border-color:#2b3a56; }
   /* coloured text/tints that stayed light-mode (dark text on dark cards) */
   html.dark .text-indigo-600, html.dark .text-indigo-700, html.dark .text-indigo-800, html.dark .text-indigo-900, html.dark .text-blue-600, html.dark .text-blue-700, html.dark .text-sky-700, html.dark .text-violet-700, html.dark .text-purple-700 { color:#9cc6e8 !important; }
   html.dark .text-indigo-500 { color:#7fb6e6 !important; }
@@ -3708,7 +3715,8 @@
             <p class="text-xs text-slate-400 mb-4">CSV must include headers: S.No., Enrollment No., Student_Name, Company_Name, Mobile Number, Reference ID, Email ID, Branch, College, Category (column order doesn't matter). A Package column (e.g. "9 LPA") is picked up too if present, but it's optional. If Mobile Number is left blank, it's automatically filled in from that student's registration record.</p>
 
             <!-- Manual entry form -->
-            <div x-show="studentForm._show" x-cloak class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 rounded-lg p-4 mb-4">
+            <div x-show="studentForm._show" x-cloak class="edit-float-backdrop" @click="studentForm._show = false"></div>
+<div x-show="studentForm._show" x-cloak class="edit-float grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 rounded-lg p-4 mb-4">
               <div>
                 <label class="text-xs font-medium text-slate-500">S.No.</label>
                 <input type="text" x-model="studentForm.S_No" class="w-full mt-1 border border-slate-300 rounded-lg px-3 py-2 text-sm">
@@ -4874,7 +4882,8 @@
               </div>
 
               <!-- Manual entry form -->
-              <div x-show="roundStudentForm._show" x-cloak class="bg-slate-50 rounded-lg p-4 mb-4">
+              <div x-show="roundStudentForm._show" x-cloak class="edit-float-backdrop" @click="roundStudentForm._show = false"></div>
+<div x-show="roundStudentForm._show" x-cloak class="edit-float bg-slate-50 rounded-lg p-4 mb-4">
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
                     <label class="text-xs font-medium text-slate-500">Enrollment No.</label>
@@ -5295,7 +5304,8 @@
               </p>
 
               <!-- Manual entry form (spot registration) -->
-              <div x-show="registeredStudentForm._show" x-cloak class="bg-slate-50 rounded-lg p-4 mb-4">
+              <div x-show="registeredStudentForm._show" x-cloak class="edit-float-backdrop" @click="registeredStudentForm._show = false"></div>
+<div x-show="registeredStudentForm._show" x-cloak class="edit-float bg-slate-50 rounded-lg p-4 mb-4">
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
                     <label class="text-xs font-medium text-slate-500">Enrollment No.</label>

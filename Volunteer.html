@@ -415,11 +415,54 @@
 <style id="polish-badge">
   .gbadge.done { display: inline-flex; align-items: center; gap: 4px; }
 </style>
-<meta name="theme-color" content="#1b5f7a">
+<script>try{if(localStorage.getItem("pt-theme")==="dark")document.documentElement.classList.add("dark");}catch(e){}</script>
+<meta name="theme-color" content="#21314e">
+<style id="brand-theme">
+  /* BRAND THEME - navy / brand blue / orange highlight, calmer cards, dark mode. Delete this block (and the pt-theme script + themeBtn) to revert. */
+  .brand { background: #21314e; box-shadow: none; }
+  h1 { background: none; -webkit-text-fill-color: #21314e; color: #21314e; }
+  .btn { background: #246498; box-shadow: 0 6px 14px -8px rgba(36,100,152,.7); }
+  .btn:disabled { box-shadow: none; }
+  .sessBtn { background: #246498; box-shadow: 0 6px 14px -8px rgba(36,100,152,.7); }
+  .sessBtn.spot { background: #de6413; box-shadow: 0 6px 14px -8px rgba(222,100,19,.7); }
+  .card, .card:nth-child(n) { border-left-color: #2c7cbd; border-radius: 16px; box-shadow: 0 1px 2px rgba(15,35,60,.04), 0 10px 24px -16px rgba(33,49,78,.35); }
+  .card[style*="padding:6px 18px"] { border-left-color: #dce9f4; }
+  .companyCard, .companyCard:nth-of-type(n) { border-left-color: #2c7cbd; border-radius: 16px; }
+  #themeBtn { position: fixed; left: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 50; width: 40px; height: 40px; border-radius: 50%;
+    border: 1px solid #cbd5e1; background: #fff; color: #21314e; font-size: 18px; line-height: 1; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 16px -6px rgba(15,35,60,.45); opacity: .9; padding: 0; }
+  /* ---- dark mode ---- */
+  html.dark body { background: #0f1829; color: #e2e8f0; }
+  html.dark h1 { -webkit-text-fill-color: #f1f5f9; color: #f1f5f9; }
+  html.dark .brand { background: #246498; }
+  html.dark .sub, html.dark .hint, html.dark .filterHint, html.dark .stateMsg, html.dark .student .meta, html.dark .cnt .l,
+  html.dark .companyToggle .ccount, html.dark .groupCard .gcount, html.dark .rcCount, html.dark .chev { color: #8da0bb; }
+  html.dark .card, html.dark .cnt, html.dark .companyCard, html.dark .companyToggle, html.dark .feedbackToggle, html.dark .groupCard, html.dark .groupToggle,
+  html.dark .backBtn, html.dark .btn.ghost, html.dark .badge.other, html.dark .bulkBtn.clear, html.dark .bulkBtn.markall, html.dark .rcMatch, html.dark .rcLastAddedBar,
+  html.dark .feedbackLinkInput { background: #17233b; border-color: #2b3a56; color: #e2e8f0; }
+  html.dark input, html.dark select { background: #101b30; border-color: #33445f; color: #e2e8f0; }
+  html.dark .card .co, html.dark .topbar .co, html.dark .student .name, html.dark .companyToggle .cname, html.dark .groupCard .gname, html.dark .cnt.pending .n { color: #f1f5f9; }
+  html.dark .topbar .rd, html.dark .logoutLink, html.dark .card .rd { color: #7fb6e6; }
+  html.dark .student { background: #17233b; }
+  html.dark #themeBtn { background: #17233b; color: #f6c58f; border-color: #33445f; }
+</style>
 </head>
 <body>
 <div class="wrap" id="app"></div>
 <div class="toast" id="toast"></div>
+<button id="themeBtn" type="button" aria-label="Switch dark / light mode" title="Dark / light mode">🌙</button>
+<script>
+(function () {
+  var b = document.getElementById('themeBtn');
+  function paint() { b.textContent = document.documentElement.classList.contains('dark') ? '☀' : '🌙'; }
+  b.addEventListener('click', function () {
+    var d = document.documentElement.classList.toggle('dark');
+    try { localStorage.setItem('pt-theme', d ? 'dark' : 'light'); } catch (e) {}
+    paint();
+  });
+  paint();
+})();
+</script>
 
 <script>
   const app = document.getElementById('app');

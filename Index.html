@@ -8148,7 +8148,7 @@ function app() {
     // ---------- Selected Students / Manual Entry ----------
     // Shows the student's photo in a popup (fetched by the server, so no Google sign-in is needed)
     openStudentPhoto(s) {
-      if (!s || !s.Photo_URL) { this.showToast('No photo saved for this student', 'error'); return; }
+      if (!s) return;
       this.photoViewer = { show: true, loading: true, src: '', name: s.Student_Name || '', error: '' };
       google.script.run
         .withSuccessHandler(res => {
@@ -8161,7 +8161,7 @@ function app() {
         .withFailureHandler(err => {
           this.photoViewer = { show: true, loading: false, src: '', name: s.Student_Name || '', error: (err && err.message) || 'Could not open the photo.' };
         })
-        .getStudentPhotoData(s.Photo_URL);
+        .getStudentPhotoData(s.Photo_URL || '', s.Photo_File_Name || '', (this.detail.company && this.detail.company.Company_Name) || s.Company_Name || '');
     },
 
     openStudentForm(existing) {

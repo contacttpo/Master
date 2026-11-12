@@ -4117,6 +4117,20 @@
           </div>
 
           <!-- Selected Students Modal (full list) -->
+          <template x-teleport="body">
+            <div x-show="photoViewer.show" x-cloak class="fixed inset-0 z-[90] flex items-center justify-center p-4" style="background:rgba(15,23,42,.8)"
+                 @click.self="photoViewer.show = false" @keydown.escape.window="photoViewer.show = false">
+              <div class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[92vh] overflow-auto p-4">
+                <div class="flex items-center justify-between mb-3 gap-3">
+                  <h3 class="text-base font-bold text-slate-800 truncate" x-text="photoViewer.name || 'Photo'"></h3>
+                  <button type="button" @click="photoViewer.show = false" class="text-slate-500 hover:text-slate-800 text-2xl leading-none px-2" aria-label="Close">&times;</button>
+                </div>
+                <p x-show="photoViewer.loading" class="text-sm text-slate-500 py-10 text-center">Loading photo...</p>
+                <p x-show="photoViewer.error" class="text-sm text-red-600 py-6 text-center" x-text="photoViewer.error"></p>
+                <img x-show="photoViewer.src" :src="photoViewer.src" :alt="photoViewer.name" class="w-full h-auto rounded-lg">
+              </div>
+            </div>
+          </template>
           <div x-show="showStudentsModal" x-cloak
                class="fixed inset-0 bg-black/40 z-40 flex items-center justify-center p-4"
                @click.self="showStudentsModal = false; highlightEnrollmentNo = ''">
@@ -4218,7 +4232,7 @@
                         <div class="pt-2 mt-2 border-t border-slate-100 flex items-center justify-between gap-2">
                           <span class="text-slate-400">Photo</span>
                           <template x-if="s.Photo_Status === 'Submitted'">
-                            <a :href="s.Photo_URL" target="_blank" class="text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5 text-xs font-medium hover:underline">Submitted &#10003;</a>
+                            <button type="button" @click="openStudentPhoto(s)" class="text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5 text-xs font-medium hover:underline">Submitted &#10003;</button>
                           </template>
                           <template x-if="s.Photo_Status !== 'Submitted'">
                             <button @click="askForPhotoSingle(s)" :disabled="askingForPhotoFor === s.Enrollment_No"
@@ -5562,6 +5576,7 @@ function app() {
     // happens on that company (loadCompanyDetail always refreshes the
     // cache entry with the latest server data after fetching).
     companyDetailCache: {},
+    photoViewer: { show: false, loading: false, src: '', name: '', error: '' },
     topPackages: [],
     topPackagesLoading: false,
     packageAnalytics: { overall: null, byBranch: [], byCompany: [] },
@@ -8131,6 +8146,24 @@ function app() {
     },
 
     // ---------- Selected Students / Manual Entry ----------
+    // Shows the student's photo in a popup (fetched by the server, so no Google sign-in is needed)
+    openStudentPhoto(s) {
+      if (!s || !s.Photo_URL) { this.showToast('No photo saved for this student', 'error'); return; }
+      this.photoViewer = { show: true, loading: true, src: '', name: s.Student_Name || '', error: '' };
+      google.script.run
+        .withSuccessHandler(res => {
+          if (res && res.success) {
+            this.photoViewer = { show: true, loading: false, src: res.dataUrl, name: s.Student_Name || res.name || '', error: '' };
+          } else {
+            this.photoViewer = { show: true, loading: false, src: '', name: s.Student_Name || '', error: (res && res.message) || 'Could not open the photo.' };
+          }
+        })
+        .withFailureHandler(err => {
+          this.photoViewer = { show: true, loading: false, src: '', name: s.Student_Name || '', error: (err && err.message) || 'Could not open the photo.' };
+        })
+        .getStudentPhotoData(s.Photo_URL);
+    },
+
     openStudentForm(existing) {
       if (existing) {
         this.studentForm = { ...existing, _show: true, _isEdit: true };

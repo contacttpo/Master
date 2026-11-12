@@ -4118,16 +4118,16 @@
 
           <!-- Selected Students Modal (full list) -->
           <template x-teleport="body">
-            <div x-show="photoViewer.show" x-cloak class="fixed inset-0 z-[90] flex items-center justify-center p-4" style="background:rgba(15,23,42,.8)"
+            <div x-show="photoViewer.show" x-cloak class="fixed inset-0 flex items-center justify-center p-4" style="background:rgba(15,23,42,.8); z-index:9999"
                  @click.self="photoViewer.show = false" @keydown.escape.window="photoViewer.show = false">
-              <div class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[92vh] overflow-auto p-4">
+              <div class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-auto p-4" style="max-height:92vh">
                 <div class="flex items-center justify-between mb-3 gap-3">
                   <h3 class="text-base font-bold text-slate-800 truncate" x-text="photoViewer.name || 'Photo'"></h3>
                   <button type="button" @click="photoViewer.show = false" class="text-slate-500 hover:text-slate-800 text-2xl leading-none px-2" aria-label="Close">&times;</button>
                 </div>
                 <p x-show="photoViewer.loading" class="text-sm text-slate-500 py-10 text-center">Loading photo...</p>
                 <p x-show="photoViewer.error" class="text-sm text-red-600 py-6 text-center" x-text="photoViewer.error"></p>
-                <img x-show="photoViewer.src" :src="photoViewer.src" :alt="photoViewer.name" class="w-full h-auto rounded-lg">
+                <img x-show="photoViewer.src" :src="photoViewer.src" :alt="photoViewer.name" class="w-full rounded-lg" style="height:auto">
               </div>
             </div>
           </template>

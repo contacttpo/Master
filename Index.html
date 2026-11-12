@@ -4128,6 +4128,7 @@
                 <p x-show="photoViewer.loading" class="text-sm text-slate-500 py-10 text-center">Loading photo...</p>
                 <p x-show="photoViewer.error" class="text-sm text-red-600 py-6 text-center" x-text="photoViewer.error"></p>
                 <img x-show="photoViewer.src" :src="photoViewer.src" :alt="photoViewer.name" class="w-full rounded-lg" style="height:auto">
+                <p x-show="photoViewer.timing" class="text-[10px] text-slate-400 mt-2 break-words" x-text="photoViewer.timing"></p>
               </div>
             </div>
           </template>
@@ -8153,7 +8154,7 @@ function app() {
       google.script.run
         .withSuccessHandler(res => {
           if (res && res.success) {
-            this.photoViewer = { show: true, loading: false, src: res.dataUrl, name: s.Student_Name || res.name || '', error: '' };
+            this.photoViewer = { show: true, loading: false, src: res.dataUrl, name: s.Student_Name || res.name || '', error: '', timing: res.timing || '' };
           } else {
             this.photoViewer = { show: true, loading: false, src: '', name: s.Student_Name || '', error: (res && res.message) || 'Could not open the photo.' };
           }

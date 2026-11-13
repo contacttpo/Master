@@ -546,49 +546,29 @@
   document.addEventListener('change', captureFormState_);
   document.addEventListener('input', captureFormState_);
 
-  // ---- Permanent / Present address ---------------------------------------
-  const ADDRESS_FIELDS = [
-    { key: 'Permanent_Address', label: 'Permanent Address' },
-    { key: 'Present_Address', label: 'Present Address' }
-  ];
-  function buildAddressSection_(container) {
-    const sec = document.createElement('div');
-    sec.id = 'addressSection';
-    const mk = (a) => {
-      const wrap = document.createElement('div');
-      wrap.id = 'fieldWrap_' + a.key;
-      const lab = document.createElement('label');
-      lab.setAttribute('for', 'f_' + a.key);
-      lab.textContent = a.label + ' ';
-      const req = document.createElement('span'); req.className = 'req'; req.textContent = '*';
-      lab.appendChild(req);
-      wrap.appendChild(lab);
-      const ta = document.createElement('textarea');
-      ta.id = 'f_' + a.key; ta.name = a.key; ta.rows = 3;
-      ta.placeholder = 'House / street, area, city, district, state, PIN code';
-      ta.style.resize = 'vertical';
-      wrap.appendChild(ta);
-      return wrap;
-    };
-    sec.appendChild(mk(ADDRESS_FIELDS[0]));
+  // "Present address is same as permanent address" tick box — only added
+  // when the admin ticked BOTH address fields for this company.
+  function wireSameAddress_(cfg) {
+    const keys = (cfg.fields || []).map(f => f.key);
+    if (keys.indexOf('Permanent_Address') === -1 || keys.indexOf('Present_Address') === -1) return;
+    const perm = document.getElementById('f_Permanent_Address');
+    const pres = document.getElementById('f_Present_Address');
+    const presWrap = document.getElementById('fieldWrap_Present_Address');
+    if (!perm || !pres || !presWrap) return;
     const same = document.createElement('label');
     same.className = 'choice-option';
     const cb = document.createElement('input');
     cb.type = 'checkbox'; cb.id = 'sameAddress';
     same.appendChild(cb);
     same.appendChild(document.createTextNode('Present address is same as permanent address'));
-    sec.appendChild(same);
-    const present = mk(ADDRESS_FIELDS[1]);
-    sec.appendChild(present);
-    const perm = sec.querySelector('#f_Permanent_Address');
-    const pres = present.querySelector('textarea');
+    presWrap.insertBefore(same, pres);
     const sync = () => {
       if (cb.checked) { pres.value = perm.value; pres.readOnly = true; pres.style.opacity = '.7'; }
       else { pres.readOnly = false; pres.style.opacity = ''; }
     };
     cb.addEventListener('change', sync);
     perm.addEventListener('input', () => { if (cb.checked) pres.value = perm.value; });
-    container.appendChild(sec);
+    sync();
   }
 
   function renderForm(cfg) {
@@ -711,6 +691,18 @@
         return;
       }
 
+      if (f.type === 'textarea') {
+        const ta = document.createElement('textarea');
+        ta.id = 'f_' + f.key;
+        ta.name = f.key;
+        ta.rows = 3;
+        ta.maxLength = 300;
+        ta.placeholder = 'House / street, area, city, district, state, PIN code';
+        ta.style.resize = 'vertical';
+        wrap.appendChild(ta);
+        return;
+      }
+
       const input = document.createElement('input');
       input.type = inputTypeFor(f.type);
       input.id = 'f_' + f.key;
@@ -823,8 +815,7 @@
       wrap.appendChild(input);
     });
 
-    // Permanent + Present address (always shown, after the custom questions).
-    buildAddressSection_(container);
+    wireSameAddress_(cfg);
 
     // Put back anything the student had already picked/typed.
     restoreFormState_();
@@ -964,14 +955,6 @@
         }
       }
     });
-
-    // Addresses
-    const permEl = document.getElementById('f_Permanent_Address');
-    const presEl = document.getElementById('f_Present_Address');
-    fieldValues.Permanent_Address = permEl ? permEl.value.trim() : '';
-    fieldValues.Present_Address = presEl ? presEl.value.trim() : '';
-    if (!clientErr && !fieldValues.Permanent_Address) clientErr = 'Permanent Address is required.';
-    if (!clientErr && !fieldValues.Present_Address) clientErr = 'Present Address is required.';
 
     // Custom Questions — radio/checkbox groups aren't a single element
     // with an id matching 'f_' + key (that id belongs to their wrapping

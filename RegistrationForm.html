@@ -89,8 +89,24 @@
     display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 400;
     text-transform: none; letter-spacing: normal; color: #1e293b; margin-bottom: 8px;
   }
+  /* The global input rule above sets appearance:none, which also removed the
+     tick / dot from checkboxes and radios — so picked answers looked
+     "erased". Draw the checked state ourselves. */
   .choice-option input[type="radio"], .choice-option input[type="checkbox"] {
-    width: auto; margin: 0; accent-color: var(--violet-2);
+    width: 22px; height: 22px; min-width: 22px; margin: 0; padding: 0;
+    border: 1.5px solid #94a3b8; background: #fff; cursor: pointer;
+    background-repeat: no-repeat; background-position: center; background-size: 14px 14px;
+  }
+  .choice-option input[type="checkbox"] { border-radius: 6px; }
+  .choice-option input[type="radio"] { border-radius: 50%; }
+  .choice-option input[type="checkbox"]:checked {
+    background-color: var(--violet-2); border-color: var(--violet-2);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M2.5 7.5l3 3 6-7' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
+  .choice-option input[type="radio"]:checked {
+    border-color: var(--violet-2); background-color: #fff;
+    background-image: radial-gradient(circle, var(--violet-2) 0 38%, transparent 42%);
+    background-size: 100% 100%;
   }
   button {
     width: 100%; padding: 15px; font-size: 16px; font-weight: 700; color: #fff;

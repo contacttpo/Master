@@ -3417,7 +3417,9 @@
                                 <label class="text-xs font-medium text-slate-500">Options (comma-separated)</label>
                                 <textarea x-model="q.optionsText" rows="2" placeholder="e.g. Yes, No, Maybe"
                                   class="w-full mt-1 border border-slate-300 rounded-lg px-3 py-2 text-sm resize-y"></textarea>
-                                <p class="text-xs text-slate-400 mt-1">Needs at least 2 options, or this question won't be saved as enabled.</p>
+                                <p class="text-xs text-slate-400 mt-1">Needs at least 2 options, or this question won't be saved as enabled.
+                                  <span x-show="q.type === 'checkbox'" x-cloak class="text-indigo-600 font-medium">Students can tick as many of these as they like. Their answers are saved together in one cell, separated by semicolons.</span>
+                                  <span x-show="q.type === 'dropdown' || q.type === 'radio'" x-cloak class="text-amber-600 font-medium">Students can pick only one. To let them pick several, change the answer type to "Multiple choice".</span></p>
                               </div>
                             </div>
                           </template>
@@ -5722,9 +5724,9 @@ function app() {
     regFormCustomQuestionTypeOptions: [
       { value: 'text', label: 'Text (free typed answer)' },
       { value: 'yes_no', label: 'Yes / No' },
-      { value: 'dropdown', label: 'Dropdown' },
-      { value: 'radio', label: 'Radio buttons' },
-      { value: 'checkbox', label: 'Checkboxes (tick any that apply)' }
+      { value: 'dropdown', label: 'Dropdown (choose ONE)' },
+      { value: 'radio', label: 'Radio buttons (choose ONE)' },
+      { value: 'checkbox', label: 'Multiple choice - students can tick MORE THAN ONE (checkboxes)' }
     ],
 
     // Online Test (OA)

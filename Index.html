@@ -8162,7 +8162,7 @@ function app() {
         .withFailureHandler(err => {
           this.photoViewer = { show: true, loading: false, src: '', name: s.Student_Name || '', error: (err && err.message) || 'Could not open the photo.' };
         })
-        .getStudentPhotoData(s.Photo_URL || '', s.Photo_File_Name || '', (this.detail.company && this.detail.company.Company_Name) || s.Company_Name || '');
+        .getStudentPhotoData(s.Photo_URL || '', s.Photo_File_Name || '', (this.detail.company && this.detail.company.Company_Name) || s.Company_Name || '', this.adminToken);
     },
 
     openStudentForm(existing) {

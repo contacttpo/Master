@@ -69,7 +69,7 @@
   .section-label::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, #bbe1f0, transparent); }
   label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; display: block; }
   .req { color: var(--coral); }
-  input, select {
+  input, select, textarea {
     width: 100%; margin-top: 6px; margin-bottom: 16px; padding: 14px; font-size: 16px;
     border: 1.5px solid #e2e8f0; border-radius: 12px;
     font-family: inherit; background: #fbfbff; color: #1e293b;
@@ -82,7 +82,10 @@
     background-repeat: no-repeat; background-position: right 16px center; padding-right: 38px;
   }
   input[type="file"] { padding: 10px; font-size: 13px; background: #fbfbff; }
-  input:focus, select:focus { outline: none; border-color: var(--violet-2); background: #fff; box-shadow: 0 0 0 4px rgba(37,132,170,.14); }
+  textarea { resize: vertical; min-height: 88px; line-height: 1.4; }
+  .same-addr { display:flex; align-items:center; gap:8px; margin:-8px 0 16px; font-size:13px; font-weight:500; color:var(--muted); text-transform:none; letter-spacing:0; cursor:pointer; }
+  .same-addr input { width:auto; margin:0; padding:0; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--violet-2); background: #fff; box-shadow: 0 0 0 4px rgba(37,132,170,.14); }
   .field-hint { font-size: 12px; color: var(--muted); margin: -12px 0 16px; }
   .choice-group { margin: 6px 0 16px; }
   .choice-option {
@@ -619,6 +622,33 @@
         return;
       }
 
+      if (f.type === 'textarea') {
+        const ta = document.createElement('textarea');
+        ta.id = 'f_' + f.key;
+        ta.name = f.key;
+        ta.rows = 3;
+        ta.maxLength = 300;
+        ta.placeholder = 'House / Flat no., Street, Area, City, State, PIN code';
+        wrap.appendChild(ta);
+
+        // Permanent address: one tap copies the present address (when this drive asks for both).
+        if (f.key === 'Permanent_Address' && cfg.fields.some(x => x.key === 'Present_Address')) {
+          const sameLabel = document.createElement('label');
+          sameLabel.className = 'same-addr';
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.id = 'sameAsPresent';
+          sameLabel.appendChild(cb);
+          sameLabel.appendChild(document.createTextNode('Same as Present Address'));
+          wrap.appendChild(sameLabel);
+          const present = () => document.getElementById('f_Present_Address');
+          const sync = () => { if (cb.checked && present()) ta.value = present().value; };
+          cb.addEventListener('change', () => { ta.readOnly = cb.checked; sync(); });
+          setTimeout(() => { if (present()) present().addEventListener('input', sync); }, 0);
+        }
+        return;
+      }
+
       const input = document.createElement('input');
       input.type = inputTypeFor(f.type);
       input.id = 'f_' + f.key;
@@ -853,7 +883,8 @@
         return;
       }
       const el = document.getElementById('f_' + f.key);
-      const val = el ? el.value.trim() : '';
+      let val = el ? el.value.trim() : '';
+      if (f.type === 'textarea') val = val.replace(/\s*[\r\n]+\s*/g, ', ');
       fieldValues[f.key] = val;
       if (f.type === 'mobile' && val && !/^\d{10}$/.test(val)) {
         clientErr = f.label + ' must be exactly 10 digits (no +91 or spaces).';

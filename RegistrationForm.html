@@ -82,9 +82,6 @@
     background-repeat: no-repeat; background-position: right 16px center; padding-right: 38px;
   }
   input[type="file"] { padding: 10px; font-size: 13px; background: #fbfbff; }
-  textarea { resize: vertical; min-height: 88px; line-height: 1.4; }
-  .same-addr { display:flex; align-items:center; gap:8px; margin:-8px 0 16px; font-size:13px; font-weight:500; color:var(--muted); text-transform:none; letter-spacing:0; cursor:pointer; }
-  .same-addr input { width:auto; margin:0; padding:0; }
   input:focus, select:focus, textarea:focus { outline: none; border-color: var(--violet-2); background: #fff; box-shadow: 0 0 0 4px rgba(37,132,170,.14); }
   .field-hint { font-size: 12px; color: var(--muted); margin: -12px 0 16px; }
   .choice-group { margin: 6px 0 16px; }
@@ -504,9 +501,101 @@
     }
   }
 
+  // ---- Answer store (fix for custom-question answers being erased) -------
+  // Every answer is written here the moment it changes, and re-applied after
+  // any (re)render, so nothing a student has picked can be lost. Custom
+  // questions are also given a guaranteed-unique key (Custom_Q1, Custom_Q2…)
+  // when the server doesn't send one, so radio groups / checkbox groups of
+  // different questions can never share a name and wipe each other out.
+  const answerStore = {};
+  function normalizeCustomQuestions_(cfg) {
+    (cfg.customQuestions || []).forEach((q, i) => {
+      if (!q.key) q.key = 'Custom_Q' + (i + 1);
+    });
+  }
+  function storeAnswer_(storeKey, value) { answerStore[storeKey] = value; }
+  function captureFormState_() {
+    const container = document.getElementById('dynamicFields');
+    if (!container) return;
+    container.querySelectorAll('input, select, textarea').forEach(el => {
+      if (!el.id) return;
+      if (el.type === 'checkbox' || el.type === 'radio') answerStore['chk:' + el.id] = el.checked;
+      else answerStore['val:' + el.id] = el.value;
+    });
+  }
+  function restoreFormState_() {
+    const container = document.getElementById('dynamicFields');
+    if (!container) return;
+    // Course first — it drives branch options and field visibility.
+    const course = document.getElementById('f_Course');
+    if (course && answerStore['val:f_Course'] !== undefined) {
+      course.value = answerStore['val:f_Course'];
+      course.dispatchEvent(new Event('change'));
+    }
+    container.querySelectorAll('input, select, textarea').forEach(el => {
+      if (!el.id || el.id === 'f_Course') return;
+      if (el.type === 'checkbox' || el.type === 'radio') {
+        if (answerStore['chk:' + el.id] !== undefined) el.checked = answerStore['chk:' + el.id];
+      } else if (answerStore['val:' + el.id] !== undefined && el.value === '') {
+        el.value = answerStore['val:' + el.id];
+        if (el.tagName === 'SELECT') el.dispatchEvent(new Event('change'));
+      }
+    });
+  }
+  // One delegated listener keeps the store current for every field.
+  document.addEventListener('change', captureFormState_);
+  document.addEventListener('input', captureFormState_);
+
+  // ---- Permanent / Present address ---------------------------------------
+  const ADDRESS_FIELDS = [
+    { key: 'Permanent_Address', label: 'Permanent Address' },
+    { key: 'Present_Address', label: 'Present Address' }
+  ];
+  function buildAddressSection_(container) {
+    const sec = document.createElement('div');
+    sec.id = 'addressSection';
+    const mk = (a) => {
+      const wrap = document.createElement('div');
+      wrap.id = 'fieldWrap_' + a.key;
+      const lab = document.createElement('label');
+      lab.setAttribute('for', 'f_' + a.key);
+      lab.textContent = a.label + ' ';
+      const req = document.createElement('span'); req.className = 'req'; req.textContent = '*';
+      lab.appendChild(req);
+      wrap.appendChild(lab);
+      const ta = document.createElement('textarea');
+      ta.id = 'f_' + a.key; ta.name = a.key; ta.rows = 3;
+      ta.placeholder = 'House / street, area, city, district, state, PIN code';
+      ta.style.resize = 'vertical';
+      wrap.appendChild(ta);
+      return wrap;
+    };
+    sec.appendChild(mk(ADDRESS_FIELDS[0]));
+    const same = document.createElement('label');
+    same.className = 'choice-option';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.id = 'sameAddress';
+    same.appendChild(cb);
+    same.appendChild(document.createTextNode('Present address is same as permanent address'));
+    sec.appendChild(same);
+    const present = mk(ADDRESS_FIELDS[1]);
+    sec.appendChild(present);
+    const perm = sec.querySelector('#f_Permanent_Address');
+    const pres = present.querySelector('textarea');
+    const sync = () => {
+      if (cb.checked) { pres.value = perm.value; pres.readOnly = true; pres.style.opacity = '.7'; }
+      else { pres.readOnly = false; pres.style.opacity = ''; }
+    };
+    cb.addEventListener('change', sync);
+    perm.addEventListener('input', () => { if (cb.checked) pres.value = perm.value; });
+    container.appendChild(sec);
+  }
+
   function renderForm(cfg) {
     populateCompanyHeader(cfg);
 
+    normalizeCustomQuestions_(cfg);
+    captureFormState_();
     const container = document.getElementById('dynamicFields');
     container.innerHTML = '';
     const hasCourseField = cfg.fields.some(x => x.key === 'Course');
@@ -622,33 +711,6 @@
         return;
       }
 
-      if (f.type === 'textarea') {
-        const ta = document.createElement('textarea');
-        ta.id = 'f_' + f.key;
-        ta.name = f.key;
-        ta.rows = 3;
-        ta.maxLength = 300;
-        ta.placeholder = 'House / Flat no., Street, Area, City, State, PIN code';
-        wrap.appendChild(ta);
-
-        // Permanent address: one tap copies the present address (when this drive asks for both).
-        if (f.key === 'Permanent_Address' && cfg.fields.some(x => x.key === 'Present_Address')) {
-          const sameLabel = document.createElement('label');
-          sameLabel.className = 'same-addr';
-          const cb = document.createElement('input');
-          cb.type = 'checkbox';
-          cb.id = 'sameAsPresent';
-          sameLabel.appendChild(cb);
-          sameLabel.appendChild(document.createTextNode('Same as Present Address'));
-          wrap.appendChild(sameLabel);
-          const present = () => document.getElementById('f_Present_Address');
-          const sync = () => { if (cb.checked && present()) ta.value = present().value; };
-          cb.addEventListener('change', () => { ta.readOnly = cb.checked; sync(); });
-          setTimeout(() => { if (present()) present().addEventListener('input', sync); }, 0);
-        }
-        return;
-      }
-
       const input = document.createElement('input');
       input.type = inputTypeFor(f.type);
       input.id = 'f_' + f.key;
@@ -693,7 +755,7 @@
       container.appendChild(wrap);
 
       const label = document.createElement('label');
-      label.setAttribute('for', 'f_' + q.key);
+      if (q.type !== 'radio' && q.type !== 'checkbox') label.setAttribute('for', 'f_' + q.key);
       label.textContent = q.label;
       if (q.required) {
         const req = document.createElement('span');
@@ -761,10 +823,17 @@
       wrap.appendChild(input);
     });
 
+    // Permanent + Present address (always shown, after the custom questions).
+    buildAddressSection_(container);
+
+    // Put back anything the student had already picked/typed.
+    restoreFormState_();
+
     // Until a course is actually picked, hide every course-specific field
     // rather than guessing — the change listener above takes over from here.
-    if (hasCourseField) applyCourseVisibility('');
-    refreshBranchOptions_('');
+    if (hasCourseField) applyCourseVisibility((document.getElementById('f_Course') || {}).value || '');
+    refreshBranchOptions_((document.getElementById('f_Course') || {}).value || '');
+    restoreFormState_();
 
     document.getElementById('cvFieldWrap').classList.toggle('hidden', !cfg.includeCV);
     const maxBytes = cfg.maxCVSizeBytes || DEFAULT_MAX_CV_BYTES;
@@ -883,8 +952,7 @@
         return;
       }
       const el = document.getElementById('f_' + f.key);
-      let val = el ? el.value.trim() : '';
-      if (f.type === 'textarea') val = val.replace(/\s*[\r\n]+\s*/g, ', ');
+      const val = el ? el.value.trim() : '';
       fieldValues[f.key] = val;
       if (f.type === 'mobile' && val && !/^\d{10}$/.test(val)) {
         clientErr = f.label + ' must be exactly 10 digits (no +91 or spaces).';
@@ -896,6 +964,14 @@
         }
       }
     });
+
+    // Addresses
+    const permEl = document.getElementById('f_Permanent_Address');
+    const presEl = document.getElementById('f_Present_Address');
+    fieldValues.Permanent_Address = permEl ? permEl.value.trim() : '';
+    fieldValues.Present_Address = presEl ? presEl.value.trim() : '';
+    if (!clientErr && !fieldValues.Permanent_Address) clientErr = 'Permanent Address is required.';
+    if (!clientErr && !fieldValues.Present_Address) clientErr = 'Present Address is required.';
 
     // Custom Questions — radio/checkbox groups aren't a single element
     // with an id matching 'f_' + key (that id belongs to their wrapping

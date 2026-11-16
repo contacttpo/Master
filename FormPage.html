@@ -378,7 +378,7 @@
     switch (f.type) {
       case 'name': if (r && (blank(v.first) || blank(v.last))) return 'Please enter both first and last name.'; return '';
       case 'email': if (blank(v)) return r ? 'This is required.' : ''; return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v).trim()) ? '' : 'Please enter a valid email address.';
-      case 'phone': if (blank(v)) return r ? 'This is required.' : ''; return /^\d{7,15}$/.test(String(v).replace(/[\s\-().+]/g, '')) ? '' : 'Please enter a valid phone number (7 to 15 digits).';
+      case 'phone': if (blank(v)) return r ? 'This is required.' : ''; return /^\d{7,15}$/.test(String(v).replace(/[\s\-().+]/g, '')) ? '' : 'Please enter a valid phone number (10 digits, DO not add +91).';
       case 'address':
         if (r && ['street', 'city', 'state', 'zip'].some(function (p) { return blank(v[p]); })) return 'Please fill street, city, state and ZIP.';
         if (!blank(v.zip) && !/^[A-Za-z0-9 \-]{3,10}$/.test(String(v.zip).trim())) return 'Please enter a valid ZIP / PIN code.';

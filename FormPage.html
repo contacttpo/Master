@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base target="_top">
+<script src="/gas-shim.js"></script>
+<meta charset="UTF-8">
+<title>Form</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  :root { --ink:#16233f; --muted:#64748b; --violet:#1b5f7a; --blue:#2871ad; --pink:#bf5611; --line:#dbe3ee; --err:#d64545; --ok:#178f6c; }
+  body { margin:0; background:#f1f5f9; color:#1e293b; font-family:'Inter',system-ui,-apple-system,sans-serif; padding:18px 12px 60px; }
+  .wrap { max-width:620px; margin:0 auto; }
+  .card { background:#fff; border:1px solid #ece9fc; border-radius:18px; box-shadow:0 14px 36px -18px rgba(28,65,79,.3), 0 2px 8px rgba(15,23,42,.05); padding:22px 20px; margin-bottom:14px; }
+  .head { padding-top:0; overflow:hidden; }
+  .ribbon { height:6px; margin:0 -20px 18px; background:linear-gradient(90deg,var(--violet),var(--blue),var(--pink)); }
+  h1 { font-family:'Fraunces',serif; font-size:24px; line-height:1.25; margin:0 0 6px; color:var(--ink); }
+  .desc { white-space:pre-wrap; color:var(--muted); font-size:14px; line-height:1.55; }
+  .req-note { margin-top:10px; font-size:12px; color:var(--err); }
+  .field { margin-bottom:0; }
+  .field > label.q, .field > .q { display:block; font-weight:600; font-size:14.5px; color:var(--ink); margin-bottom:4px; }
+  .star { color:var(--err); margin-left:2px; }
+  .help { font-size:12.5px; color:var(--muted); margin:0 0 8px; }
+  input[type=text], input[type=email], input[type=tel], input[type=number], input[type=date], input[type=time], select, textarea {
+    width:100%; padding:11px 12px; border:1.5px solid var(--line); border-radius:10px; font:inherit; font-size:15px; background:#fff; color:#1e293b; outline:none;
+  }
+  textarea { resize:vertical; min-height:96px; }
+  input:focus, select:focus, textarea:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(40,113,173,.15); }
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .row3 { display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:10px; margin-top:10px; }
+  .sub { font-size:11.5px; color:var(--muted); margin-top:3px; }
+  .opt { display:flex; align-items:flex-start; gap:10px; padding:9px 10px; border:1.5px solid var(--line); border-radius:10px; margin-bottom:7px; cursor:pointer; font-size:14.5px; }
+  .opt input { margin-top:3px; accent-color:var(--violet); width:17px; height:17px; flex-shrink:0; }
+  .opt:has(input:checked) { border-color:var(--violet); background:#eef6fa; }
+  .stars { display:flex; gap:4px; }
+  .stars button { background:none; border:0; padding:2px; font-size:34px; line-height:1; color:#cbd5e1; cursor:pointer; }
+  .stars button.on { color:#f5a623; }
+  .scale { display:flex; flex-wrap:wrap; gap:6px; }
+  .scale button { min-width:42px; height:42px; border:1.5px solid var(--line); border-radius:10px; background:#fff; font:inherit; font-weight:600; cursor:pointer; color:var(--ink); }
+  .scale button.on { background:var(--violet); border-color:var(--violet); color:#fff; }
+  .scale-lbl { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-top:5px; }
+  .tbl-wrap { overflow-x:auto; border:1.5px solid var(--line); border-radius:10px; }
+  table.grid { border-collapse:collapse; width:100%; min-width:360px; font-size:13.5px; }
+  table.grid th, table.grid td { padding:9px 8px; border-bottom:1px solid #edf1f6; text-align:center; }
+  table.grid th:first-child, table.grid td:first-child { text-align:left; font-weight:600; min-width:110px; position:sticky; left:0; background:#fff; }
+  table.grid thead th { background:#f4f7fb; font-weight:600; }
+  table.grid tr:last-child td { border-bottom:0; }
+  table.grid input[type=radio], table.grid input[type=checkbox] { width:18px; height:18px; accent-color:var(--violet); }
+  table.grid input[type=text] { padding:7px 8px; font-size:14px; min-width:90px; }
+  .file-btn { display:flex; align-items:center; gap:10px; padding:12px; border:1.5px dashed #9fb2c9; border-radius:10px; background:#f8fafc; cursor:pointer; font-size:14px; color:var(--violet); font-weight:600; }
+  .file-btn input { display:none; }
+  .fileitem { display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:13px; padding:6px 10px; background:#f1f5f9; border-radius:8px; margin-top:6px; }
+  .fileitem button { background:none; border:0; color:var(--err); font-size:18px; cursor:pointer; padding:0 4px; }
+  .err { color:var(--err); font-size:12.5px; margin-top:6px; display:none; font-weight:500; }
+  .field.bad .err { display:block; }
+  .field.bad input[type=text], .field.bad input[type=email], .field.bad input[type=tel], .field.bad input[type=number],
+  .field.bad input[type=date], .field.bad input[type=time], .field.bad select, .field.bad textarea { border-color:var(--err); }
+  .submit { width:100%; border:0; border-radius:12px; padding:14px; font:inherit; font-weight:700; font-size:16px; color:#fff; cursor:pointer;
+    background:linear-gradient(135deg,var(--violet),var(--blue)); box-shadow:0 8px 18px -8px rgba(27,95,122,.7); }
+  .submit:disabled { opacity:.6; cursor:default; }
+  .banner { padding:12px 14px; border-radius:10px; font-size:14px; margin-bottom:12px; display:none; }
+  .banner.show { display:block; }
+  .banner.error { background:#fdecec; color:#932c2c; border:1px solid #f5a8a8; }
+  .center { text-align:center; padding:34px 20px; }
+  .tick { width:62px; height:62px; border-radius:50%; background:#e3f6ee; color:var(--ok); font-size:34px; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; }
+  .ghost { margin-top:14px; background:none; border:1.5px solid var(--line); border-radius:10px; padding:10px 16px; font:inherit; font-weight:600; color:var(--violet); cursor:pointer; }
+  .spin { width:30px; height:30px; border:3px solid #d8e2ee; border-top-color:var(--blue); border-radius:50%; animation:sp 0.8s linear infinite; margin:0 auto 12px; }
+  @keyframes sp { to { transform:rotate(360deg); } }
+  .stack > .field + .field { margin-top:20px; }
+</style>
+</head>
+<body>
+<div class="wrap" id="root">
+  <div class="card center"><div class="spin"></div><div style="color:#64748b">Loading form…</div></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var root = document.getElementById('root');
+  var params = window.PARAMS || {};
+  if (!params.id) { try { new URLSearchParams(location.search).forEach(function (v, k) { params[k] = v; }); } catch (e) {} }
+  var formId = params.id || '';
+  var form = null, values = {}, files = {}, submitting = false;
+
+  function el(tag, attrs, kids) {
+    var e = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) {
+      if (k === 'class') e.className = attrs[k];
+      else if (k === 'text') e.textContent = attrs[k];
+      else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), attrs[k]);
+      else if (attrs[k] !== false && attrs[k] !== null && attrs[k] !== undefined) e.setAttribute(k, attrs[k]);
+    });
+    (kids || []).forEach(function (c) { if (c) e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return e;
+  }
+  function message(title, text, isErr) {
+    root.innerHTML = '';
+    root.appendChild(el('div', { class: 'card center' }, [
+      el('div', { class: 'tick', text: isErr ? '!' : '✓', style: isErr ? 'background:#fdecec;color:#d64545' : '' }),
+      el('h1', { text: title }), el('div', { class: 'desc', text: text })
+    ]));
+  }
+
+  // ---------- load ----------
+  if (!formId) { message('Form link is incomplete', 'Please open the exact link you were given.', true); return; }
+  google.script.run
+    .withSuccessHandler(function (res) {
+      if (!res || !res.success) { message(res && res.closed ? (res.title || 'Form closed') : 'Cannot open this form', (res && res.message) || 'Please try again later.', true); return; }
+      form = res.form; document.title = form.title; render();
+    })
+    .withFailureHandler(function (err) { message('Could not load the form', (err && err.message) || 'Please check your connection and reload.', true); })
+    .getPublicBuilderForm(formId);
+
+  // ---------- render ----------
+  function render() {
+    values = {}; files = {};
+    root.innerHTML = '';
+    var head = el('div', { class: 'card head' }, [el('div', { class: 'ribbon' }), el('h1', { text: form.title })]);
+    if (form.description) head.appendChild(el('div', { class: 'desc', text: form.description }));
+    if (form.fields.some(function (f) { return f.required; })) head.appendChild(el('div', { class: 'req-note', text: '* Required' }));
+    root.appendChild(head);
+
+    var body = el('div', { class: 'card stack' });
+    form.fields.forEach(function (f) { body.appendChild(buildField(f)); });
+    root.appendChild(body);
+
+    var banner = el('div', { class: 'banner error', id: 'banner' });
+    var btn = el('button', { class: 'submit', id: 'submitBtn', type: 'button', text: 'Submit', onclick: submit });
+    root.appendChild(banner); root.appendChild(btn);
+  }
+
+  function wrap(f, inner, withLabelFor) {
+    var q = el('label', { class: 'q' }, [document.createTextNode(f.label)]);
+    if (f.required) q.appendChild(el('span', { class: 'star', text: '*' }));
+    var w = el('div', { class: 'field', id: 'fld_' + f.id }, [q]);
+    if (f.help) w.appendChild(el('div', { class: 'help', text: f.help }));
+    [].concat(inner).forEach(function (n) { w.appendChild(n); });
+    w.appendChild(el('div', { class: 'err' }));
+    return w;
+  }
+  function input(type, attrs, onChange) {
+    var a = Object.assign({ type: type }, attrs || {});
+    var i = el('input', a);
+    i.addEventListener('input', function () { onChange(i.value); });
+    i.addEventListener('change', function () { onChange(i.value); });
+    return i;
+  }
+
+  function buildField(f) {
+    var id = f.id;
+    switch (f.type) {
+      case 'name': {
+        values[id] = { first: '', last: '' };
+        var a = input('text', { placeholder: 'First name', autocomplete: 'given-name', maxlength: 100 }, function (v) { values[id].first = v; });
+        var b = input('text', { placeholder: 'Last name', autocomplete: 'family-name', maxlength: 100 }, function (v) { values[id].last = v; });
+        return wrap(f, el('div', { class: 'row2' }, [a, b]));
+      }
+      case 'email': return wrap(f, input('email', { placeholder: 'name@example.com', autocomplete: 'email', inputmode: 'email', maxlength: 254 }, function (v) { values[id] = v; }));
+      case 'phone': return wrap(f, input('tel', { placeholder: 'Phone number', autocomplete: 'tel', inputmode: 'tel', maxlength: 20 }, function (v) { values[id] = v; }));
+      case 'address': {
+        values[id] = { street: '', city: '', state: '', zip: '' };
+        var st = el('textarea', { placeholder: 'Street address (house no., street, area)', style: 'min-height:78px', maxlength: 300 });
+        st.addEventListener('input', function () { values[id].street = st.value; });
+        var city = input('text', { placeholder: 'City', maxlength: 100 }, function (v) { values[id].city = v; });
+        var state = input('text', { placeholder: 'State', maxlength: 100 }, function (v) { values[id].state = v; });
+        var zip = input('text', { placeholder: 'ZIP / PIN', inputmode: 'numeric', maxlength: 10 }, function (v) { values[id].zip = v; });
+        return wrap(f, [st, el('div', { class: 'row3' }, [city, state, zip])]);
+      }
+      case 'date': {
+        var d = '', t = '';
+        var sync = function () { values[id] = d ? (f.withTime && t ? d + ' ' + t : d) : ''; };
+        var di = input('date', {}, function (v) { d = v; sync(); });
+        if (!f.withTime) return wrap(f, di);
+        var ti = input('time', {}, function (v) { t = v; sync(); });
+        return wrap(f, el('div', { class: 'row2' }, [di, ti]));
+      }
+      case 'time': return wrap(f, input('time', {}, function (v) { values[id] = v; }));
+      case 'short': return wrap(f, input('text', { maxlength: 500 }, function (v) { values[id] = v; }));
+      case 'long': {
+        var ta = el('textarea', { maxlength: 10000 });
+        ta.addEventListener('input', function () { values[id] = ta.value; });
+        return wrap(f, ta);
+      }
+      case 'number': {
+        var attrs = { inputmode: 'decimal', step: 'any' };
+        if (f.min !== null && f.min !== undefined) attrs.min = f.min;
+        if (f.max !== null && f.max !== undefined) attrs.max = f.max;
+        return wrap(f, input('number', attrs, function (v) { values[id] = v; }));
+      }
+      case 'dropdown': {
+        if (f.multi) {
+          values[id] = [];
+          return wrap(f, [checkList(f, values[id], false)]);
+        }
+        var sel = el('select', {}, [el('option', { value: '', text: 'Select…' })].concat(f.options.map(function (o) { return el('option', { value: o, text: o }); })));
+        sel.addEventListener('change', function () { values[id] = sel.value; });
+        return wrap(f, sel);
+      }
+      case 'single': {
+        var name = 'r_' + id;
+        return wrap(f, f.options.map(function (o) {
+          var r = el('input', { type: 'radio', name: name, value: o });
+          r.addEventListener('change', function () { values[id] = o; });
+          return el('label', { class: 'opt' }, [r, el('span', { text: o })]);
+        }));
+      }
+      case 'multiple': { values[id] = []; return wrap(f, [checkList(f, values[id], false)]); }
+      case 'stars': {
+        var wrapStars = el('div', { class: 'stars' });
+        var btns = [];
+        for (var i = 1; i <= f.max; i++) (function (n) {
+          var b = el('button', { type: 'button', 'aria-label': n + ' star' + (n > 1 ? 's' : ''), text: '★' });
+          b.addEventListener('click', function () { values[id] = (values[id] === n) ? '' : n; paint(); });
+          btns.push(b); wrapStars.appendChild(b);
+        })(i);
+        var paint = function () { btns.forEach(function (b, k) { b.className = (values[id] && k < values[id]) ? 'on' : ''; }); };
+        return wrap(f, wrapStars);
+      }
+      case 'scale': {
+        var sc = el('div', { class: 'scale' }), sbtns = [];
+        for (var v = f.min; v <= f.max; v++) (function (n) {
+          var b = el('button', { type: 'button', text: String(n) });
+          b.addEventListener('click', function () { values[id] = n; sbtns.forEach(function (x, k) { x.className = (k + f.min === n) ? 'on' : ''; }); });
+          sbtns.push(b); sc.appendChild(b);
+        })(v);
+        var parts = [sc];
+        if (f.lowLabel || f.highLabel) parts.push(el('div', { class: 'scale-lbl' }, [el('span', { text: f.lowLabel || '' }), el('span', { text: f.highLabel || '' })]));
+        return wrap(f, parts);
+      }
+      case 'table': return wrap(f, buildTable(f));
+      case 'file': return wrap(f, buildFile(f));
+    }
+    return wrap(f, el('div', { text: '(unsupported element)' }));
+  }
+
+  function checkList(f, arr) {
+    var box = el('div');
+    f.options.forEach(function (o) {
+      var c = el('input', { type: 'checkbox', value: o });
+      c.addEventListener('change', function () {
+        var i = arr.indexOf(o);
+        if (c.checked && i === -1) arr.push(o);
+        if (!c.checked && i !== -1) arr.splice(i, 1);
+      });
+      box.appendChild(el('label', { class: 'opt' }, [c, el('span', { text: o })]));
+    });
+    return box;
+  }
+
+  function buildTable(f) {
+    var ans = {}; values[f.id] = ans;
+    var thead = el('thead', {}, [el('tr', {}, [el('th', { text: '' })].concat(f.cols.map(function (c) { return el('th', { text: c }); })))]);
+    var tbody = el('tbody');
+    f.rows.forEach(function (rowLabel, i) {
+      var tr = el('tr', {}, [el('td', { text: rowLabel })]);
+      var key = 'r' + i;
+      if (f.cellType === 'checkbox') ans[key] = [];
+      if (f.cellType === 'text') ans[key] = {};
+      f.cols.forEach(function (col, j) {
+        var td = el('td');
+        if (f.cellType === 'radio') {
+          var r = el('input', { type: 'radio', name: 'tb_' + f.id + '_' + i, 'aria-label': rowLabel + ' – ' + col });
+          r.addEventListener('change', function () { ans[key] = col; });
+          td.appendChild(r);
+        } else if (f.cellType === 'checkbox') {
+          var c = el('input', { type: 'checkbox', 'aria-label': rowLabel + ' – ' + col });
+          c.addEventListener('change', function () {
+            var k = ans[key].indexOf(col);
+            if (c.checked && k === -1) ans[key].push(col);
+            if (!c.checked && k !== -1) ans[key].splice(k, 1);
+          });
+          td.appendChild(c);
+        } else {
+          var t = el('input', { type: 'text', maxlength: 500, 'aria-label': rowLabel + ' – ' + col });
+          t.addEventListener('input', function () { ans[key]['c' + j] = t.value; });
+          td.appendChild(t);
+        }
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    return el('div', { class: 'tbl-wrap' }, [el('table', { class: 'grid' }, [thead, tbody])]);
+  }
+
+  var MAX_BYTES = 5 * 1024 * 1024;
+  var ALLOWED = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'ppt', 'pptx', 'txt', 'zip'];
+  function buildFile(f) {
+    files[f.id] = [];
+    var max = f.maxFiles || 1;
+    var list = el('div');
+    var inp = el('input', { type: 'file', multiple: max > 1 ? 'multiple' : false });
+    var errBox = null;
+    function paintList() {
+      list.innerHTML = '';
+      files[f.id].forEach(function (file, i) {
+        list.appendChild(el('div', { class: 'fileitem' }, [
+          el('span', { text: file.name + ' (' + Math.max(1, Math.round(file.size / 1024)) + ' KB)' }),
+          el('button', { type: 'button', 'aria-label': 'Remove', text: '×', onclick: function () { files[f.id].splice(i, 1); paintList(); } })
+        ]));
+      });
+    }
+    inp.addEventListener('change', function () {
+      var problems = [];
+      Array.prototype.slice.call(inp.files).forEach(function (file) {
+        var ext = (file.name.split('.').pop() || '').toLowerCase();
+        if (ALLOWED.indexOf(ext) === -1) problems.push('"' + file.name + '" is not an allowed file type.');
+        else if (file.size > MAX_BYTES) problems.push('"' + file.name + '" is larger than 5 MB.');
+        else if (files[f.id].length >= max) problems.push('You can attach at most ' + max + ' file(s).');
+        else files[f.id].push(file);
+      });
+      inp.value = '';
+      paintList();
+      var box = document.querySelector('#fld_' + f.id + ' .err');
+      if (problems.length) { box.textContent = problems.join(' '); document.getElementById('fld_' + f.id).classList.add('bad'); }
+      else document.getElementById('fld_' + f.id).classList.remove('bad');
+    });
+    var btn = el('label', { class: 'file-btn' }, [el('span', { text: '📎' }), el('span', { text: max > 1 ? 'Choose files (up to ' + max + ', max 5 MB each)' : 'Choose a file (max 5 MB)' }), inp]);
+    return [btn, list];
+  }
+
+  // ---------- validation (the server checks everything again) ----------
+  function blank(v) { return v === undefined || v === null || String(v).trim() === ''; }
+  function check(f) {
+    var v = values[f.id], r = f.required, L = '';
+    switch (f.type) {
+      case 'name': if (r && (blank(v.first) || blank(v.last))) return 'Please enter both first and last name.'; return '';
+      case 'email': if (blank(v)) return r ? 'This is required.' : ''; return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v).trim()) ? '' : 'Please enter a valid email address.';
+      case 'phone': if (blank(v)) return r ? 'This is required.' : ''; return /^\d{7,15}$/.test(String(v).replace(/[\s\-().+]/g, '')) ? '' : 'Please enter a valid phone number (7 to 15 digits).';
+      case 'address':
+        if (r && ['street', 'city', 'state', 'zip'].some(function (p) { return blank(v[p]); })) return 'Please fill street, city, state and ZIP.';
+        if (!blank(v.zip) && !/^[A-Za-z0-9 \-]{3,10}$/.test(String(v.zip).trim())) return 'Please enter a valid ZIP / PIN code.';
+        return '';
+      case 'date': if (blank(v)) return r ? 'This is required.' : ''; if (f.withTime && r && String(v).indexOf(' ') === -1) return 'Please pick a time as well.'; return '';
+      case 'time': case 'short': case 'long': return (r && blank(v)) ? 'This is required.' : '';
+      case 'number':
+        if (blank(v)) return r ? 'This is required.' : '';
+        if (!isFinite(Number(v))) return 'Please enter a number.';
+        if (f.min !== null && f.min !== undefined && Number(v) < f.min) return 'Must be at least ' + f.min + '.';
+        if (f.max !== null && f.max !== undefined && Number(v) > f.max) return 'Must be at most ' + f.max + '.';
+        return '';
+      case 'dropdown': if (f.multi) return (r && !v.length) ? 'Please choose at least one option.' : ''; return (r && blank(v)) ? 'Please choose an option.' : '';
+      case 'single': return (r && blank(v)) ? 'Please choose one option.' : '';
+      case 'multiple': return (r && !v.length) ? 'Please choose at least one option.' : '';
+      case 'stars': return (r && !v) ? 'Please give a rating.' : '';
+      case 'scale': return (r && (v === undefined || v === '')) ? 'Please choose a value.' : '';
+      case 'table':
+        if (!r) return '';
+        for (var i = 0; i < f.rows.length; i++) {
+          var c = v['r' + i], ok;
+          if (f.cellType === 'radio') ok = !blank(c);
+          else if (f.cellType === 'checkbox') ok = c.length > 0;
+          else ok = f.cols.some(function (_, j) { return !blank(c['c' + j]); });
+          if (!ok) return 'Please answer every row (' + f.rows[i] + ').';
+        }
+        return '';
+      case 'file': return (r && !files[f.id].length) ? 'Please attach a file.' : '';
+    }
+    return L;
+  }
+
+  function showBanner(text) {
+    var b = document.getElementById('banner');
+    b.textContent = text; b.className = 'banner error show';
+  }
+
+  function readFile(file) {
+    return new Promise(function (resolve, reject) {
+      var fr = new FileReader();
+      fr.onload = function () { resolve(String(fr.result).split(',')[1] || ''); };
+      fr.onerror = function () { reject(new Error('Could not read "' + file.name + '".')); };
+      fr.readAsDataURL(file);
+    });
+  }
+
+  function submit() {
+    if (submitting) return;
+    var firstBad = null;
+    form.fields.forEach(function (f) {
+      var node = document.getElementById('fld_' + f.id);
+      var msg = check(f);
+      node.classList.toggle('bad', !!msg);
+      node.querySelector('.err').textContent = msg;
+      if (msg && !firstBad) firstBad = node;
+    });
+    document.getElementById('banner').className = 'banner error';
+    if (firstBad) { firstBad.scrollIntoView({ behavior: 'smooth', block: 'center' }); showBanner('Please fix the highlighted questions.'); return; }
+
+    submitting = true;
+    var btn = document.getElementById('submitBtn');
+    btn.disabled = true; btn.textContent = 'Submitting…';
+    var jobs = [];
+    form.fields.forEach(function (f) {
+      if (f.type !== 'file') return;
+      (files[f.id] || []).forEach(function (file) {
+        jobs.push(readFile(file).then(function (b64) { return { fieldId: f.id, name: file.name, mime: file.type || 'application/octet-stream', base64: b64 }; }));
+      });
+    });
+    Promise.all(jobs).then(function (fileList) {
+      if (fileList.length) btn.textContent = 'Uploading files… please wait';
+      var answers = {};
+      form.fields.forEach(function (f) { if (f.type !== 'file') answers[f.id] = values[f.id]; });
+      google.script.run
+        .withSuccessHandler(function (res) {
+          submitting = false;
+          if (res && res.success) { done(res.message); return; }
+          btn.disabled = false; btn.textContent = 'Submit';
+          showBanner((res && res.message) || 'Could not submit. Please try again.');
+        })
+        .withFailureHandler(function (err) {
+          submitting = false; btn.disabled = false; btn.textContent = 'Submit';
+          showBanner((err && err.message) || 'Could not submit. Please check your connection and try again.');
+        })
+        .submitBuilderForm(form.id, answers, fileList);
+    }).catch(function (e) {
+      submitting = false; btn.disabled = false; btn.textContent = 'Submit';
+      showBanner(e.message || 'Could not read a selected file.');
+    });
+  }
+
+  function done(msg) {
+    root.innerHTML = '';
+    root.appendChild(el('div', { class: 'card center' }, [
+      el('div', { class: 'tick', text: '✓' }), el('h1', { text: 'Response submitted' }),
+      el('div', { class: 'desc', text: msg || 'Thank you! Your response has been recorded.' }),
+      el('button', { class: 'ghost', type: 'button', text: 'Submit another response', onclick: function () { render(); window.scrollTo(0, 0); } })
+    ]));
+  }
+})();
+</script>
+</body>
+</html>

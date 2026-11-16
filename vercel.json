@@ -101,6 +101,17 @@
     },
     {
       "source": "/",
+      "has": [
+        {
+          "type": "query",
+          "key": "page",
+          "value": "form"
+        }
+      ],
+      "destination": "/FormPage.html"
+    },
+    {
+      "source": "/",
       "destination": "/Index.html"
     }
   ],

@@ -465,6 +465,73 @@
   html.dark .border-emerald-100, html.dark .border-emerald-200, html.dark .border-red-100, html.dark .border-red-200, html.dark .border-blue-100, html.dark .border-indigo-200 { border-color:#2b3a56; }
   html.dark main .bg-white .font-medium, html.dark main .bg-white .font-semibold, html.dark main .bg-white .font-bold { color:inherit; }
 </style>
+<style id="fbx-css">
+  /* Form Builder (own classes, so it does not depend on which Tailwind utilities were compiled) */
+  .fbx { position: relative; }
+  .fbx-toast { position: sticky; top: 8px; z-index: 30; margin-bottom: 12px; padding: 10px 14px; border-radius: 10px; font-size: 14px; font-weight: 600; background: #e3f6ee; color: #0f5843; border: 1px solid #a3e5cd; }
+  .fbx-toast.err { background: #fdecec; color: #932c2c; border-color: #f5a8a8; }
+  .fbx-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .fbx-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .fbx-btn { border: 1px solid #b9c5ef; background: #fff; color: #1c3d5f; font-size: 14px; font-weight: 600; padding: 8px 14px; border-radius: 10px; cursor: pointer; white-space: nowrap; }
+  .fbx-btn:hover { background: #eef1fb; }
+  .fbx-btn.primary { background: #214d71; border-color: #214d71; color: #fff; }
+  .fbx-btn.primary:hover { background: #1c3d5f; }
+  .fbx-btn.sm { padding: 6px 10px; font-size: 13px; }
+  .fbx-btn.danger { color: #b93838; border-color: #f5a8a8; }
+  .fbx-btn.danger:hover { background: #fdecec; }
+  .fbx-btn:disabled { opacity: .5; cursor: default; }
+  .fbx-back { background: none; border: 0; color: #214d71; font-weight: 600; font-size: 13px; cursor: pointer; padding: 0; margin-bottom: 4px; }
+  .fbx-pad { padding: 8px 0; }
+  .fbx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
+  .fbx-form { border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; background: #fff; }
+  .fbx-form-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+  .fbx-form-title { font-weight: 700; color: #1e293b; font-size: 16px; word-break: break-word; }
+  .fbx-pill { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+  .fbx-pill.open { background: #d1f2e6; color: #0f5843; }
+  .fbx-pill.closed { background: #e2e8f0; color: #475569; }
+  .fbx-meta { font-size: 12.5px; color: #4e5a73; margin-top: 4px; }
+  .fbx-form-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .fbx-empty { text-align: center; padding: 40px 10px; border: 1.5px dashed #cbd5e1; border-radius: 14px; }
+  .fbx-empty-t { font-weight: 700; color: #334155; margin-bottom: 4px; }
+  .fbx-empty-inline { font-size: 14px; color: #64748b; padding: 6px 2px 12px; }
+  .fbx-card { border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; margin-bottom: 12px; background: #fff; }
+  .fbx-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .fbx-type { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #214d71; background: #eef1fb; padding: 3px 8px; border-radius: 6px; }
+  .fbx-num { font-size: 12px; color: #64748b; }
+  .fbx-tools { margin-left: auto; display: flex; gap: 4px; }
+  .fbx-tools button { width: 32px; height: 32px; border: 1px solid #e2e8f0; background: #fff; border-radius: 8px; cursor: pointer; font-size: 15px; color: #475569; }
+  .fbx-tools button:hover:not(:disabled) { background: #f1f5f9; }
+  .fbx-tools button.danger { color: #b93838; }
+  .fbx-tools button:disabled { opacity: .35; cursor: default; }
+  .fbx-lbl { display: block; font-size: 13px; font-weight: 600; color: #334155; margin: 10px 0 4px; }
+  .fbx-hint, .fbx-hint2 { font-weight: 400; font-size: 12px; color: #64748b; }
+  .fbx-hint2 { margin: 2px 0 0; }
+  .fbx-req { color: #b93838; }
+  .fbx-in { width: 100%; border: 1.5px solid #d6dee9; border-radius: 10px; padding: 9px 11px; font-size: 14.5px; background: #fff; color: #1e293b; }
+  .fbx-in:focus { outline: none; border-color: #2871ad; box-shadow: 0 0 0 3px rgba(40,113,173,.15); }
+  .fbx-title { font-size: 17px; font-weight: 600; }
+  textarea.fbx-in { resize: vertical; }
+  .fbx-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 560px) { .fbx-row2 { grid-template-columns: 1fr; } }
+  .fbx-check { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-top: 10px; color: #334155; cursor: pointer; }
+  .fbx-check input { width: 17px; height: 17px; accent-color: #214d71; }
+  .fbx-palette { background: #f8fafc; }
+  .fbx-pal-h { font-weight: 700; color: #1e293b; margin-bottom: 8px; }
+  .fbx-pal-g { margin-bottom: 10px; }
+  .fbx-pal-t { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+  .fbx-pal-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fbx-chip { border: 1px solid #b9c5ef; background: #fff; color: #1c3d5f; font-size: 13px; font-weight: 600; padding: 6px 11px; border-radius: 999px; cursor: pointer; }
+  .fbx-chip:hover { background: #eef1fb; }
+  .fbx-savebar { display: flex; justify-content: flex-end; gap: 8px; position: sticky; bottom: 10px; }
+  .fbx-search { width: 200px; }
+  .fbx-tablewrap { overflow: auto; max-height: 68vh; border: 1px solid #e2e8f0; border-radius: 12px; }
+  .fbx-table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .fbx-table th { position: sticky; top: 0; background: #e0e7ff; color: #1e1b4b; text-align: left; padding: 8px 10px; border-bottom: 1px solid #c7d2fe; white-space: nowrap; z-index: 1; }
+  .fbx-table td { padding: 8px 10px; border-bottom: 1px solid #edf1f6; vertical-align: top; min-width: 90px; max-width: 320px; word-break: break-word; }
+  .fbx-table td.nowrap { white-space: nowrap; }
+  .fbx-table tr:hover td { background: #f8fafc; }
+  .fbx-link { color: #214d71; font-weight: 600; text-decoration: underline; }
+</style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800" x-data="app()" x-init="init()" x-cloak>
 
@@ -590,6 +657,10 @@
         <button @click="goToLiveOverview()" class="w-full text-left text-sm font-medium rounded-lg px-3 py-2.5 transition-colors flex items-center gap-2.5" :class="view === 'liveOverview' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
           Live Overview
+        </button>
+        <button @click="goToFormBuilder()" class="w-full text-left text-sm font-medium rounded-lg px-3 py-2.5 transition-colors flex items-center gap-2.5" :class="view === 'formBuilder' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'">
+          <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+          Form Builder
         </button>
         <button @click="goToActivityLog()" class="w-full text-left text-sm font-medium rounded-lg px-3 py-2.5 transition-colors flex items-center gap-2.5" :class="view === 'activityLog' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -2433,6 +2504,244 @@
     </div>
 
     <!-- ===================== ACTIVITY LOG ===================== -->
+    <!-- ================= FORM BUILDER (admin) =================
+         Build custom forms for students, share one link per form (no login to fill),
+         see the responses and download them as a formatted Excel file.
+         Server side: FormBuilder.gs.  Public page: FormPage.html (/?page=form&id=...). -->
+    <section x-data="formBuilderMgr()" x-show="view === 'formBuilder'" x-cloak class="fade-in"
+      x-init="$watch('view', v => { if (v === 'formBuilder') openList(); })">
+      <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 sm:p-6 fbx">
+        <div class="fbx-toast" x-show="msg.text" x-cloak :class="msg.type" x-text="msg.text"></div>
+
+        <!-- ---------- LIST OF FORMS ---------- -->
+        <div x-show="mode === 'list'">
+          <div class="fbx-top">
+            <div>
+              <h2 class="brand-heading text-2xl text-slate-800">Form Builder</h2>
+              <p class="text-sm text-slate-500">Create forms for students. Each form gets its own link and its own responses.</p>
+            </div>
+            <div class="fbx-actions">
+              <button type="button" class="fbx-btn" @click="loadForms()"><span x-text="loading ? 'Refreshing…' : '↻ Refresh'"></span></button>
+              <button type="button" class="fbx-btn primary" @click="newForm()">+ New form</button>
+            </div>
+          </div>
+          <p class="text-sm text-slate-500 fbx-pad" x-show="loading && !forms.length">Loading forms…</p>
+          <div class="fbx-empty" x-show="!loading && !forms.length">
+            <p class="fbx-empty-t">No forms yet</p>
+            <p class="text-sm text-slate-500">Click <b>+ New form</b> to build your first one.</p>
+          </div>
+          <div class="fbx-grid">
+            <template x-for="f in forms" :key="f.id">
+              <div class="fbx-form">
+                <div class="fbx-form-top">
+                  <h3 class="fbx-form-title" x-text="f.title"></h3>
+                  <span class="fbx-pill" :class="f.status === 'Open' ? 'open' : 'closed'" x-text="f.status === 'Open' ? 'Accepting responses' : 'Closed'"></span>
+                </div>
+                <p class="fbx-meta"><span x-text="f.fieldCount + ' elements'"></span> · <b x-text="f.responseCount"></b> <span x-text="f.responseCount === 1 ? 'response' : 'responses'"></span></p>
+                <p class="fbx-meta" x-show="f.updatedAt" x-text="'Updated ' + f.updatedAt"></p>
+                <div class="fbx-form-btns">
+                  <button type="button" class="fbx-btn sm" @click="openResponses(f)">Responses</button>
+                  <button type="button" class="fbx-btn sm" @click="editForm(f.id)">Edit</button>
+                  <button type="button" class="fbx-btn sm" @click="copyLink(f.id)">Copy link</button>
+                  <button type="button" class="fbx-btn sm" @click="openPublic(f.id)">Open ↗</button>
+                  <button type="button" class="fbx-btn sm" @click="toggleStatus(f)" x-text="f.status === 'Open' ? 'Close form' : 'Reopen'"></button>
+                  <button type="button" class="fbx-btn sm danger" @click="removeForm(f)">Delete</button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- ---------- EDITOR ---------- -->
+        <div x-show="mode === 'edit'" x-cloak>
+          <div class="fbx-top">
+            <div>
+              <button type="button" class="fbx-back" @click="backToList()">← All forms</button>
+              <h2 class="brand-heading text-2xl text-slate-800" x-text="draft && draft.id ? 'Edit form' : 'New form'"></h2>
+            </div>
+            <div class="fbx-actions" x-show="draft">
+              <button type="button" class="fbx-btn" x-show="draft && draft.id" @click="copyLink(draft.id)">Copy link</button>
+              <button type="button" class="fbx-btn" x-show="draft && draft.id" @click="openPublic(draft.id)">Open form ↗</button>
+              <button type="button" class="fbx-btn primary" :disabled="saving" @click="saveForm()"><span x-text="saving ? 'Saving…' : 'Save form'"></span></button>
+            </div>
+          </div>
+
+          <template x-if="draft">
+            <div>
+              <div class="fbx-card">
+                <label class="fbx-lbl">Form title <span class="fbx-req">*</span> <span class="fbx-hint">— shown to students and used to name the responses sheet, so you can find the data easily</span></label>
+                <input class="fbx-in fbx-title" type="text" maxlength="150" x-model="draft.title" placeholder="e.g. Placement Drive Feedback – Nov 2026">
+                <label class="fbx-lbl">Description (optional)</label>
+                <textarea class="fbx-in" rows="3" maxlength="2000" x-model="draft.description" placeholder="Instructions shown under the title"></textarea>
+                <div class="fbx-row2">
+                  <div>
+                    <label class="fbx-lbl">Message after submitting (optional)</label>
+                    <input class="fbx-in" type="text" maxlength="500" x-model="draft.successMessage" placeholder="Thank you! Your response has been recorded.">
+                  </div>
+                  <div>
+                    <label class="fbx-lbl">Status</label>
+                    <select class="fbx-in" x-model="draft.status">
+                      <option value="Open">Open – accepting responses</option>
+                      <option value="Closed">Closed</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <p class="fbx-empty-inline" x-show="!draft.fields.length">No elements yet — pick one from "Add an element" below.</p>
+
+              <template x-for="(f, i) in draft.fields" :key="f.id">
+                <div class="fbx-card">
+                  <div class="fbx-card-head">
+                    <span class="fbx-type" x-text="typeLabel(f.type)"></span>
+                    <span class="fbx-num" x-text="'#' + (i + 1)"></span>
+                    <div class="fbx-tools">
+                      <button type="button" title="Move up" :disabled="i === 0" @click="moveField(i, -1)">↑</button>
+                      <button type="button" title="Move down" :disabled="i === draft.fields.length - 1" @click="moveField(i, 1)">↓</button>
+                      <button type="button" title="Duplicate" @click="dupField(i)">⧉</button>
+                      <button type="button" title="Remove" class="danger" @click="removeField(i)">✕</button>
+                    </div>
+                  </div>
+                  <p class="fbx-hint2" x-text="typeHint(f.type)"></p>
+                  <label class="fbx-lbl">Question / label</label>
+                  <input class="fbx-in" type="text" maxlength="200" x-model="f.label">
+                  <label class="fbx-lbl">Help text (optional)</label>
+                  <input class="fbx-in" type="text" maxlength="300" x-model="f.help" placeholder="Small hint shown under the question">
+                  <label class="fbx-check"><input type="checkbox" x-model="f.required"> Required</label>
+
+                  <div x-show="f.type === 'dropdown' || f.type === 'single' || f.type === 'multiple'">
+                    <label class="fbx-lbl">Options <span class="fbx-hint">— one per line</span></label>
+                    <textarea class="fbx-in" rows="4" x-model="f.optionsText" placeholder="Option 1&#10;Option 2"></textarea>
+                    <label class="fbx-check" x-show="f.type === 'dropdown'"><input type="checkbox" x-model="f.multi"> Allow selecting more than one option</label>
+                  </div>
+
+                  <div x-show="f.type === 'table'">
+                    <div class="fbx-row2">
+                      <div>
+                        <label class="fbx-lbl">Rows <span class="fbx-hint">— one per line</span></label>
+                        <textarea class="fbx-in" rows="4" x-model="f.rowsText"></textarea>
+                      </div>
+                      <div>
+                        <label class="fbx-lbl">Columns <span class="fbx-hint">— one per line</span></label>
+                        <textarea class="fbx-in" rows="4" x-model="f.colsText"></textarea>
+                      </div>
+                    </div>
+                    <label class="fbx-lbl">Each cell is</label>
+                    <select class="fbx-in" x-model="f.cellType">
+                      <option value="radio">Radio buttons (one choice per row)</option>
+                      <option value="checkbox">Checkboxes (several choices per row)</option>
+                      <option value="text">A text box</option>
+                    </select>
+                  </div>
+
+                  <div x-show="f.type === 'number'" class="fbx-row2">
+                    <div><label class="fbx-lbl">Minimum (optional)</label><input class="fbx-in" type="number" step="any" x-model="f.min"></div>
+                    <div><label class="fbx-lbl">Maximum (optional)</label><input class="fbx-in" type="number" step="any" x-model="f.max"></div>
+                  </div>
+
+                  <label class="fbx-check" x-show="f.type === 'date'"><input type="checkbox" x-model="f.withTime"> Also ask for a time</label>
+
+                  <div x-show="f.type === 'stars'">
+                    <label class="fbx-lbl">Number of stars</label>
+                    <select class="fbx-in" x-model.number="f.max">
+                      <template x-for="n in [3,4,5,6,7,8,9,10]" :key="n"><option :value="n" x-text="n"></option></template>
+                    </select>
+                  </div>
+
+                  <div x-show="f.type === 'scale'">
+                    <div class="fbx-row2">
+                      <div><label class="fbx-lbl">From</label>
+                        <select class="fbx-in" x-model.number="f.min"><option :value="0">0</option><option :value="1">1</option></select></div>
+                      <div><label class="fbx-lbl">To</label>
+                        <input class="fbx-in" type="number" min="3" max="20" x-model.number="f.max"></div>
+                    </div>
+                    <div class="fbx-row2">
+                      <div><label class="fbx-lbl">Left label (optional)</label><input class="fbx-in" type="text" maxlength="60" x-model="f.lowLabel" placeholder="Not likely"></div>
+                      <div><label class="fbx-lbl">Right label (optional)</label><input class="fbx-in" type="text" maxlength="60" x-model="f.highLabel" placeholder="Very likely"></div>
+                    </div>
+                  </div>
+
+                  <div x-show="f.type === 'file'">
+                    <label class="fbx-lbl">Number of files allowed</label>
+                    <select class="fbx-in" x-model.number="f.maxFiles">
+                      <template x-for="n in [1,2,3,4,5]" :key="n"><option :value="n" x-text="n"></option></template>
+                    </select>
+                    <p class="fbx-hint2">Each file can be up to 5 MB. Allowed: PDF, images, Word, Excel, PowerPoint, CSV, TXT, ZIP.</p>
+                  </div>
+                </div>
+              </template>
+
+              <div class="fbx-card fbx-palette">
+                <h3 class="fbx-pal-h">Add an element</h3>
+                <template x-for="g in TYPE_GROUPS" :key="g.title">
+                  <div class="fbx-pal-g">
+                    <p class="fbx-pal-t" x-text="g.title"></p>
+                    <div class="fbx-pal-btns">
+                      <template x-for="t in g.types" :key="t">
+                        <button type="button" class="fbx-chip" @click="addField(t)" x-text="'+ ' + typeLabel(t)"></button>
+                      </template>
+                    </div>
+                  </div>
+                </template>
+              </div>
+
+              <div class="fbx-savebar">
+                <button type="button" class="fbx-btn" @click="backToList()">Back</button>
+                <button type="button" class="fbx-btn primary" :disabled="saving" @click="saveForm()"><span x-text="saving ? 'Saving…' : 'Save form'"></span></button>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <!-- ---------- RESPONSES ---------- -->
+        <div x-show="mode === 'responses'" x-cloak>
+          <div class="fbx-top">
+            <div>
+              <button type="button" class="fbx-back" @click="backToList()">← All forms</button>
+              <h2 class="brand-heading text-2xl text-slate-800" x-text="res.title || 'Responses'"></h2>
+              <p class="text-sm text-slate-500"><span x-text="res.rows.length"></span> <span x-text="res.rows.length === 1 ? 'response' : 'responses'"></span></p>
+            </div>
+            <div class="fbx-actions">
+              <input class="fbx-in fbx-search" type="text" placeholder="Search responses…" x-model="res.q">
+              <button type="button" class="fbx-btn" @click="loadResponses()"><span x-text="res.loading ? 'Refreshing…' : '↻ Refresh'"></span></button>
+              <button type="button" class="fbx-btn primary" :disabled="exporting || !res.rows.length" @click="exportExcel()"><span x-text="exporting ? 'Preparing…' : '⬇ Download Excel'"></span></button>
+            </div>
+          </div>
+          <p class="text-sm text-slate-500 fbx-pad" x-show="res.loading && !res.rows.length">Loading responses…</p>
+          <div class="fbx-empty" x-show="!res.loading && !res.rows.length"><p class="fbx-empty-t">No responses yet</p></div>
+          <div class="fbx-tablewrap" x-show="res.rows.length">
+            <table class="fbx-table">
+              <thead>
+                <tr>
+                  <th>#</th><th>Submitted</th>
+                  <template x-for="c in res.columns" :key="c.key"><th x-text="c.header"></th></template>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="(row, ri) in filteredRows()" :key="row._id">
+                  <tr>
+                    <td x-text="ri + 1"></td>
+                    <td class="nowrap" x-text="row._at"></td>
+                    <template x-for="c in res.columns" :key="c.key">
+                      <td>
+                        <template x-for="(ln, li) in lines(row[c.key])" :key="li">
+                          <div>
+                            <template x-if="isUrl(ln)"><a class="fbx-link" :href="ln" target="_blank" rel="noopener">Open file ↗</a></template>
+                            <template x-if="!isUrl(ln)"><span x-text="ln"></span></template>
+                          </div>
+                        </template>
+                      </td>
+                    </template>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+          <p class="text-xs text-slate-400 fbx-pad" x-show="res.rows.length">The Excel file has the same columns with a title banner, coloured header, borders and wrapped text.</p>
+        </div>
+      </div>
+    </section>
+
     <!-- Who changed what, when — admins (by name + email), volunteers (by
          name + mobile), and direct edits made straight in the Google Sheet
          (see the onEdit trigger in Code.gs). Read-only: this page never
@@ -5522,7 +5831,7 @@ function app() {
     // Status-chip panels (shared by the floating button, Live Overview and Manage Drive).
     chipOpen: {}, chipFlat: false, chipData: {}, chipLoading: {}, chipMsg: {},
     liveFab: { rows: [], open: false, updatedAt: null, tick: 0, started: false, busy: false },
-    view: 'home', // 'home' | 'dashboard' | 'branches' | 'volunteers' | 'form' | 'detail' | 'manageDrive' | 'activityLog'
+    view: 'home', // 'home' | 'dashboard' | 'branches' | 'volunteers' | 'form' | 'detail' | 'manageDrive' | 'activityLog' | 'formBuilder'
     mobileNavOpen: false,
     loading: true,
     saving: false,
@@ -5988,6 +6297,7 @@ function app() {
         case 'volunteers':   this.goToVolunteers(); break;
         case 'liveOverview': this.goToLiveOverview(); break;
         case 'activityLog':  this.goToActivityLog(); break;
+        case 'formBuilder':  this.goToFormBuilder(); break;
         case 'manageDrive':
           if (saved.company) this.manageDriveCompany = saved.company;
           this.goToManageDrive();
@@ -6357,6 +6667,11 @@ function app() {
 
     goToLiveOverview() {
       this.view = 'liveOverview';
+      this.mobileNavOpen = false;
+    },
+
+    goToFormBuilder() {
+      this.view = 'formBuilder';
       this.mobileNavOpen = false;
     },
 
@@ -11200,6 +11515,245 @@ function app() {
 // bulkUploadRoundResults, getVolunteerLiveOverview) all live in
 // Volunteer.gs, additive to the rest of the backend.
 // ===================================================================
+// ===================== FORM BUILDER (admin) =====================
+// Used by the "Form Builder" section in Index.html. Server side: FormBuilder.gs.
+function formBuilderMgr() {
+  const LABELS = {
+    name: 'Full Name', email: 'Email', phone: 'Phone', address: 'Address', date: 'Date Picker',
+    short: 'Short Text', long: 'Long Text / Paragraph', dropdown: 'Dropdown', single: 'Single Choice',
+    multiple: 'Multiple Choice (Checkboxes)', number: 'Number', file: 'Image / File Upload', time: 'Time',
+    table: 'Input Table', stars: 'Star Rating', scale: 'Scale Rating'
+  };
+  const HINTS = {
+    name: 'Shows First name and Last name boxes.',
+    email: 'Single-line box that checks the email format.',
+    phone: 'Phone number box (7 to 15 digits, spaces / + / - allowed).',
+    address: 'Street (multi-line), City, State and ZIP / PIN.',
+    date: 'Date picker, with an optional time.',
+    short: 'Single-line text answer (names, titles, short codes).',
+    long: 'Multi-line paragraph for detailed answers.',
+    dropdown: 'Pick-list. Choose whether one or several options can be selected.',
+    single: 'Radio buttons: only one option can be chosen.',
+    multiple: 'Checkboxes: several options can be chosen.',
+    number: 'Numbers only, with an optional minimum and maximum.',
+    file: 'Student uploads a document or image. Saved to Google Drive.',
+    time: 'Hour and minute picker.',
+    table: 'Grid of rows and columns (radio buttons, checkboxes or text boxes in each cell).',
+    stars: 'Star rating, for example 1 to 5 stars.',
+    scale: 'Numbered scale, for example 0 to 10.'
+  };
+  const uid = () => 'f' + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-3);
+  const lines = t => String(t || '').split('\n').map(s => s.trim()).filter(Boolean);
+
+  return {
+    TYPE_GROUPS: [
+      { title: 'Quick & Contact Elements', types: ['name', 'email', 'phone', 'address', 'date'] },
+      { title: 'Basic Text & Choice Elements', types: ['short', 'long', 'dropdown', 'single', 'multiple', 'number', 'file', 'time'] },
+      { title: 'Advanced Elements', types: ['table', 'stars', 'scale'] }
+    ],
+    mode: 'list', forms: [], loading: false, saving: false, exporting: false,
+    msg: { text: '', type: '' }, _msgTimer: null,
+    draft: null,
+    res: { loading: false, formId: '', title: '', columns: [], rows: [], q: '' },
+
+    typeLabel(t) { return LABELS[t] || t; },
+    typeHint(t) { return HINTS[t] || ''; },
+    token() {
+      let t = '';
+      try { t = (this.$data && this.$data.adminToken) || ''; } catch (e) { /* fall back below */ }
+      if (!t) { try { t = localStorage.getItem('cpt_session_token') || sessionStorage.getItem('cpt_session_token') || ''; } catch (e) { /* none */ } }
+      return t;
+    },
+    flash(text, type) {
+      this.msg = { text: text, type: type || 'ok' };
+      clearTimeout(this._msgTimer);
+      this._msgTimer = setTimeout(() => { this.msg = { text: '', type: '' }; }, type === 'err' ? 7000 : 3000);
+    },
+    fail(err) { this.flash((err && err.message) ? err.message : String(err || 'Something went wrong'), 'err'); },
+    formUrl(id) { return location.origin + '/?page=form&id=' + encodeURIComponent(id); },
+
+    // ---------- list ----------
+    openList() { this.mode = 'list'; this.loadForms(); },
+    backToList() { this.mode = 'list'; this.draft = null; this.loadForms(); },
+    loadForms() {
+      this.loading = true;
+      google.script.run
+        .withSuccessHandler(res => {
+          this.loading = false;
+          if (res && res.success) this.forms = res.forms; else this.flash((res && res.message) || 'Could not load forms', 'err');
+        })
+        .withFailureHandler(err => { this.loading = false; this.fail(err); })
+        .listBuilderForms(this.token());
+    },
+    copyLink(id) {
+      const url = this.formUrl(id);
+      const done = () => this.flash('Form link copied');
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, () => window.prompt('Copy this link:', url));
+      else window.prompt('Copy this link:', url);
+    },
+    openPublic(id) { window.open(this.formUrl(id), '_blank', 'noopener'); },
+    toggleStatus(f) {
+      const next = f.status === 'Open' ? 'Closed' : 'Open';
+      google.script.run
+        .withSuccessHandler(res => {
+          if (res && res.success) { f.status = res.status; this.flash(res.status === 'Open' ? 'Form reopened' : 'Form closed - no new responses'); }
+          else this.flash((res && res.message) || 'Could not change status', 'err');
+        })
+        .withFailureHandler(err => this.fail(err))
+        .setBuilderFormStatus(f.id, next, this.token());
+    },
+    removeForm(f) {
+      if (!confirm('Delete "' + f.title + '"?\n\nThe form link will stop working. Its responses stay saved in the Google Sheet.')) return;
+      google.script.run
+        .withSuccessHandler(res => {
+          if (res && res.success) { this.forms = this.forms.filter(x => x.id !== f.id); this.flash('Form deleted'); }
+          else this.flash((res && res.message) || 'Could not delete', 'err');
+        })
+        .withFailureHandler(err => this.fail(err))
+        .deleteBuilderForm(f.id, this.token());
+    },
+
+    // ---------- editor ----------
+    blankField(type) {
+      const f = { id: uid(), type: type, label: LABELS[type], required: false, help: '' };
+      if (type === 'dropdown' || type === 'single' || type === 'multiple') { f.optionsText = 'Option 1\nOption 2'; f.multi = false; }
+      if (type === 'table') { f.rowsText = 'Row 1\nRow 2'; f.colsText = 'Column 1\nColumn 2'; f.cellType = 'radio'; }
+      if (type === 'number') { f.min = ''; f.max = ''; }
+      if (type === 'date') f.withTime = false;
+      if (type === 'stars') f.max = 5;
+      if (type === 'scale') { f.min = 0; f.max = 10; f.lowLabel = ''; f.highLabel = ''; }
+      if (type === 'file') f.maxFiles = 1;
+      return f;
+    },
+    fromServerField(s) {
+      const f = Object.assign({ help: '', required: false }, s);
+      if (s.options) f.optionsText = s.options.join('\n');
+      if (s.rows) f.rowsText = s.rows.join('\n');
+      if (s.cols) f.colsText = s.cols.join('\n');
+      if (s.type === 'number') { f.min = (s.min === null || s.min === undefined) ? '' : s.min; f.max = (s.max === null || s.max === undefined) ? '' : s.max; }
+      return f;
+    },
+    newForm() {
+      this.draft = { id: '', title: '', description: '', successMessage: '', status: 'Open', fields: [] };
+      this.addField('name'); this.addField('email');
+      this.mode = 'edit';
+      window.scrollTo(0, 0);
+    },
+    editForm(id) {
+      google.script.run
+        .withSuccessHandler(res => {
+          if (!res || !res.success) { this.flash((res && res.message) || 'Could not open the form', 'err'); return; }
+          const f = res.form;
+          this.draft = {
+            id: f.id, title: f.title, description: f.description || '', successMessage: f.successMessage || '',
+            status: f.status || 'Open', fields: (f.fields || []).map(x => this.fromServerField(x))
+          };
+          this.mode = 'edit';
+          window.scrollTo(0, 0);
+        })
+        .withFailureHandler(err => this.fail(err))
+        .getBuilderForm(id, this.token());
+    },
+    addField(type) {
+      if (!this.draft) return;
+      if (this.draft.fields.length >= 80) { this.flash('A form can have at most 80 elements.', 'err'); return; }
+      this.draft.fields.push(this.blankField(type));
+    },
+    moveField(i, dir) {
+      const a = this.draft.fields, j = i + dir;
+      if (j < 0 || j >= a.length) return;
+      const t = a[i]; a[i] = a[j]; a[j] = t;
+      this.draft.fields = a.slice();
+    },
+    dupField(i) {
+      const copy = JSON.parse(JSON.stringify(this.draft.fields[i]));
+      copy.id = uid();
+      this.draft.fields.splice(i + 1, 0, copy);
+    },
+    removeField(i) {
+      if (!confirm('Remove this element?' + (this.draft.id ? '\n\n(Answers already collected for it stay in the responses sheet.)' : ''))) return;
+      this.draft.fields.splice(i, 1);
+    },
+    payload() {
+      const d = this.draft;
+      return {
+        id: d.id, title: String(d.title || '').trim(), description: d.description, successMessage: d.successMessage, status: d.status,
+        fields: d.fields.map(f => {
+          const o = { id: f.id, type: f.type, label: String(f.label || '').trim(), required: !!f.required, help: f.help || '' };
+          if (f.type === 'dropdown' || f.type === 'single' || f.type === 'multiple') { o.options = lines(f.optionsText); if (f.type === 'dropdown') o.multi = !!f.multi; }
+          if (f.type === 'table') { o.rows = lines(f.rowsText); o.cols = lines(f.colsText); o.cellType = f.cellType; }
+          if (f.type === 'number') { o.min = f.min === '' ? null : f.min; o.max = f.max === '' ? null : f.max; }
+          if (f.type === 'date') o.withTime = !!f.withTime;
+          if (f.type === 'stars') o.max = f.max;
+          if (f.type === 'scale') { o.min = f.min; o.max = f.max; o.lowLabel = f.lowLabel || ''; o.highLabel = f.highLabel || ''; }
+          if (f.type === 'file') o.maxFiles = f.maxFiles;
+          return o;
+        })
+      };
+    },
+    saveForm() {
+      if (!this.draft || this.saving) return;
+      const p = this.payload();
+      if (!p.title) { this.flash('Please give the form a title.', 'err'); return; }
+      if (!p.fields.length) { this.flash('Add at least one element.', 'err'); return; }
+      this.saving = true;
+      google.script.run
+        .withSuccessHandler(res => {
+          this.saving = false;
+          if (res && res.success) { this.draft.id = res.id; this.flash('Form saved'); }
+          else this.flash((res && res.message) || 'Could not save the form', 'err');
+        })
+        .withFailureHandler(err => { this.saving = false; this.fail(err); })
+        .saveBuilderForm(p, this.token());
+    },
+
+    // ---------- responses ----------
+    openResponses(f) {
+      this.res = { loading: true, formId: f.id, title: f.title, columns: [], rows: [], q: '' };
+      this.mode = 'responses';
+      window.scrollTo(0, 0);
+      this.loadResponses();
+    },
+    loadResponses() {
+      const id = this.res.formId;
+      this.res.loading = true;
+      google.script.run
+        .withSuccessHandler(r => {
+          this.res.loading = false;
+          if (r && r.success) { this.res.title = r.title; this.res.columns = r.columns; this.res.rows = r.rows.slice().reverse(); }
+          else this.flash((r && r.message) || 'Could not load responses', 'err');
+        })
+        .withFailureHandler(err => { this.res.loading = false; this.fail(err); })
+        .getBuilderResponses(id, this.token());
+    },
+    filteredRows() {
+      const q = String(this.res.q || '').trim().toLowerCase();
+      if (!q) return this.res.rows;
+      return this.res.rows.filter(r => Object.keys(r).some(k => String(r[k] === undefined ? '' : r[k]).toLowerCase().indexOf(q) !== -1));
+    },
+    lines(v) { const s = String(v === undefined || v === null ? '' : v); return s === '' ? [] : s.split('\n'); },
+    isUrl(s) { return /^https?:\/\//i.test(String(s || '').trim()); },
+    exportExcel() {
+      if (this.exporting) return;
+      this.exporting = true;
+      google.script.run
+        .withSuccessHandler(r => {
+          this.exporting = false;
+          if (!r || !r.success) { this.flash((r && r.message) || 'Export failed', 'err'); return; }
+          const bytes = atob(r.base64), arr = new Uint8Array(bytes.length);
+          for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+          const url = URL.createObjectURL(new Blob([arr], { type: r.mimeType }));
+          const a = document.createElement('a');
+          a.href = url; a.download = r.fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 2000);
+          this.flash('Download started');
+        })
+        .withFailureHandler(err => { this.exporting = false; this.fail(err); })
+        .exportBuilderResponses(this.res.formId, this.token());
+    }
+  };
+}
+
 function volunteerManager() {
   return {
     tab: 'assign',

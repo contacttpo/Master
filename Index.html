@@ -2535,9 +2535,10 @@
               <div class="fbx-form">
                 <div class="fbx-form-top">
                   <h3 class="fbx-form-title" x-text="f.title"></h3>
-                  <span class="fbx-pill" :class="f.status === 'Open' ? 'open' : 'closed'" x-text="f.status === 'Open' ? 'Accepting responses' : 'Closed'"></span>
+                  <span class="fbx-pill" :class="(f.status === 'Open' && !(f.deadline && f.deadline <= Date.now())) ? 'open' : 'closed'" x-text="f.status !== 'Open' ? 'Closed' : (f.deadline && f.deadline <= Date.now() ? 'Deadline passed' : 'Accepting responses')"></span>
                 </div>
                 <p class="fbx-meta"><span x-text="f.fieldCount + ' elements'"></span> · <b x-text="f.responseCount"></b> <span x-text="f.responseCount === 1 ? 'response' : 'responses'"></span></p>
+                <p class="fbx-meta" x-show="f.deadline" x-text="(f.deadline <= Date.now() ? 'Closed on ' : 'Closes on ') + new Date(f.deadline).toLocaleString([], { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })"></p>
                 <p class="fbx-meta" x-show="f.updatedAt" x-text="'Updated ' + f.updatedAt"></p>
                 <div class="fbx-form-btns">
                   <button type="button" class="fbx-btn sm" @click="openResponses(f)">Responses</button>
@@ -2584,6 +2585,25 @@
                       <option value="Open">Open – accepting responses</option>
                       <option value="Closed">Closed</option>
                     </select>
+                  </div>
+                </div>
+                <div class="fbx-row2">
+                  <div>
+                    <label class="fbx-lbl">Expires when <span class="fbx-hint">— students see a countdown at the top of the form</span></label>
+                    <select class="fbx-in" x-model="draft.expires" @change="onExpiresChange()">
+                      <option value="never">Never – open until I close it</option>
+                      <option value="custom">At a specific date &amp; time</option>
+                      <option value="1h">1 hour from now</option>
+                      <option value="6h">6 hours from now</option>
+                      <option value="24h">24 hours from now</option>
+                      <option value="3d">3 days from now</option>
+                      <option value="7d">7 days from now</option>
+                    </select>
+                  </div>
+                  <div x-show="draft.expires === 'custom'">
+                    <label class="fbx-lbl">Deadline (date &amp; time)</label>
+                    <input class="fbx-in" type="datetime-local" x-model="draft.deadlineLocal">
+                    <p class="fbx-hint" style="margin-top:4px">After this moment the form closes by itself and no more answers are accepted.</p>
                   </div>
                 </div>
               </div>
@@ -11633,8 +11653,25 @@ function formBuilderMgr() {
       if (s.type === 'number') { f.min = (s.min === null || s.min === undefined) ? '' : s.min; f.max = (s.max === null || s.max === undefined) ? '' : s.max; }
       return f;
     },
+    // ---------- deadline helpers ----------
+    toLocalInput(ms) {
+      const d = new Date(ms), p = n => String(n).padStart(2, '0');
+      return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+    },
+    onExpiresChange() {
+      const d = this.draft, hours = { '1h': 1, '6h': 6, '24h': 24, '3d': 72, '7d': 168 };
+      if (d.expires === 'never') { d.deadlineLocal = ''; return; }
+      if (hours[d.expires]) { d.deadlineLocal = this.toLocalInput(Date.now() + hours[d.expires] * 3600000); d.expires = 'custom'; return; }
+      if (!d.deadlineLocal) d.deadlineLocal = this.toLocalInput(Date.now() + 24 * 3600000);
+    },
+    deadlineMs() {
+      const d = this.draft;
+      if (d.expires !== 'custom' || !d.deadlineLocal) return 0;
+      const t = new Date(d.deadlineLocal).getTime();
+      return isFinite(t) ? t : 0;
+    },
     newForm() {
-      this.draft = { id: '', title: '', description: '', successMessage: '', status: 'Open', fields: [] };
+      this.draft = { id: '', title: '', description: '', successMessage: '', status: 'Open', expires: 'never', deadlineLocal: '', deadlineOrig: 0, fields: [] };
       this.addField('name'); this.addField('email');
       this.mode = 'edit';
       window.scrollTo(0, 0);
@@ -11646,7 +11683,8 @@ function formBuilderMgr() {
           const f = res.form;
           this.draft = {
             id: f.id, title: f.title, description: f.description || '', successMessage: f.successMessage || '',
-            status: f.status || 'Open', fields: (f.fields || []).map(x => this.fromServerField(x))
+            status: f.status || 'Open', fields: (f.fields || []).map(x => this.fromServerField(x)),
+            expires: f.deadline ? 'custom' : 'never', deadlineLocal: f.deadline ? this.toLocalInput(f.deadline) : '', deadlineOrig: f.deadline || 0
           };
           this.mode = 'edit';
           window.scrollTo(0, 0);
@@ -11677,7 +11715,7 @@ function formBuilderMgr() {
     payload() {
       const d = this.draft;
       return {
-        id: d.id, title: String(d.title || '').trim(), description: d.description, successMessage: d.successMessage, status: d.status,
+        id: d.id, title: String(d.title || '').trim(), description: d.description, successMessage: d.successMessage, status: d.status, deadline: this.deadlineMs(),
         fields: d.fields.map(f => {
           const o = { id: f.id, type: f.type, label: String(f.label || '').trim(), required: !!f.required, help: f.help || '' };
           if (f.type === 'dropdown' || f.type === 'single' || f.type === 'multiple') { o.options = lines(f.optionsText); if (f.type === 'dropdown') o.multi = !!f.multi; }
@@ -11696,6 +11734,8 @@ function formBuilderMgr() {
       const p = this.payload();
       if (!p.title) { this.flash('Please give the form a title.', 'err'); return; }
       if (!p.fields.length) { this.flash('Add at least one element.', 'err'); return; }
+      if (this.draft.expires === 'custom' && !p.deadline) { this.flash('Pick the deadline date & time, or set "Expires when" to Never.', 'err'); return; }
+      if (p.deadline && p.deadline <= Date.now() && p.deadline !== this.draft.deadlineOrig) { this.flash('The deadline is in the past. Please pick a future date & time.', 'err'); return; }
       this.saving = true;
       google.script.run
         .withSuccessHandler(res => {

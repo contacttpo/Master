@@ -70,6 +70,15 @@
   .spin { width:30px; height:30px; border:3px solid #d8e2ee; border-top-color:var(--blue); border-radius:50%; animation:sp 0.8s linear infinite; margin:0 auto 12px; }
   @keyframes sp { to { transform:rotate(360deg); } }
   .stack > .field + .field { margin-top:20px; }
+  .cd { position:sticky; top:8px; z-index:30; background:linear-gradient(135deg,#16233f,#1b5f7a); color:#fff; border-radius:16px; padding:12px 14px; margin-bottom:14px; text-align:center; box-shadow:0 10px 24px -12px rgba(22,35,63,.75); transition:background .3s; }
+  .cd.warn { background:linear-gradient(135deg,#9a3412,#c2410c); }
+  .cd.urgent { background:linear-gradient(135deg,#991b1b,#d64545); }
+  .cd-t { font-size:12px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; opacity:.9; }
+  .cd-n { display:flex; justify-content:center; gap:8px; margin:7px 0 5px; }
+  .cd-b { min-width:58px; background:rgba(255,255,255,.15); border-radius:10px; padding:6px 4px; }
+  .cd-b b { display:block; font-size:24px; line-height:1.1; font-variant-numeric:tabular-nums; }
+  .cd-b span { font-size:10px; text-transform:uppercase; letter-spacing:.05em; opacity:.85; }
+  .cd-s { font-size:12px; opacity:.9; }
 </style>
 </head>
 <body>
@@ -85,6 +94,44 @@
   if (!params.id) { try { new URLSearchParams(location.search).forEach(function (v, k) { params[k] = v; }); } catch (e) {} }
   var formId = params.id || '';
   var form = null, values = {}, files = {}, submitting = false;
+  var deadline = 0, cdTimer = null;
+
+  // ---------- deadline countdown ----------
+  function remainingMs() { return deadline - Date.now(); }
+  function fmtDeadline() { return new Date(deadline).toLocaleString([], { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }); }
+  function pad2(n) { return n < 10 ? '0' + n : String(n); }
+  function box(id, label) { return el('div', { class: 'cd-b', id: id + 'Box' }, [el('b', { id: id, text: '00' }), el('span', { text: label })]); }
+  function buildCountdown() {
+    return el('div', { class: 'cd', id: 'cd' }, [
+      el('div', { class: 'cd-t', text: '⏳ Time left to fill this form' }),
+      el('div', { class: 'cd-n' }, [box('cdD', 'Days'), box('cdH', 'Hours'), box('cdM', 'Minutes'), box('cdS', 'Seconds')]),
+      el('div', { class: 'cd-s', text: 'Closes on ' + fmtDeadline() })
+    ]);
+  }
+  function tick() {
+    var ms = remainingMs();
+    if (ms <= 0) { expire(); return; }
+    var cd = document.getElementById('cd');
+    if (!cd) return;
+    var s = Math.floor(ms / 1000), d = Math.floor(s / 86400);
+    document.getElementById('cdD').textContent = pad2(d);
+    document.getElementById('cdH').textContent = pad2(Math.floor((s % 86400) / 3600));
+    document.getElementById('cdM').textContent = pad2(Math.floor((s % 3600) / 60));
+    document.getElementById('cdS').textContent = pad2(s % 60);
+    document.getElementById('cdDBox').style.display = d > 0 ? '' : 'none';
+    cd.className = 'cd' + (ms < 10 * 60000 ? ' urgent' : (ms < 3600000 ? ' warn' : ''));
+  }
+  function expire() {
+    if (cdTimer) { clearInterval(cdTimer); cdTimer = null; }
+    var cd = document.getElementById('cd');
+    if (!cd) return;                       // the thank-you screen is showing - nothing to lock
+    cd.className = 'cd urgent';
+    cd.innerHTML = '';
+    cd.appendChild(el('div', { class: 'cd-t', text: '⛔ The deadline has passed' }));
+    cd.appendChild(el('div', { class: 'cd-s', text: 'This form is no longer accepting responses.' }));
+    Array.prototype.forEach.call(root.querySelectorAll('input, select, textarea, button.submit'), function (n) { n.disabled = true; });
+    var b = document.getElementById('submitBtn'); if (b) b.textContent = 'Deadline passed';
+  }
 
   function el(tag, attrs, kids) {
     var e = document.createElement(tag);
@@ -110,7 +157,7 @@
   google.script.run
     .withSuccessHandler(function (res) {
       if (!res || !res.success) { message(res && res.closed ? (res.title || 'Form closed') : 'Cannot open this form', (res && res.message) || 'Please try again later.', true); return; }
-      form = res.form; document.title = form.title; render();
+      form = res.form; deadline = Number(form.deadline) || 0; document.title = form.title; render();
     })
     .withFailureHandler(function (err) { message('Could not load the form', (err && err.message) || 'Please check your connection and reload.', true); })
     .getPublicBuilderForm(formId);
@@ -118,7 +165,9 @@
   // ---------- render ----------
   function render() {
     values = {}; files = {};
+    if (deadline && remainingMs() <= 0) { message('Deadline passed', 'The deadline for this form has passed, so it is no longer accepting responses.', true); return; }
     root.innerHTML = '';
+    if (deadline) { root.appendChild(buildCountdown()); tick(); if (!cdTimer) cdTimer = setInterval(tick, 1000); }
     var head = el('div', { class: 'card head' }, [el('div', { class: 'ribbon' }), el('h1', { text: form.title })]);
     if (form.description) head.appendChild(el('div', { class: 'desc', text: form.description }));
     if (form.fields.some(function (f) { return f.required; })) head.appendChild(el('div', { class: 'req-note', text: '* Required' }));
@@ -378,6 +427,7 @@
 
   function submit() {
     if (submitting) return;
+    if (deadline && remainingMs() <= 0) { expire(); return; }
     var firstBad = null;
     form.fields.forEach(function (f) {
       var node = document.getElementById('fld_' + f.id);

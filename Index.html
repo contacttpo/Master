@@ -2518,7 +2518,7 @@
          see the responses and download them as a formatted Excel file.
          Server side: FormBuilder.gs.  Public page: FormPage.html (/?page=form&id=...). -->
     <section x-data="formBuilderMgr()" x-show="view === 'formBuilder'" x-cloak class="fade-in"
-      x-init="$watch('view', v => { if (v === 'formBuilder') openList(); })">
+      x-init="if (view === 'formBuilder') openList(); $watch('view', v => { if (v === 'formBuilder') openList(); })">
       <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 sm:p-6 fbx">
         <div class="fbx-toast" x-show="msg.text" x-cloak :class="msg.type" x-text="msg.text"></div>
 
@@ -2534,8 +2534,13 @@
               <button type="button" class="fbx-btn primary" @click="newForm()">+ New form</button>
             </div>
           </div>
-          <p class="text-sm text-slate-500 fbx-pad" x-show="loading && !forms.length">Loading forms…</p>
-          <div class="fbx-empty" x-show="!loading && !forms.length">
+          <p class="text-sm text-slate-500 fbx-pad" x-show="(loading || !loaded) && !loadError && !forms.length">Loading forms…</p>
+          <div class="fbx-empty" x-show="loadError && !loading && !forms.length" x-cloak>
+            <p class="fbx-empty-t">Could not load your forms</p>
+            <p class="text-sm text-slate-500" x-text="loadError"></p>
+            <button type="button" class="fbx-btn" style="margin-top:10px" @click="loadForms()">↻ Try again</button>
+          </div>
+          <div class="fbx-empty" x-show="loaded && !loading && !loadError && !forms.length" x-cloak>
             <p class="fbx-empty-t">No forms yet</p>
             <p class="text-sm text-slate-500">Click <b>+ New form</b> to build your first one.</p>
           </div>
@@ -11615,7 +11620,7 @@ function formBuilderMgr() {
       { title: 'Advanced Elements', types: ['table', 'stars', 'scale'] }
     ],
     get questions() { return this.draft ? this.draft.fields.slice(this.contactCount()) : []; },
-    mode: 'list', forms: [], loading: false, saving: false, exporting: false,
+    mode: 'list', forms: [], loading: false, loaded: false, loadError: '', saving: false, exporting: false,
     msg: { text: '', type: '' }, _msgTimer: null,
     draft: null,
     res: { loading: false, formId: '', title: '', columns: [], rows: [], q: '' },
@@ -11639,14 +11644,20 @@ function formBuilderMgr() {
     // ---------- list ----------
     openList() { this.mode = 'list'; this.loadForms(); },
     backToList() { this.mode = 'list'; this.draft = null; this.loadForms(); },
-    loadForms() {
+    loadForms(isRetry) {
       this.loading = true;
+      if (!isRetry) this.loadError = '';
+      const failed = msg => {
+        // one quiet automatic retry (the first call after login can arrive before the session is ready), then show the error
+        if (!isRetry) { setTimeout(() => this.loadForms(true), 1500); return; }
+        this.loading = false; this.loadError = msg || 'Could not load forms';
+      };
       google.script.run
         .withSuccessHandler(res => {
-          this.loading = false;
-          if (res && res.success) this.forms = res.forms; else this.flash((res && res.message) || 'Could not load forms', 'err');
+          if (res && res.success) { this.loading = false; this.loadError = ''; this.forms = res.forms || []; this.loaded = true; }
+          else failed((res && res.message) || 'Could not load forms');
         })
-        .withFailureHandler(err => { this.loading = false; this.fail(err); })
+        .withFailureHandler(err => failed((err && err.message) ? err.message : String(err || '')))
         .listBuilderForms(this.token());
     },
     copyLink(id) {

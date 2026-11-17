@@ -516,6 +516,15 @@
   .fbx-check { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-top: 10px; color: #334155; cursor: pointer; }
   .fbx-check input { width: 17px; height: 17px; accent-color: #214d71; }
   .fbx-palette { background: #f8fafc; }
+  .fbx-qc { border-top: 1px solid #eef2f7; padding: 9px 0 6px; }
+  .fbx-qc-tick { margin-top: 0; font-weight: 600; }
+  .fbx-qc-body { margin: 4px 0 4px 25px; }
+  .fbx-qc-opts { display: flex; flex-wrap: wrap; gap: 0 20px; }
+  .fbx-addq { margin: -2px 0 16px; }
+  .fbx-addq-btn { width: 100%; border: 1.5px dashed #b9c5ef; background: #f8fafc; color: #1c3d5f; font-weight: 700; font-size: 13.5px; padding: 10px 12px; border-radius: 12px; cursor: pointer; }
+  .fbx-addq-btn:hover { background: #eef1fb; }
+  .fbx-addq-pick { display: flex; gap: 8px; align-items: center; }
+  .fbx-addq-pick .fbx-in { margin: 0; flex: 1; }
   .fbx-pal-h { font-weight: 700; color: #1e293b; margin-bottom: 8px; }
   .fbx-pal-g { margin-bottom: 10px; }
   .fbx-pal-t { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
@@ -2608,16 +2617,51 @@
                 </div>
               </div>
 
-              <p class="fbx-empty-inline" x-show="!draft.fields.length">No elements yet — pick one from "Add an element" below.</p>
+              <div class="fbx-card">
+                <h3 class="fbx-pal-h">Quick &amp; Contact Details <span class="fbx-hint">— tick what you want students to fill in; these always appear at the very top of the form</span></h3>
+                <template x-for="t in CONTACT_TYPES" :key="t">
+                  <div class="fbx-qc">
+                    <label class="fbx-check fbx-qc-tick"><input type="checkbox" :checked="contactList(t).length > 0" @change="toggleContact(t, $event)"> <span x-text="typeLabel(t)"></span></label>
+                    <template x-for="f in contactList(t)" :key="f.id">
+                      <div class="fbx-qc-body">
+                        <p class="fbx-hint2" x-text="typeHint(t)"></p>
+                        <label class="fbx-lbl">Question / label</label>
+                        <input class="fbx-in" type="text" maxlength="200" x-model="f.label">
+                        <label class="fbx-lbl">Help text (optional)</label>
+                        <input class="fbx-in" type="text" maxlength="300" x-model="f.help" placeholder="Small hint shown under the question">
+                        <div class="fbx-qc-opts">
+                          <label class="fbx-check"><input type="checkbox" x-model="f.required"> Required</label>
+                          <label class="fbx-check" x-show="t === 'date'"><input type="checkbox" x-model="f.withTime"> Also ask for a time</label>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+                </template>
+              </div>
 
-              <template x-for="(f, i) in draft.fields" :key="f.id">
-                <div class="fbx-card">
+              <div x-show="!questions.length">
+                <p class="fbx-empty-inline">No other questions yet — press <b>+ Add question</b> and choose the answer type.</p>
+                <div class="fbx-addq">
+                  <button type="button" class="fbx-addq-btn" x-show="pickerFor !== '__first'" @click="pickerFor = '__first'">+ Add question</button>
+                  <div class="fbx-addq-pick" x-show="pickerFor === '__first'" x-cloak>
+                    <select class="fbx-in" @change="pickType($event, '')">
+                      <option value="">Choose the answer type…</option>
+                      <template x-for="g in TYPE_GROUPS" :key="g.title"><optgroup :label="g.title"><template x-for="t in g.types" :key="t"><option :value="t" x-text="typeLabel(t)"></option></template></optgroup></template>
+                    </select>
+                    <button type="button" class="fbx-btn sm" @click="pickerFor = ''">Cancel</button>
+                  </div>
+                </div>
+              </div>
+
+              <template x-for="(f, i) in questions" :key="f.id">
+                <div>
+                <div class="fbx-card" :id="'fbq_' + f.id">
                   <div class="fbx-card-head">
                     <span class="fbx-type" x-text="typeLabel(f.type)"></span>
                     <span class="fbx-num" x-text="'#' + (i + 1)"></span>
                     <div class="fbx-tools">
                       <button type="button" title="Move up" :disabled="i === 0" @click="moveField(i, -1)">↑</button>
-                      <button type="button" title="Move down" :disabled="i === draft.fields.length - 1" @click="moveField(i, 1)">↓</button>
+                      <button type="button" title="Move down" :disabled="i === questions.length - 1" @click="moveField(i, 1)">↓</button>
                       <button type="button" title="Duplicate" @click="dupField(i)">⧉</button>
                       <button type="button" title="Remove" class="danger" @click="removeField(i)">✕</button>
                     </div>
@@ -2689,21 +2733,18 @@
                     <p class="fbx-hint2">Each file can be up to 5 MB. Allowed: PDF, images, Word, Excel, PowerPoint, CSV, TXT, ZIP.</p>
                   </div>
                 </div>
-              </template>
-
-              <div class="fbx-card fbx-palette">
-                <h3 class="fbx-pal-h">Add an element</h3>
-                <template x-for="g in TYPE_GROUPS" :key="g.title">
-                  <div class="fbx-pal-g">
-                    <p class="fbx-pal-t" x-text="g.title"></p>
-                    <div class="fbx-pal-btns">
-                      <template x-for="t in g.types" :key="t">
-                        <button type="button" class="fbx-chip" @click="addField(t)" x-text="'+ ' + typeLabel(t)"></button>
-                      </template>
-                    </div>
+                <div class="fbx-addq">
+                  <button type="button" class="fbx-addq-btn" x-show="pickerFor !== f.id" @click="pickerFor = f.id">+ Add question</button>
+                  <div class="fbx-addq-pick" x-show="pickerFor === f.id" x-cloak>
+                    <select class="fbx-in" @change="pickType($event, f.id)">
+                      <option value="">Choose the answer type…</option>
+                      <template x-for="g in TYPE_GROUPS" :key="g.title"><optgroup :label="g.title"><template x-for="t in g.types" :key="t"><option :value="t" x-text="typeLabel(t)"></option></template></optgroup></template>
+                    </select>
+                    <button type="button" class="fbx-btn sm" @click="pickerFor = ''">Cancel</button>
                   </div>
-                </template>
-              </div>
+                </div>
+                </div>
+              </template>
 
               <div class="fbx-savebar">
                 <button type="button" class="fbx-btn" @click="backToList()">Back</button>
@@ -11562,15 +11603,18 @@ function formBuilderMgr() {
     stars: 'Star rating, for example 1 to 5 stars.',
     scale: 'Numbered scale, for example 0 to 10.'
   };
+  const CONTACT = ['name', 'email', 'phone', 'address', 'date'];   // always kept at the top of the form, in this order
   const uid = () => 'f' + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-3);
   const lines = t => String(t || '').split('\n').map(s => s.trim()).filter(Boolean);
 
   return {
+    CONTACT_TYPES: CONTACT,
+    pickerFor: '',
     TYPE_GROUPS: [
-      { title: 'Quick & Contact Elements', types: ['name', 'email', 'phone', 'address', 'date'] },
       { title: 'Basic Text & Choice Elements', types: ['short', 'long', 'dropdown', 'single', 'multiple', 'number', 'file', 'time'] },
       { title: 'Advanced Elements', types: ['table', 'stars', 'scale'] }
     ],
+    get questions() { return this.draft ? this.draft.fields.slice(this.contactCount()) : []; },
     mode: 'list', forms: [], loading: false, saving: false, exporting: false,
     msg: { text: '', type: '' }, _msgTimer: null,
     draft: null,
@@ -11671,6 +11715,7 @@ function formBuilderMgr() {
       return isFinite(t) ? t : 0;
     },
     newForm() {
+      this.pickerFor = '';
       this.draft = { id: '', title: '', description: '', successMessage: '', status: 'Open', expires: 'never', deadlineLocal: '', deadlineOrig: 0, fields: [] };
       this.addField('name'); this.addField('email');
       this.mode = 'edit';
@@ -11686,6 +11731,8 @@ function formBuilderMgr() {
             status: f.status || 'Open', fields: (f.fields || []).map(x => this.fromServerField(x)),
             expires: f.deadline ? 'custom' : 'never', deadlineLocal: f.deadline ? this.toLocalInput(f.deadline) : '', deadlineOrig: f.deadline || 0
           };
+          this.normalizeOrder();
+          this.pickerFor = '';
           this.mode = 'edit';
           window.scrollTo(0, 0);
         })
@@ -11694,23 +11741,68 @@ function formBuilderMgr() {
     },
     addField(type) {
       if (!this.draft) return;
-      if (this.draft.fields.length >= 80) { this.flash('A form can have at most 80 elements.', 'err'); return; }
+      if (this.draft.fields.length >= 80) { this.flash('A form can have at most 80 questions.', 'err'); return; }
       this.draft.fields.push(this.blankField(type));
     },
-    moveField(i, dir) {
-      const a = this.draft.fields, j = i + dir;
-      if (j < 0 || j >= a.length) return;
+    // ---------- quick & contact block (always first) ----------
+    contactCount() {
+      const f = this.draft ? this.draft.fields : [];
+      let n = 0, last = -1;
+      while (n < f.length) { const r = CONTACT.indexOf(f[n].type); if (r === -1 || r <= last) break; last = r; n++; }
+      return n;
+    },
+    contactList(t) { return this.draft ? this.draft.fields.slice(0, this.contactCount()).filter(f => f.type === t) : []; },
+    normalizeOrder() {
+      const first = {}, rest = [];
+      this.draft.fields.forEach(f => { if (CONTACT.indexOf(f.type) !== -1 && !first[f.type]) first[f.type] = f; else rest.push(f); });
+      this.draft.fields = CONTACT.filter(t => first[t]).map(t => first[t]).concat(rest);
+    },
+    toggleContact(t, ev) {
+      const a = this.draft.fields, c = this.contactCount(), have = a.slice(0, c).findIndex(f => f.type === t);
+      if (ev.target.checked) {
+        if (have !== -1) return;
+        if (a.length >= 80) { ev.target.checked = false; this.flash('A form can have at most 80 questions.', 'err'); return; }
+        let at = 0;
+        while (at < c && CONTACT.indexOf(a[at].type) < CONTACT.indexOf(t)) at++;
+        a.splice(at, 0, this.blankField(t));
+      } else if (have !== -1) {
+        if (this.draft.id && !confirm('Remove "' + a[have].label + '" from the form?\n\n(Answers already collected for it stay in the responses sheet.)')) { ev.target.checked = true; return; }
+        a.splice(have, 1);
+      }
+    },
+    // ---------- questions (everything after the contact block) ----------
+    pickType(ev, afterId) {
+      const type = ev.target.value; ev.target.value = '';
+      if (!type) return;
+      const a = this.draft.fields;
+      if (a.length >= 80) { this.flash('A form can have at most 80 questions.', 'err'); return; }
+      const nf = this.blankField(type);
+      let at = a.length;
+      if (afterId) { const k = a.findIndex(f => f.id === afterId); if (k !== -1) at = k + 1; }
+      a.splice(at, 0, nf);
+      this.pickerFor = '';
+      this.$nextTick(() => {
+        const n = document.getElementById('fbq_' + nf.id);
+        if (!n) return;
+        n.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const i = n.querySelector('input[type=text]'); if (i) { i.focus(); i.select(); }
+      });
+    },
+    moveField(qi, dir) {
+      const a = this.draft.fields, c = this.contactCount(), i = c + qi, j = i + dir;
+      if (j < c || j >= a.length) return;
       const t = a[i]; a[i] = a[j]; a[j] = t;
       this.draft.fields = a.slice();
     },
-    dupField(i) {
+    dupField(qi) {
+      const i = this.contactCount() + qi;
       const copy = JSON.parse(JSON.stringify(this.draft.fields[i]));
       copy.id = uid();
       this.draft.fields.splice(i + 1, 0, copy);
     },
-    removeField(i) {
-      if (!confirm('Remove this element?' + (this.draft.id ? '\n\n(Answers already collected for it stay in the responses sheet.)' : ''))) return;
-      this.draft.fields.splice(i, 1);
+    removeField(qi) {
+      if (!confirm('Remove this question?' + (this.draft.id ? '\n\n(Answers already collected for it stay in the responses sheet.)' : ''))) return;
+      this.draft.fields.splice(this.contactCount() + qi, 1);
     },
     payload() {
       const d = this.draft;
@@ -11733,7 +11825,7 @@ function formBuilderMgr() {
       if (!this.draft || this.saving) return;
       const p = this.payload();
       if (!p.title) { this.flash('Please give the form a title.', 'err'); return; }
-      if (!p.fields.length) { this.flash('Add at least one element.', 'err'); return; }
+      if (!p.fields.length) { this.flash('Add at least one question.', 'err'); return; }
       if (this.draft.expires === 'custom' && !p.deadline) { this.flash('Pick the deadline date & time, or set "Expires when" to Never.', 'err'); return; }
       if (p.deadline && p.deadline <= Date.now() && p.deadline !== this.draft.deadlineOrig) { this.flash('The deadline is in the past. Please pick a future date & time.', 'err'); return; }
       this.saving = true;

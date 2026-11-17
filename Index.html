@@ -533,6 +533,11 @@
   .fbx-chip:hover { background: #eef1fb; }
   .fbx-savebar { display: flex; justify-content: flex-end; gap: 8px; position: sticky; bottom: 10px; }
   .fbx-search { width: 200px; }
+  .fbx-filters { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 12px; background: #f8fafc; }
+  .fbx-fgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px 12px; }
+  .fbx-fgrid .fbx-lbl { margin-top: 6px; }
+  .fbx-fbar { display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-top: 12px; font-size: 13px; color: #475569; }
+  .fbx-badge { display: inline-block; min-width: 18px; padding: 0 6px; margin-left: 4px; border-radius: 999px; background: #214d71; color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
   .fbx-tablewrap { overflow: auto; max-height: 68vh; border: 1px solid #e2e8f0; border-radius: 12px; }
   .fbx-table { border-collapse: collapse; width: 100%; font-size: 13px; }
   .fbx-table th { position: sticky; top: 0; background: #e0e7ff; color: #1e1b4b; text-align: left; padding: 8px 10px; border-bottom: 1px solid #c7d2fe; white-space: nowrap; z-index: 1; }
@@ -2765,15 +2770,51 @@
             <div>
               <button type="button" class="fbx-back" @click="backToList()">← All forms</button>
               <h2 class="brand-heading text-2xl text-slate-800" x-text="res.title || 'Responses'"></h2>
-              <p class="text-sm text-slate-500"><span x-text="res.rows.length"></span> <span x-text="res.rows.length === 1 ? 'response' : 'responses'"></span></p>
+              <p class="text-sm text-slate-500"><span x-text="isFiltered() ? (filteredRows().length + ' of ' + res.rows.length) : res.rows.length"></span> <span x-text="(isFiltered() ? filteredRows().length : res.rows.length) === 1 && !isFiltered() ? 'response' : 'responses'"></span><span x-show="isFiltered()"> (filtered)</span></p>
             </div>
             <div class="fbx-actions">
               <input class="fbx-in fbx-search" type="text" placeholder="Search responses…" x-model="res.q">
+              <button type="button" class="fbx-btn" :disabled="!res.rows.length" @click="res.showFilters = !res.showFilters">⚲ Filters<span class="fbx-badge" x-show="activeFilters() > 0" x-text="activeFilters()"></span></button>
               <button type="button" class="fbx-btn" @click="loadResponses()"><span x-text="res.loading ? 'Refreshing…' : '↻ Refresh'"></span></button>
-              <button type="button" class="fbx-btn primary" :disabled="exporting || !res.rows.length" @click="exportExcel()"><span x-text="exporting ? 'Preparing…' : '⬇ Download Excel'"></span></button>
+              <button type="button" class="fbx-btn primary" :disabled="exporting || !filteredRows().length" @click="exportExcel()"><span x-text="exporting ? 'Preparing…' : (isFiltered() ? '⬇ Download filtered (' + filteredRows().length + ')' : '⬇ Download Excel')"></span></button>
+            </div>
+          </div>
+          <div class="fbx-filters" x-show="res.showFilters && res.rows.length" x-cloak>
+            <div class="fbx-fgrid">
+              <div>
+                <label class="fbx-lbl">Submitted from</label>
+                <input class="fbx-in" type="date" x-model="res.f.from">
+              </div>
+              <div>
+                <label class="fbx-lbl">Submitted to</label>
+                <input class="fbx-in" type="date" x-model="res.f.to">
+              </div>
+              <template x-for="c in res.columns" :key="c.key">
+                <div x-show="res.opts[c.key] && res.opts[c.key].type !== 'none'">
+                  <label class="fbx-lbl" x-text="c.header"></label>
+                  <template x-if="res.opts[c.key] && res.opts[c.key].type === 'select'">
+                    <select class="fbx-in" x-model="res.f.cols[c.key]">
+                      <option value="">All</option>
+                      <template x-if="res.opts[c.key].blank"><option value="__blank__">(blank)</option></template>
+                      <template x-for="o in res.opts[c.key].list" :key="o"><option :value="o" x-text="o"></option></template>
+                    </select>
+                  </template>
+                  <template x-if="res.opts[c.key] && res.opts[c.key].type === 'text'">
+                    <input class="fbx-in" type="text" placeholder="Contains…" x-model="res.f.cols[c.key]">
+                  </template>
+                </div>
+              </template>
+            </div>
+            <div class="fbx-fbar">
+              <span>Showing <b x-text="filteredRows().length"></b> of <b x-text="res.rows.length"></b> responses. The Excel download uses the same filters.</span>
+              <button type="button" class="fbx-btn sm" :disabled="!isFiltered()" @click="clearFilters()">Clear all filters</button>
             </div>
           </div>
           <p class="text-sm text-slate-500 fbx-pad" x-show="res.loading && !res.rows.length">Loading responses…</p>
+          <div class="fbx-empty" x-show="res.rows.length && !filteredRows().length" x-cloak>
+            <p class="fbx-empty-t">No responses match these filters</p>
+            <button type="button" class="fbx-btn" style="margin-top:8px" @click="clearFilters()">Clear all filters</button>
+          </div>
           <div class="fbx-empty" x-show="!res.loading && !res.rows.length"><p class="fbx-empty-t">No responses yet</p></div>
           <div class="fbx-tablewrap" x-show="res.rows.length">
             <table class="fbx-table">
@@ -11608,6 +11649,7 @@ function formBuilderMgr() {
     stars: 'Star rating, for example 1 to 5 stars.',
     scale: 'Numbered scale, for example 0 to 10.'
   };
+  const FILTER_MAX_OPTIONS = 25;   // a column with more different answers than this gets a "contains" box instead of a pick-list
   const CONTACT = ['name', 'email', 'phone', 'address', 'date'];   // always kept at the top of the form, in this order
   const uid = () => 'f' + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-3);
   const lines = t => String(t || '').split('\n').map(s => s.trim()).filter(Boolean);
@@ -11852,7 +11894,7 @@ function formBuilderMgr() {
 
     // ---------- responses ----------
     openResponses(f) {
-      this.res = { loading: true, formId: f.id, title: f.title, columns: [], rows: [], q: '' };
+      this.res = { loading: true, formId: f.id, title: f.title, columns: [], rows: [], q: '', showFilters: false, opts: {}, f: { from: '', to: '', cols: {} } };
       this.mode = 'responses';
       window.scrollTo(0, 0);
       this.loadResponses();
@@ -11863,16 +11905,70 @@ function formBuilderMgr() {
       google.script.run
         .withSuccessHandler(r => {
           this.res.loading = false;
-          if (r && r.success) { this.res.title = r.title; this.res.columns = r.columns; this.res.rows = r.rows.slice().reverse(); }
+          if (r && r.success) { this.res.title = r.title; this.res.columns = r.columns; this.res.rows = r.rows.slice().reverse(); this.buildFilters(); }
           else this.flash((r && r.message) || 'Could not load responses', 'err');
         })
         .withFailureHandler(err => { this.res.loading = false; this.fail(err); })
         .getBuilderResponses(id, this.token());
     },
+    // ---------- filters ----------
+    // For every column: a pick-list when it has few different answers (checkbox answers are split per line),
+    // a "contains" box when it has many, and nothing for file links / empty columns.
+    buildFilters() {
+      const opts = {}, old = (this.res.f && this.res.f.cols) || {}, cols = {};
+      this.res.columns.forEach(c => {
+        const set = {}; let blank = false, filled = 0, url = false;
+        this.res.rows.forEach(r => {
+          const v = String(r[c.key] === undefined || r[c.key] === null ? '' : r[c.key]);
+          if (v === '') { blank = true; return; }
+          filled++;
+          v.split('\n').forEach(l => { l = l.trim(); if (!l) return; if (/^https?:\/\//i.test(l)) url = true; set[l] = 1; });
+        });
+        const list = Object.keys(set).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+        opts[c.key] = (!filled || url) ? { type: 'none' } : (list.length <= FILTER_MAX_OPTIONS ? { type: 'select', list: list, blank: blank } : { type: 'text' });
+        let keep = old[c.key] || '';
+        if (opts[c.key].type === 'select' && keep && keep !== '__blank__' && list.indexOf(keep) === -1) keep = '';
+        if (opts[c.key].type === 'none') keep = '';
+        cols[c.key] = keep;
+      });
+      this.res.opts = opts;
+      this.res.f = { from: (this.res.f && this.res.f.from) || '', to: (this.res.f && this.res.f.to) || '', cols: cols };
+    },
+    rowDate(r) {
+      const at = String(r._at || ''), m = /^(\d{4})-(\d{2})-(\d{2})/.exec(at);
+      if (m) return m[1] + '-' + m[2] + '-' + m[3];
+      const t = Date.parse(at); if (isNaN(t)) return '';
+      const d = new Date(t), p = n => String(n).padStart(2, '0');
+      return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+    },
+    activeFilters() {
+      const f = this.res.f || {}, cols = f.cols || {};
+      return (f.from ? 1 : 0) + (f.to ? 1 : 0) + Object.keys(cols).filter(k => String(cols[k] || '').trim() !== '').length;
+    },
+    isFiltered() { return this.activeFilters() > 0 || String(this.res.q || '').trim() !== ''; },
+    clearFilters() {
+      const cols = {}; this.res.columns.forEach(c => { cols[c.key] = ''; });
+      this.res.f = { from: '', to: '', cols: cols }; this.res.q = '';
+    },
     filteredRows() {
-      const q = String(this.res.q || '').trim().toLowerCase();
-      if (!q) return this.res.rows;
-      return this.res.rows.filter(r => Object.keys(r).some(k => String(r[k] === undefined ? '' : r[k]).toLowerCase().indexOf(q) !== -1));
+      const q = String(this.res.q || '').trim().toLowerCase(), f = this.res.f || {}, cols = f.cols || {};
+      const active = Object.keys(cols).filter(k => String(cols[k] || '').trim() !== '');
+      if (!q && !f.from && !f.to && !active.length) return this.res.rows;
+      return this.res.rows.filter(r => {
+        if (f.from || f.to) {
+          const d = this.rowDate(r);
+          if (!d || (f.from && d < f.from) || (f.to && d > f.to)) return false;
+        }
+        for (let i = 0; i < active.length; i++) {
+          const k = active[i], want = String(cols[k]).trim(), v = String(r[k] === undefined || r[k] === null ? '' : r[k]);
+          if ((this.res.opts[k] || {}).type === 'select') {
+            if (want === '__blank__') { if (v !== '') return false; }
+            else if (v.split('\n').map(x => x.trim()).indexOf(want) === -1) return false;
+          } else if (v.toLowerCase().indexOf(want.toLowerCase()) === -1) return false;
+        }
+        if (q && !Object.keys(r).some(k => String(r[k] === undefined ? '' : r[k]).toLowerCase().indexOf(q) !== -1)) return false;
+        return true;
+      });
     },
     lines(v) { const s = String(v === undefined || v === null ? '' : v); return s === '' ? [] : s.split('\n'); },
     isUrl(s) { return /^https?:\/\//i.test(String(s || '').trim()); },
@@ -11892,7 +11988,7 @@ function formBuilderMgr() {
           this.flash('Download started');
         })
         .withFailureHandler(err => { this.exporting = false; this.fail(err); })
-        .exportBuilderResponses(this.res.formId, this.token());
+        .exportBuilderResponses(this.res.formId, this.token(), this.isFiltered() ? this.filteredRows().map(r => r._id) : null);
     }
   };
 }

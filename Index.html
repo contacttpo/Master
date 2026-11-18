@@ -533,6 +533,24 @@
   .fbx-chip:hover { background: #eef1fb; }
   .fbx-savebar { display: flex; justify-content: flex-end; gap: 8px; position: sticky; bottom: 10px; }
   .fbx-search { width: 200px; }
+  /* Companies page: A–Z jump bar + letter groups */
+  .cg-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 6px 8px; margin-bottom: 16px; }
+  .cg-letters { flex: 1; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+  .cg-letters::-webkit-scrollbar { display: none; }
+  .cg-l { flex: 0 0 auto; width: 28px; height: 28px; border: 0; background: transparent; border-radius: 8px; font-size: 12px; font-weight: 700; color: #3730a3; cursor: pointer; }
+  .cg-l:hover:not(:disabled) { background: #eef2ff; }
+  .cg-l:disabled { color: #cbd5e1; cursor: default; }
+  .cg-sort { flex: 0 0 auto; border: 1px solid #cbd5e1; border-radius: 8px; padding: 4px 8px; font-size: 12px; background: #fff; color: #334155; }
+  .cg-group { margin-bottom: 24px; }
+  .cg-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; scroll-margin-top: 64px; }
+  .cg-badge { flex: 0 0 auto; width: 36px; height: 36px; border-radius: 10px; background: #4f46e5; color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .cg-line { flex: 1; height: 1px; background: #e2e8f0; }
+  .cg-count { font-size: 12px; color: #94a3b8; }
+  @media (max-width: 767px) { .cg-bar { top: 56px; } .cg-head { scroll-margin-top: 112px; } }
+  html.dark .cg-bar { background: #17233b; border-color: #334155; }
+  html.dark .cg-l { color: #a5b4fc; } html.dark .cg-l:hover:not(:disabled) { background: #1e2a47; } html.dark .cg-l:disabled { color: #475569; }
+  html.dark .cg-sort { background: #0f172a; color: #e2e8f0; border-color: #334155; }
+  html.dark .cg-line { background: #334155; }
   .fbx-filters { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 12px; background: #f8fafc; }
   .fbx-fgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px 12px; }
   .fbx-fgrid .fbx-lbl { margin-top: 6px; }
@@ -1208,15 +1226,38 @@
         <p class="text-slate-400 text-xs mt-1" x-show="!search && !statusFilter">Click "+ New Company" above to add your first one.</p>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <template x-for="(c, idx) in filteredCompanies()" :key="c.Company_Name">
+      <!-- A–Z jump bar + sort -->
+      <div class="cg-bar" x-show="!loading && companies.length" x-cloak>
+        <div class="cg-letters" x-show="companySort !== 'flat'">
+          <template x-for="L in companyLetters()" :key="L.key">
+            <button type="button" class="cg-l" :disabled="!L.has" @click="jumpToLetter(L.key)" x-text="L.label"></button>
+          </template>
+        </div>
+        <div style="flex:1" x-show="companySort === 'flat'"></div>
+        <select class="cg-sort" x-model="companySort" @change="saveCompanySort()" title="Sort companies">
+          <option value="az">A–Z (grouped)</option>
+          <option value="za">Z–A (grouped)</option>
+          <option value="flat">A–Z (no headings)</option>
+        </select>
+      </div>
+
+      <div>
+        <template x-for="g in companyGroups()" :key="g.key">
+          <div class="cg-group">
+            <div class="cg-head" x-show="g.label" :id="'cg_' + g.key">
+              <span class="cg-badge" x-text="g.label"></span>
+              <span class="cg-line"></span>
+              <span class="cg-count" x-text="g.items.length + (g.items.length === 1 ? ' company' : ' companies')"></span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <template x-for="c in g.items" :key="c.Company_Name">
           <div @click="openCompany(c.Company_Name)"
                class="bg-white border border-slate-200 border-l-4 rounded-2xl p-5 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition"
-               :class="cardAccent(idx)">
+               :class="cardAccent(nameIdx(c.Company_Name))">
             <div class="flex items-start justify-between mb-2">
               <div class="flex items-center gap-2.5 min-w-0">
                 <div class="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-                  :style="'background-color:' + pieColor(idx)" x-text="(c.Company_Name || '?').charAt(0).toUpperCase()"></div>
+                  :style="'background-color:' + pieColor(nameIdx(c.Company_Name))" x-text="(c.Company_Name || '?').charAt(0).toUpperCase()"></div>
                 <h3 class="font-semibold text-slate-800 truncate" x-text="c.Company_Name"></h3>
               </div>
               <div class="flex items-center gap-1.5 flex-shrink-0 ml-2">
@@ -1238,6 +1279,9 @@
               <span class="text-xs text-slate-400">Students Selected</span>
               <span class="text-sm font-bold" :class="c.SelectedCount > 0 ? 'text-emerald-700' : 'text-slate-400'"
                 x-text="c.SelectedCount || 0"></span>
+            </div>
+          </div>
+              </template>
             </div>
           </div>
         </template>
@@ -5944,6 +5988,7 @@ function app() {
     saving: false,
     search: '',
     statusFilter: '',
+    companySort: (function () { try { return localStorage.getItem('companySort') || 'az'; } catch (e) { return 'az'; } })(),
     companies: [],
     companyForm: {},
 
@@ -7930,12 +7975,51 @@ function app() {
         .getGlobalSelectionSummary();
     },
 
+    // Companies are always shown alphabetically (names starting with a digit/symbol go last, under "#").
+    // The previous/next arrows in Company Details use this same list, so they follow the same order.
+    companyLetter(c) {
+      const ch = String((c && c.Company_Name) || '').trim().charAt(0).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+      return /^[A-Z]$/.test(ch) ? ch : '#';
+    },
     filteredCompanies() {
+      const dir = this.companySort === 'za' ? -1 : 1;
+      const nm = c => String((c && c.Company_Name) || '').trim();
       return this.companies.filter(c => {
         const matchesSearch = !this.search || (c.Company_Name || '').toLowerCase().includes(this.search.toLowerCase());
         const matchesStatus = !this.statusFilter || c.Status === this.statusFilter;
         return matchesSearch && matchesStatus;
+      }).sort((a, b) => {
+        const la = this.companyLetter(a), lb = this.companyLetter(b);
+        if (la !== lb && (la === '#' || lb === '#')) return la === '#' ? 1 : -1;
+        return dir * nm(a).localeCompare(nm(b), undefined, { numeric: true, sensitivity: 'base' });
       });
+    },
+    companyGroups() {
+      const list = this.filteredCompanies();
+      if (this.companySort === 'flat') return list.length ? [{ key: 'all', label: '', items: list }] : [];
+      const groups = [], seen = {};
+      list.forEach(c => {
+        const l = this.companyLetter(c);
+        if (!seen[l]) { seen[l] = { key: l === '#' ? 'hash' : l, label: l, items: [] }; groups.push(seen[l]); }
+        seen[l].items.push(c);
+      });
+      return groups;
+    },
+    companyLetters() {
+      const have = {};
+      this.filteredCompanies().forEach(c => { have[this.companyLetter(c)] = true; });
+      return 'ABCDEFGHIJKLMNOPQRSTUVWXYZ#'.split('').map(l => ({ key: l === '#' ? 'hash' : l, label: l, has: !!have[l] }));
+    },
+    jumpToLetter(key) {
+      const el = document.getElementById('cg_' + key);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+    saveCompanySort() { try { localStorage.setItem('companySort', this.companySort); } catch (e) {} },
+    // Card colour follows the company name (not its position) so colours don't shuffle when you search or filter.
+    nameIdx(name) {
+      let h = 0; const t = String(name || '');
+      for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) % 1000003;
+      return h;
     },
 
     // ---------- Company Form ----------

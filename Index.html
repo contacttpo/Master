@@ -5147,8 +5147,11 @@
             <button type="button" @click="summaryMode = 'college'"
               class="text-xs font-medium px-2.5 py-1 rounded-full border transition-colors"
               :class="summaryMode === 'college' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 text-slate-600 hover:bg-slate-50'">College-wise</button>
+            <button type="button" @click="summaryMode = 'both'"
+              class="text-xs font-medium px-2.5 py-1 rounded-full border transition-colors"
+              :class="summaryMode === 'both' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 text-slate-600 hover:bg-slate-50'">College + Branch</button>
           </div>
-          <table class="text-xs" style="width:auto; border-collapse:collapse;">
+          <table class="text-xs" style="width:auto; border-collapse:collapse;" x-show="summaryMode !== 'both'">
             <thead>
               <tr class="text-left text-slate-400 border-b border-slate-200">
                 <th class="py-1.5 pr-4" x-text="summaryMode === 'college' ? 'College' : 'Branch'"></th>
@@ -5209,6 +5212,68 @@
               </template>
             </tbody>
           </table>
+          <table class="text-xs" style="width:auto; border-collapse:collapse;" x-show="summaryMode === 'both'" x-cloak>
+            <thead>
+              <tr class="text-left text-slate-400 border-b border-slate-200">
+                <th class="py-1.5 pr-4">College / Branch</th>
+                <th class="py-1.5 pr-4">Appeared</th>
+                <th class="py-1.5 pr-4 text-emerald-700">Shortlisted</th>
+                <th class="py-1.5 pr-4 text-blue-700">Selected</th>
+                <th class="py-1.5 pr-4 text-red-600">Rejected</th>
+                <th class="py-1.5 pr-4 text-slate-500">Pending</th>
+                <th class="py-1.5 pr-4 text-slate-400">Absent</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="row in roundCollegeBranchSummary()" :key="row.type + '|' + row.college + '|' + row.branch">
+                <tr class="border-b border-slate-100" :style="row.type === 'college' ? 'background:#f8fafc' : ''">
+                  <td class="py-1.5 pr-4" :style="row.type === 'pair' ? 'padding-left:18px' : 'font-weight:600'">
+                    <button type="button" @click="setRoundCombo(row.college, row.type === 'pair' ? row.branch : '', 'All')"
+                      class="hover:underline"
+                      :class="isRoundComboActive(row.college, row.type === 'pair' ? row.branch : '', 'All') ? 'text-indigo-700 font-semibold' : 'text-slate-700'"
+                      x-text="row.type === 'pair' ? row.branch : row.college"></button>
+                  </td>
+                  <td class="py-1.5 pr-4 ">
+                    <button type="button" @click="setRoundCombo(row.college, row.type === 'pair' ? row.branch : '', 'All')"
+                      class="hover:underline"
+                      :class="isRoundComboActive(row.college, row.type === 'pair' ? row.branch : '', 'All') ? 'font-semibold underline' : ''"
+                      x-text="row.appeared"></button>
+                  </td>
+                  <td class="py-1.5 pr-4 text-emerald-700">
+                    <button type="button" @click="setRoundCombo(row.college, row.type === 'pair' ? row.branch : '', 'Shortlisted')"
+                      class="hover:underline"
+                      :class="isRoundComboActive(row.college, row.type === 'pair' ? row.branch : '', 'Shortlisted') ? 'font-semibold underline' : ''"
+                      x-text="row.shortlisted"></button>
+                  </td>
+                  <td class="py-1.5 pr-4 text-blue-700">
+                    <button type="button" @click="setRoundCombo(row.college, row.type === 'pair' ? row.branch : '', 'Selected')"
+                      class="hover:underline"
+                      :class="isRoundComboActive(row.college, row.type === 'pair' ? row.branch : '', 'Selected') ? 'font-semibold underline' : ''"
+                      x-text="row.selected"></button>
+                  </td>
+                  <td class="py-1.5 pr-4 text-red-600">
+                    <button type="button" @click="setRoundCombo(row.college, row.type === 'pair' ? row.branch : '', 'Rejected')"
+                      class="hover:underline"
+                      :class="isRoundComboActive(row.college, row.type === 'pair' ? row.branch : '', 'Rejected') ? 'font-semibold underline' : ''"
+                      x-text="row.rejected"></button>
+                  </td>
+                  <td class="py-1.5 pr-4 text-slate-500">
+                    <button type="button" @click="setRoundCombo(row.college, row.type === 'pair' ? row.branch : '', 'Pending')"
+                      class="hover:underline"
+                      :class="isRoundComboActive(row.college, row.type === 'pair' ? row.branch : '', 'Pending') ? 'font-semibold underline' : ''"
+                      x-text="row.pending"></button>
+                  </td>
+                  <td class="py-1.5 pr-4 text-slate-400">
+                    <button type="button" @click="setRoundCombo(row.college, row.type === 'pair' ? row.branch : '', 'Absent')"
+                      class="hover:underline"
+                      :class="isRoundComboActive(row.college, row.type === 'pair' ? row.branch : '', 'Absent') ? 'font-semibold underline' : ''"
+                      x-text="row.absent"></button>
+                  </td>
+                  </tr>
+              </template>
+            </tbody>
+          </table>
+          
           <p class="text-xs text-slate-400 mt-2" x-show="roundListBranch || roundListCollege">
             Showing <span class="font-medium text-slate-600" x-text="[roundListBranch, roundListCollege].filter(Boolean).join(' · ')"></span><span x-show="roundListFilter !== 'All'"> · <span x-text="roundListFilter"></span></span> in the list below —
             <button type="button" @click="clearRoundListFilters()" class="text-indigo-600 hover:underline">clear filter</button>
@@ -10081,6 +10146,17 @@ function app() {
       if (this[key] === name && this.roundListFilter === resultOpt) { this[key] = ''; this.roundListFilter = 'All'; }
       else { this[key] = name; this.roundListFilter = resultOpt; }
     },
+    // College + Branch table: sets the college and (for a branch row) the branch together with the result.
+    setRoundCombo(college, branch, resultOpt) {
+      if (this.roundListCollege === college && this.roundListBranch === (branch || '') && this.roundListFilter === resultOpt) {
+        this.roundListCollege = ''; this.roundListBranch = ''; this.roundListFilter = 'All';
+      } else {
+        this.roundListCollege = college; this.roundListBranch = branch || ''; this.roundListFilter = resultOpt;
+      }
+    },
+    isRoundComboActive(college, branch, resultOpt) {
+      return this.roundListCollege === college && this.roundListBranch === (branch || '') && this.roundListFilter === resultOpt;
+    },
     isRoundGroupActive(mode, name, resultOpt) {
       return (mode === 'college' ? this.roundListCollege : this.roundListBranch) === name && this.roundListFilter === resultOpt;
     },
@@ -10701,6 +10777,32 @@ function app() {
         else rows[c].pending++;
       });
       return Object.values(rows).sort((a, b) => b.appeared - a.appeared || a.college.localeCompare(b.college));
+    },
+
+    // College + Branch: one subtotal row per college, with a row for each of its branches underneath.
+    roundCollegeBranchSummary() {
+      const cols = {};
+      const blank = () => ({ appeared: 0, shortlisted: 0, selected: 0, rejected: 0, pending: 0, absent: 0 });
+      const add = (o, s) => {
+        if (s.Result === 'Absent') { o.absent++; return; }
+        o.appeared++;
+        if (s.Result === 'Shortlisted') o.shortlisted++;
+        else if (s.Result === 'Selected') o.selected++;
+        else if (s.Result === 'Rejected') o.rejected++;
+        else o.pending++;
+      };
+      this.roundStudents.forEach(s => {
+        const c = (s.College || '').trim() || 'Unspecified', b = (s.Branch || '').trim() || 'Unspecified';
+        if (!cols[c]) cols[c] = Object.assign({ type: 'college', college: c, branch: '', branches: {} }, blank());
+        if (!cols[c].branches[b]) cols[c].branches[b] = Object.assign({ type: 'pair', college: c, branch: b }, blank());
+        add(cols[c], s); add(cols[c].branches[b], s);
+      });
+      const out = [];
+      Object.values(cols).sort((a, b) => b.appeared - a.appeared || a.college.localeCompare(b.college)).forEach(c => {
+        out.push(c);
+        Object.values(c.branches).sort((a, b) => b.appeared - a.appeared || a.branch.localeCompare(b.branch)).forEach(r => out.push(r));
+      });
+      return out;
     },
 
     // Branch-wise breakdown of ALL registered students for this company

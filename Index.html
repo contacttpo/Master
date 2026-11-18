@@ -533,6 +533,8 @@
   .fbx-chip:hover { background: #eef1fb; }
   .fbx-savebar { display: flex; justify-content: flex-end; gap: 8px; position: sticky; bottom: 10px; }
   .fbx-search { width: 200px; }
+  .dl-note { background: #eef2ff; border: 1px solid #c7d2fe; color: #312e81; border-radius: 10px; padding: 8px 12px; font-size: 12px; margin-bottom: 14px; }
+  html.dark .dl-note { background: #1e2a47; border-color: #334155; color: #c7d2fe; }
   /* Companies page: A–Z jump bar + letter groups */
   .cg-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 6px 8px; margin-bottom: 16px; }
   .cg-letters { flex: 1; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
@@ -3239,6 +3241,14 @@
           </div>
         </div>
 
+        <div x-show="downloadModal.source === 'round'" x-cloak class="dl-note">
+          <b x-text="roundRowsFor(downloadModal.resultFilter).length"></b> student(s) will be downloaded
+          <span x-show="roundListBranch"> · Branch: <b x-text="roundListBranch"></b></span>
+          <span x-show="roundListCollege"> · College: <b x-text="roundListCollege"></b></span>
+          <span x-show="roundListSearch.trim()"> · Search: “<span x-text="roundListSearch"></span>”</span>
+          <span x-show="roundListBranch || roundListCollege || roundListSearch.trim()" style="display:block; margin-top:2px; opacity:.85;">These come from the filters on the list. Clear them there to download every student.</span>
+        </div>
+
         <div class="flex items-center justify-between mb-1.5">
           <p class="text-xs font-medium text-slate-500">Columns</p>
           <div class="flex gap-2">
@@ -5110,7 +5120,7 @@
                class="fixed inset-0 bg-black/40 z-40 flex items-center justify-center p-4"
                @click.self="showRoundStudentsModal = false">
             <div class="bg-white rounded-2xl max-w-5xl w-full max-h-[85vh] overflow-y-auto p-4 sm:p-6"
-                 x-data="{ showRoundBranchSummary: false }">
+                 x-data="{ showRoundBranchSummary: false, summaryMode: 'branch' }">
               <div class="flex items-center justify-between mb-4">
                 <h3 class="font-semibold text-lg">
                   Students — <span x-text="activeRoundName"></span>
@@ -5118,7 +5128,7 @@
                     x-show="roundStudents.length > 0"
                     class="text-slate-400 font-normal hover:text-indigo-600 hover:underline transition-colors"
                     :title="showRoundBranchSummary ? 'Hide branch-wise breakdown' : 'Show branch-wise breakdown'"
-                    x-text="(roundListFilter === 'All' && !roundListBranch && !roundListSearch.trim()) ? ('(' + roundStudents.length + ')') : ('(' + visibleRoundStudents().length + ' of ' + roundStudents.length + (roundListBranch ? ' — ' + roundListBranch : '') + (roundListFilter !== 'All' ? ' — ' + roundListFilter : '') + ')')"></button>
+                    x-text="(roundListFilter === 'All' && !roundListBranch && !roundListCollege && !roundListSearch.trim()) ? ('(' + roundStudents.length + ')') : ('(' + visibleRoundStudents().length + ' of ' + roundStudents.length + (roundListBranch ? ' — ' + roundListBranch : '') + (roundListCollege ? ' — ' + roundListCollege : '') + (roundListFilter !== 'All' ? ' — ' + roundListFilter : '') + ')')"></button>
                   <span class="text-slate-400 font-normal" x-show="roundStudents.length === 0"
                     x-text="'(' + roundStudents.length + ')'"></span>
                 </h3>
@@ -5129,74 +5139,83 @@
                    round) / Shortlisted / Selected / Rejected / Pending per
                    branch. Hidden until the total-count "(N)" above is clicked. -->
               <div class="overflow-x-auto mb-4" x-show="roundStudents.length > 0 && showRoundBranchSummary" x-cloak x-transition>
-                <table class="text-xs" style="width:auto; border-collapse:collapse;">
-                  <thead>
-                    <tr class="text-left text-slate-400 border-b border-slate-200">
-                      <th class="py-1.5 pr-4">Branch</th>
-                      <th class="py-1.5 pr-4">Appeared</th>
-                      <th class="py-1.5 pr-4 text-emerald-700">Shortlisted</th>
-                      <th class="py-1.5 pr-4 text-blue-700">Selected</th>
-                      <th class="py-1.5 pr-4 text-red-600">Rejected</th>
-                      <th class="py-1.5 pr-4 text-slate-500">Pending</th>
-                      <th class="py-1.5 pr-4 text-slate-400">Absent</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <template x-for="row in roundBranchSummary()" :key="row.branch">
-                      <tr class="border-b border-slate-100">
-                        <td class="py-1.5 pr-4 font-medium text-slate-700">
-                          <button type="button" @click="setRoundBranchFilter(row.branch, 'All')"
-                            class="hover:underline"
-                            :class="(roundListBranch === row.branch && roundListFilter === 'All') ? 'text-indigo-700 font-semibold' : ''"
-                            x-text="row.branch"></button>
-                        </td>
-                        <td class="py-1.5 pr-4">
-                          <button type="button" @click="setRoundBranchFilter(row.branch, 'All')"
-                            class="hover:underline"
-                            :class="(roundListBranch === row.branch && roundListFilter === 'All') ? 'text-indigo-700 font-semibold' : ''"
-                            x-text="row.appeared"></button>
-                        </td>
-                        <td class="py-1.5 pr-4 text-emerald-700">
-                          <button type="button" @click="setRoundBranchFilter(row.branch, 'Shortlisted')"
-                            class="hover:underline"
-                            :class="(roundListBranch === row.branch && roundListFilter === 'Shortlisted') ? 'font-semibold underline' : ''"
-                            x-text="row.shortlisted"></button>
-                        </td>
-                        <td class="py-1.5 pr-4 text-blue-700">
-                          <button type="button" @click="setRoundBranchFilter(row.branch, 'Selected')"
-                            class="hover:underline"
-                            :class="(roundListBranch === row.branch && roundListFilter === 'Selected') ? 'font-semibold underline' : ''"
-                            x-text="row.selected"></button>
-                        </td>
-                        <td class="py-1.5 pr-4 text-red-600">
-                          <button type="button" @click="setRoundBranchFilter(row.branch, 'Rejected')"
-                            class="hover:underline"
-                            :class="(roundListBranch === row.branch && roundListFilter === 'Rejected') ? 'font-semibold underline' : ''"
-                            x-text="row.rejected"></button>
-                        </td>
-                        <td class="py-1.5 pr-4 text-slate-500">
-                          <button type="button" @click="setRoundBranchFilter(row.branch, 'Pending')"
-                            class="hover:underline"
-                            :class="(roundListBranch === row.branch && roundListFilter === 'Pending') ? 'font-semibold underline' : ''"
-                            x-text="row.pending"></button>
-                        </td>
-                        <td class="py-1.5 pr-4 text-slate-400">
-                          <button type="button" @click="setRoundBranchFilter(row.branch, 'Absent')"
-                            class="hover:underline"
-                            :class="(roundListBranch === row.branch && roundListFilter === 'Absent') ? 'font-semibold underline' : ''"
-                            x-text="row.absent"></button>
-                        </td>
-                      </tr>
-                    </template>
-                  </tbody>
-                </table>
-                <p class="text-xs text-slate-400 mt-2" x-show="roundListBranch">
-                  Showing <span class="font-medium text-slate-600" x-text="roundListBranch"></span><span x-show="roundListFilter !== 'All'"> · <span x-text="roundListFilter"></span></span> in the list below —
-                  <button type="button" @click="clearRoundListFilters()" class="text-indigo-600 hover:underline">clear filter</button>
-                </p>
-              </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span class="text-xs text-slate-400">Group by:</span>
+            <button type="button" @click="summaryMode = 'branch'"
+              class="text-xs font-medium px-2.5 py-1 rounded-full border transition-colors"
+              :class="summaryMode === 'branch' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 text-slate-600 hover:bg-slate-50'">Branch-wise</button>
+            <button type="button" @click="summaryMode = 'college'"
+              class="text-xs font-medium px-2.5 py-1 rounded-full border transition-colors"
+              :class="summaryMode === 'college' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 text-slate-600 hover:bg-slate-50'">College-wise</button>
+          </div>
+          <table class="text-xs" style="width:auto; border-collapse:collapse;">
+            <thead>
+              <tr class="text-left text-slate-400 border-b border-slate-200">
+                <th class="py-1.5 pr-4" x-text="summaryMode === 'college' ? 'College' : 'Branch'"></th>
+                <th class="py-1.5 pr-4">Appeared</th>
+                <th class="py-1.5 pr-4 text-emerald-700">Shortlisted</th>
+                <th class="py-1.5 pr-4 text-blue-700">Selected</th>
+                <th class="py-1.5 pr-4 text-red-600">Rejected</th>
+                <th class="py-1.5 pr-4 text-slate-500">Pending</th>
+                <th class="py-1.5 pr-4 text-slate-400">Absent</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="row in (summaryMode === 'college' ? roundCollegeSummary() : roundBranchSummary())" :key="summaryMode + '|' + row.name">
+                <tr class="border-b border-slate-100">
+                  <td class="py-1.5 pr-4 font-medium text-slate-700">
+                    <button type="button" @click="setRoundGroupFilter(summaryMode, row.name, 'All')"
+                      class="hover:underline"
+                      :class="isRoundGroupActive(summaryMode, row.name, 'All') ? 'text-indigo-700 font-semibold' : ''"
+                      x-text="row.name"></button>
+                  </td>
+                  <td class="py-1.5 pr-4 ">
+                  <button type="button" @click="setRoundGroupFilter(summaryMode, row.name, 'All')"
+                    class="hover:underline"
+                    :class="isRoundGroupActive(summaryMode, row.name, 'All') ? 'font-semibold underline' : ''"
+                    x-text="row.appeared"></button>
+                </td>
+                <td class="py-1.5 pr-4 text-emerald-700">
+                  <button type="button" @click="setRoundGroupFilter(summaryMode, row.name, 'Shortlisted')"
+                    class="hover:underline"
+                    :class="isRoundGroupActive(summaryMode, row.name, 'Shortlisted') ? 'font-semibold underline' : ''"
+                    x-text="row.shortlisted"></button>
+                </td>
+                <td class="py-1.5 pr-4 text-blue-700">
+                  <button type="button" @click="setRoundGroupFilter(summaryMode, row.name, 'Selected')"
+                    class="hover:underline"
+                    :class="isRoundGroupActive(summaryMode, row.name, 'Selected') ? 'font-semibold underline' : ''"
+                    x-text="row.selected"></button>
+                </td>
+                <td class="py-1.5 pr-4 text-red-600">
+                  <button type="button" @click="setRoundGroupFilter(summaryMode, row.name, 'Rejected')"
+                    class="hover:underline"
+                    :class="isRoundGroupActive(summaryMode, row.name, 'Rejected') ? 'font-semibold underline' : ''"
+                    x-text="row.rejected"></button>
+                </td>
+                <td class="py-1.5 pr-4 text-slate-500">
+                  <button type="button" @click="setRoundGroupFilter(summaryMode, row.name, 'Pending')"
+                    class="hover:underline"
+                    :class="isRoundGroupActive(summaryMode, row.name, 'Pending') ? 'font-semibold underline' : ''"
+                    x-text="row.pending"></button>
+                </td>
+                <td class="py-1.5 pr-4 text-slate-400">
+                  <button type="button" @click="setRoundGroupFilter(summaryMode, row.name, 'Absent')"
+                    class="hover:underline"
+                    :class="isRoundGroupActive(summaryMode, row.name, 'Absent') ? 'font-semibold underline' : ''"
+                    x-text="row.absent"></button>
+                </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+          <p class="text-xs text-slate-400 mt-2" x-show="roundListBranch || roundListCollege">
+            Showing <span class="font-medium text-slate-600" x-text="[roundListBranch, roundListCollege].filter(Boolean).join(' · ')"></span><span x-show="roundListFilter !== 'All'"> · <span x-text="roundListFilter"></span></span> in the list below —
+            <button type="button" @click="clearRoundListFilters()" class="text-indigo-600 hover:underline">clear filter</button>
+          </p>
+        </div>
 
-              <div class="mb-3" x-show="roundStudents.length > 0">
+        <div class="mb-3" x-show="roundStudents.length > 0">
                 <input type="text" x-model="roundListSearch" placeholder="Search by name or enrollment number…"
                   class="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm">
               </div>
@@ -5222,10 +5241,14 @@
                   class="text-xs font-medium px-2.5 py-1 rounded-full border transition-colors"
                   :class="roundListFilter === 'Absent' ? 'bg-slate-600 border-slate-600 text-white' : 'bg-slate-200 border-slate-200 text-slate-600 hover:bg-slate-300'"
                   x-text="roundResultCounts().absent + ' Absent'"></button>
-                <button type="button" x-show="roundListFilter !== 'All' || roundListBranch" @click="clearRoundListFilters()"
+                <button type="button" x-show="roundListFilter !== 'All' || roundListBranch || roundListCollege" @click="clearRoundListFilters()"
                   class="text-xs font-medium text-indigo-600 hover:text-indigo-800 underline ml-1">
                   Clear filter
                 </button>
+            <button type="button" x-show="roundListBranch || roundListCollege" @click="openDownloadModal('round')"
+              class="text-xs font-medium px-2.5 py-1 rounded-full border transition-colors bg-indigo-600 border-indigo-600 text-white">
+              ⬇ Download this list (<span x-text="visibleRoundStudents().length"></span>)
+            </button>
               </div>
 
               <div class="mb-4">
@@ -5519,8 +5542,8 @@
                   </tbody>
                 </table>
                 <p x-show="roundStudents.length > 0 && visibleRoundStudents().length === 0" class="text-sm text-slate-400 text-center py-6">
-                  <span x-show="roundListSearch.trim()">No students match "<span x-text="roundListSearch"></span>"<span x-show="roundListFilter !== 'All'"> in <span x-text="roundListFilter"></span></span><span x-show="roundListBranch"> (<span x-text="roundListBranch"></span>)</span>.</span>
-                  <span x-show="!roundListSearch.trim()">No students match "<span x-text="roundListFilter"></span>"<span x-show="roundListBranch"> in <span x-text="roundListBranch"></span></span> in this round.</span>
+                  <span x-show="roundListSearch.trim()">No students match "<span x-text="roundListSearch"></span>"<span x-show="roundListFilter !== 'All'"> in <span x-text="roundListFilter"></span></span><span x-show="roundListBranch"> (<span x-text="roundListBranch"></span>)</span><span x-show="roundListCollege"> (<span x-text="roundListCollege"></span>)</span>.</span>
+                  <span x-show="!roundListSearch.trim()">No students match "<span x-text="roundListFilter"></span>"<span x-show="roundListBranch"> in <span x-text="roundListBranch"></span></span><span x-show="roundListCollege"> in <span x-text="roundListCollege"></span></span> in this round.</span>
                 </p>
               </div>
               <p x-show="roundStudents.length === 0" class="text-sm text-slate-400">No students tracked for this round yet.</p>
@@ -6125,6 +6148,7 @@ function app() {
     // breakdown table (e.g. clicking "141" under Shortlisted for CSE sets
     // this to 'CSE' and roundListFilter to 'Shortlisted' together).
     roundListBranch: '',
+    roundListCollege: '',   // same idea as roundListBranch, driven by the College-wise table
     roundListSearch: '',
     roundStudentForm: { _show: false, _isEdit: false, _foundInMaster: null, _checking: false,
       Enrollment_No: '', Student_Name: '', Branch: '', College: '', Mobile_No: '', Email_ID: '', Result: '' },
@@ -7807,8 +7831,12 @@ function app() {
     // non-round downloads or when the filter is "All".
     downloadModalTitleWithFilter() {
       const t = this.downloadModal.title;
-      if (this.downloadModal.source === 'round' && this.downloadModal.resultFilter && this.downloadModal.resultFilter !== 'All') {
-        return t + ' (' + this.downloadModal.resultFilter + ')';
+      if (this.downloadModal.source === 'round') {
+        const bits = [];
+        if (this.roundListBranch) bits.push(this.roundListBranch);
+        if (this.roundListCollege) bits.push(this.roundListCollege);
+        if (this.downloadModal.resultFilter && this.downloadModal.resultFilter !== 'All') bits.push(this.downloadModal.resultFilter);
+        return bits.length ? t + ' (' + bits.join(', ') + ')' : t;
       }
       return t;
     },
@@ -7872,13 +7900,10 @@ function app() {
       } else if (this.downloadModal.source === 'registered') {
         finish(this.filteredRegisteredStudents());
       } else if (this.downloadModal.source === 'round') {
-        const rf = this.downloadModal.resultFilter;
-        const rows = (!rf || rf === 'All')
-          ? this.roundStudents
-          : this.roundStudents.filter(s => this.roundResultGroup(s) === rf);
+        const rows = this.roundRowsFor(this.downloadModal.resultFilter);
         if (rows.length === 0) {
           this.downloadModal.exporting = false;
-          this.showToast('No students match "' + rf + '" in this round', 'error');
+          this.showToast('No students match the current filters in this round', 'error');
           return;
         }
         finish(rows);
@@ -9865,6 +9890,7 @@ function app() {
         Enrollment_No: '', Student_Name: '', Branch: '', College: '', Mobile_No: '', Email_ID: '', Result: '' };
       this.roundListFilter = 'All';
       this.roundListBranch = '';
+      this.roundListCollege = '';
       this.roundListSearch = '';
       this.loadRegExtraFieldDefs();
 
@@ -10048,9 +10074,21 @@ function app() {
       }
     },
 
+    // Clicking a number in the Branch-wise or College-wise table: narrows the list to that branch/college and
+    // that result together; clicking the same cell again clears it.
+    setRoundGroupFilter(mode, name, resultOpt) {
+      const key = mode === 'college' ? 'roundListCollege' : 'roundListBranch';
+      if (this[key] === name && this.roundListFilter === resultOpt) { this[key] = ''; this.roundListFilter = 'All'; }
+      else { this[key] = name; this.roundListFilter = resultOpt; }
+    },
+    isRoundGroupActive(mode, name, resultOpt) {
+      return (mode === 'college' ? this.roundListCollege : this.roundListBranch) === name && this.roundListFilter === resultOpt;
+    },
+
     clearRoundListFilters() {
       this.roundListFilter = 'All';
       this.roundListBranch = '';
+      this.roundListCollege = '';
       this.roundListSearch = '';
     },
 
@@ -10153,17 +10191,24 @@ function app() {
       return (r === 'Shortlisted' || r === 'Selected' || r === 'Rejected' || r === 'Absent') ? r : 'Pending';
     },
 
-    visibleRoundStudents() {
-      const f = this.roundListFilter;
+    // The round's students narrowed by a Result tab AND the branch / college / search currently set on the list.
+    // Used for both the on-screen table and the download, so a download is always exactly what you are looking at.
+    roundRowsFor(resultFilter) {
+      const f = resultFilter;
       let list = (!f || f === 'All') ? this.roundStudents : this.roundStudents.filter(s => this.roundResultGroup(s) === f);
       if (this.roundListBranch) {
         const b = this.roundListBranch;
         list = list.filter(s => ((s.Branch || '').trim() || 'Unspecified') === b);
       }
+      if (this.roundListCollege) {
+        const c = this.roundListCollege;
+        list = list.filter(s => ((s.College || '').trim() || 'Unspecified') === c);
+      }
       const q = (this.roundListSearch || '').trim().toLowerCase();
       if (q) list = list.filter(s => (s.Student_Name || '').toLowerCase().includes(q) || (s.Enrollment_No || '').toString().toLowerCase().includes(q));
       return list;
     },
+    visibleRoundStudents() { return this.roundRowsFor(this.roundListFilter); },
 
     // Pulls the starting list into the currently open round: Present
     // students from Registered Students for the very first round, or
@@ -10631,7 +10676,7 @@ function app() {
       const rows = {};
       this.roundStudents.forEach(s => {
         const b = (s.Branch || '').trim() || 'Unspecified';
-        if (!rows[b]) rows[b] = { branch: b, appeared: 0, shortlisted: 0, selected: 0, rejected: 0, pending: 0, absent: 0 };
+        if (!rows[b]) rows[b] = { branch: b, name: b, appeared: 0, shortlisted: 0, selected: 0, rejected: 0, pending: 0, absent: 0 };
         if (s.Result === 'Absent') { rows[b].absent++; return; }
         rows[b].appeared++;
         if (s.Result === 'Shortlisted') rows[b].shortlisted++;
@@ -10640,6 +10685,22 @@ function app() {
         else rows[b].pending++;
       });
       return Object.values(rows).sort((a, b) => b.appeared - a.appeared || a.branch.localeCompare(b.branch));
+    },
+
+    // Same table as above, split by college instead of branch.
+    roundCollegeSummary() {
+      const rows = {};
+      this.roundStudents.forEach(s => {
+        const c = (s.College || '').trim() || 'Unspecified';
+        if (!rows[c]) rows[c] = { college: c, name: c, appeared: 0, shortlisted: 0, selected: 0, rejected: 0, pending: 0, absent: 0 };
+        if (s.Result === 'Absent') { rows[c].absent++; return; }
+        rows[c].appeared++;
+        if (s.Result === 'Shortlisted') rows[c].shortlisted++;
+        else if (s.Result === 'Selected') rows[c].selected++;
+        else if (s.Result === 'Rejected') rows[c].rejected++;
+        else rows[c].pending++;
+      });
+      return Object.values(rows).sort((a, b) => b.appeared - a.appeared || a.college.localeCompare(b.college));
     },
 
     // Branch-wise breakdown of ALL registered students for this company

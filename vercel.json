@@ -112,6 +112,17 @@
     },
     {
       "source": "/",
+      "has": [
+        {
+          "type": "query",
+          "key": "page",
+          "value": "crm"
+        }
+      ],
+      "destination": "/Crm.html"
+    },
+    {
+      "source": "/",
       "destination": "/Index.html"
     }
   ],

@@ -533,6 +533,9 @@
   .fbx-chip:hover { background: #eef1fb; }
   .fbx-savebar { display: flex; justify-content: flex-end; gap: 8px; position: sticky; bottom: 10px; }
   .fbx-search { width: 200px; }
+  .crm-frame-wrap { border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; background: #fff; }
+  .crm-frame { display: block; width: 100%; height: calc(100vh - 110px); min-height: 560px; border: 0; }
+  html.dark .crm-frame-wrap { border-color: #334155; }
   .dl-note { background: #eef2ff; border: 1px solid #c7d2fe; color: #312e81; border-radius: 10px; padding: 8px 12px; font-size: 12px; margin-bottom: 14px; }
   html.dark .dl-note { background: #1e2a47; border-color: #334155; color: #c7d2fe; }
   /* Companies page: A–Z jump bar + letter groups */
@@ -695,6 +698,10 @@
         <button @click="goToFormBuilder()" class="w-full text-left text-sm font-medium rounded-lg px-3 py-2.5 transition-colors flex items-center gap-2.5" :class="view === 'formBuilder' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
           Form Builder
+        </button>
+        <button @click="goToCrm()" class="w-full text-left text-sm font-medium rounded-lg px-3 py-2.5 transition-colors flex items-center gap-2.5" :class="view === 'crm' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'">
+          <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          CRM
         </button>
         <button @click="goToActivityLog()" class="w-full text-left text-sm font-medium rounded-lg px-3 py-2.5 transition-colors flex items-center gap-2.5" :class="view === 'activityLog' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -2568,6 +2575,18 @@
          Build custom forms for students, share one link per form (no login to fill),
          see the responses and download them as a formatted Excel file.
          Server side: FormBuilder.gs.  Public page: FormPage.html (/?page=form&id=...). -->
+    <!-- ================= CRM =================
+         The HR CRM (HR_Data + Remarks_Log) runs as its own page, Crm.html, shown here inside the dashboard.
+         It uses this dashboard's login; server side: CRM_Code.gs. -->
+    <section x-data="{ crmLoaded: false }" x-show="view === 'crm'" x-cloak class="fade-in"
+      x-init="if (view === 'crm') crmLoaded = true; $watch('view', v => { if (v === 'crm') crmLoaded = true; })">
+      <div class="crm-frame-wrap">
+        <template x-if="crmLoaded">
+          <iframe src="/?page=crm" title="HR CRM" class="crm-frame"></iframe>
+        </template>
+      </div>
+    </section>
+
     <section x-data="formBuilderMgr()" x-show="view === 'formBuilder'" x-cloak class="fade-in"
       x-init="if (view === 'formBuilder') openList(); $watch('view', v => { if (v === 'formBuilder') openList(); })">
       <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 sm:p-6 fbx">
@@ -6070,7 +6089,7 @@ function app() {
     // Status-chip panels (shared by the floating button, Live Overview and Manage Drive).
     chipOpen: {}, chipFlat: false, chipData: {}, chipLoading: {}, chipMsg: {},
     liveFab: { rows: [], open: false, updatedAt: null, tick: 0, started: false, busy: false },
-    view: 'home', // 'home' | 'dashboard' | 'branches' | 'volunteers' | 'form' | 'detail' | 'manageDrive' | 'activityLog' | 'formBuilder'
+    view: 'home', // 'home' | 'dashboard' | 'branches' | 'volunteers' | 'form' | 'detail' | 'manageDrive' | 'activityLog' | 'formBuilder' | 'crm'
     mobileNavOpen: false,
     loading: true,
     saving: false,
@@ -6539,6 +6558,7 @@ function app() {
         case 'liveOverview': this.goToLiveOverview(); break;
         case 'activityLog':  this.goToActivityLog(); break;
         case 'formBuilder':  this.goToFormBuilder(); break;
+        case 'crm':          this.goToCrm(); break;
         case 'manageDrive':
           if (saved.company) this.manageDriveCompany = saved.company;
           this.goToManageDrive();
@@ -6913,6 +6933,11 @@ function app() {
 
     goToFormBuilder() {
       this.view = 'formBuilder';
+      this.mobileNavOpen = false;
+    },
+
+    goToCrm() {
+      this.view = 'crm';
       this.mobileNavOpen = false;
     },
 

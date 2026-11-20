@@ -533,6 +533,16 @@
   .fbx-chip:hover { background: #eef1fb; }
   .fbx-savebar { display: flex; justify-content: flex-end; gap: 8px; position: sticky; bottom: 10px; }
   .fbx-search { width: 200px; }
+  .hrc-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .hrc-count { display: inline-block; min-width: 20px; padding: 0 7px; margin-left: 6px; border-radius: 999px; background: #eef2ff; color: #4338ca; font-size: 12px; line-height: 20px; text-align: center; font-weight: 700; }
+  .hrc-open { font-size: 13px; font-weight: 600; color: #4338ca; border: 1px solid #c7d2fe; background: #fff; border-radius: 10px; padding: 6px 12px; cursor: pointer; }
+  .hrc-open:hover { background: #eef2ff; }
+  .hrc-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; padding: 10px 0; border-top: 1px solid #f1f5f9; }
+  .hrc-main { flex: 1 1 180px; min-width: 0; }
+  .hrc-contact { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; overflow-wrap: anywhere; }
+  .hrc-contact a { color: #334155; text-decoration: none; } .hrc-contact a:hover { text-decoration: underline; }
+  .hrc-meta { flex: 0 1 auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .hrc-pill { font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: #f1f5f9; color: #475569; white-space: nowrap; }
   .crm-frame-wrap { border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; background: #fff; }
   .crm-frame { display: block; width: 100%; height: calc(100vh - 110px); min-height: 560px; border: 0; }
   html.dark .crm-frame-wrap { border-color: #334155; }
@@ -2582,7 +2592,7 @@
       x-init="if (view === 'crm') crmLoaded = true; $watch('view', v => { if (v === 'crm') crmLoaded = true; })">
       <div class="crm-frame-wrap">
         <template x-if="crmLoaded">
-          <iframe src="/?page=crm" title="HR CRM" class="crm-frame"></iframe>
+          <iframe :src="crmSrc" title="HR CRM" class="crm-frame"></iframe>
         </template>
       </div>
     </section>
@@ -3470,6 +3480,31 @@
                 <p class="font-medium text-slate-400" x-show="!teamList().length">None added yet — use Edit to add the team members who visited.</p>
               </div>
             </div>
+          </div>
+
+          <!-- HR Contacts (from the CRM) -->
+          <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 sm:p-6 mb-6" x-show="hrContactsLoading || hrContacts.length || hrContactsError" x-cloak>
+            <div class="hrc-head">
+              <h3 class="brand-heading text-lg text-slate-800">HR Contacts <span class="hrc-count" x-show="hrContacts.length" x-text="hrContacts.length"></span></h3>
+              <button type="button" class="hrc-open" @click="openCrmForCompany(detail.company.Company_Name)">Open in CRM →</button>
+            </div>
+            <p class="text-xs text-slate-400" x-show="hrContactsLoading && !hrContacts.length">Loading…</p>
+            <template x-for="c in hrContacts" :key="c.rowId">
+              <div class="hrc-row">
+                <div class="hrc-main">
+                  <p class="font-medium text-sm" x-text="c.hrName || '—'"></p>
+                  <p class="text-xs text-slate-400" x-text="c.designation || '—'"></p>
+                </div>
+                <div class="hrc-contact text-sm">
+                  <a :href="'tel:' + c.phone" x-show="c.phone" x-text="c.phone"></a>
+                  <a :href="'mailto:' + c.email" x-show="c.email" x-text="c.email"></a>
+                </div>
+                <div class="hrc-meta">
+                  <span class="hrc-pill" x-text="c.status || 'Pending'"></span>
+                  <span class="text-xs text-slate-400" x-text="c.nextFollowUp ? 'Next: ' + c.nextFollowUp : 'No follow-up set'"></span>
+                </div>
+              </div>
+            </template>
           </div>
 
           <!-- Selection Funnel -->
@@ -6079,6 +6114,8 @@ function app() {
     loginLoading: false,
     currentAdmin: { name: '', email: '' },
     adminToken: '',
+    crmSrc: '/?page=crm',          // the CRM page; gets &company=... when opened from Company Details
+    hrContacts: [], hrContactsLoading: false, hrContactsError: '',
     mustResetPassword: false,
     showPasswordReset: false,
     passwordResetForm: { current: '', next: '', confirm: '' },
@@ -6937,8 +6974,33 @@ function app() {
     },
 
     goToCrm() {
+      if (this.crmSrc !== '/?page=crm') this.crmSrc = '/?page=crm';
       this.view = 'crm';
       this.mobileNavOpen = false;
+    },
+
+    // "Open in CRM" on Company Details: the CRM opens already filtered to that company
+    openCrmForCompany(name) {
+      this.crmSrc = '/?page=crm&company=' + encodeURIComponent(name || '');
+      this.view = 'crm';
+      this.mobileNavOpen = false;
+    },
+
+    loadHrContacts(name) {
+      this.hrContacts = [];
+      this.hrContactsError = '';
+      this.hrContactsLoading = true;
+      google.script.run
+        .withSuccessHandler(list => {
+          if (this.selectedCompanyName !== name) return;      // user already moved to another company
+          this.hrContacts = list || [];
+          this.hrContactsLoading = false;
+        })
+        .withFailureHandler(() => {
+          if (this.selectedCompanyName !== name) return;
+          this.hrContactsLoading = false;                     // the CRM is optional here: stay quiet if it is not set up
+        })
+        .getCrmContactsForCompany(name, this.adminToken);
     },
 
     goToActivityLog() {
@@ -8326,6 +8388,7 @@ function app() {
         this.applyCompanyDetail(cached, /*fromCache*/ true);
       }
       this.loadCompanyDetail(name, /*silent*/ !!cached);
+      this.loadHrContacts(name);
     },
 
     // Jumps to the previous/next company in the currently filtered list

@@ -1300,6 +1300,124 @@
 
   </style>
 
+<style id="crm-v2">
+/* ===== CRM v2 look (loaded last, so it wins over the older rules above) ===== */
+:root{ --k-line:#e2e8f0; --k-text:#0f172a; --k-mute:#64748b; --k-card:#ffffff; --k-soft:#f1f5f9; }
+body{ font-family: Inter, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; background:#f8fafc; }
+#mainApp{ min-height:100vh; }
+
+.k-head{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:18px 28px 6px; max-width:1400px; margin:0 auto; }
+.k-title{ font-size:22px; font-weight:800; color:var(--k-text); margin:0; letter-spacing:-.2px; }
+.k-sub{ margin:2px 0 0; font-size:13px; color:var(--k-mute); }
+.k-head-actions{ display:flex; align-items:center; gap:10px; }
+.k-seg{ display:inline-flex; background:var(--k-soft); border:1px solid var(--k-line); border-radius:12px; padding:3px; }
+.k-seg button{ border:0; background:transparent; font-size:13px; font-weight:600; color:var(--k-mute); padding:7px 12px; border-radius:9px; cursor:pointer; }
+.k-seg button.active{ background:#fff; color:var(--k-text); box-shadow:0 1px 3px rgba(15,23,42,.12); }
+
+#mainApp .main-container{ padding:14px 28px 40px; }
+
+/* today bar */
+.k-stats{ display:flex; gap:10px; overflow-x:auto; padding:2px 2px 10px; margin-bottom:6px; }
+.k-stat{ flex:1 0 140px; text-align:left; background:var(--k-card); border:1px solid var(--k-line); border-radius:14px; padding:12px 14px; cursor:pointer; transition:.15s; border-left-width:4px; }
+.k-stat:hover{ transform:translateY(-2px); box-shadow:0 8px 20px rgba(15,23,42,.08); }
+.k-stat.on{ outline:2px solid #4f46e5; outline-offset:1px; background:#eef2ff; }
+.k-stat-n{ display:block; font-size:26px; font-weight:800; line-height:1.1; color:var(--k-text); }
+.k-stat-l{ display:block; margin-top:3px; font-size:12px; font-weight:600; color:var(--k-mute); }
+.k-stat-overdue{ border-left-color:#dc2626; } .k-stat-overdue .k-stat-n{ color:#dc2626; }
+.k-stat-today{ border-left-color:#f59e0b; } .k-stat-today .k-stat-n{ color:#d97706; }
+.k-stat-week{ border-left-color:#2563eb; }
+.k-stat-never{ border-left-color:#7c3aed; }
+.k-stat-all{ border-left-color:#94a3b8; }
+
+/* filters */
+.k-filters{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px; }
+.k-search{ flex:2 1 260px; min-width:200px; }
+.k-sel{ flex:1 1 150px; min-width:130px; }
+.k-clear{ border:1px solid #fecaca; background:#fef2f2; color:#b91c1c; font-weight:600; font-size:13px; border-radius:10px; padding:6px 12px; cursor:pointer; }
+
+/* cards: calm white cards, the colour comes from the left edge + chips */
+#mainApp .card-grid{ grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:16px; }
+#mainApp .card-grid .crm-card.k-card{ background:var(--k-card); border:1px solid var(--k-line); border-left:5px solid #cbd5e1; border-top:1px solid var(--k-line); border-radius:14px; padding:16px; box-shadow:0 1px 2px rgba(15,23,42,.04); }
+#mainApp .card-grid .crm-card.k-card:hover{ transform:translateY(-2px); box-shadow:0 10px 24px rgba(15,23,42,.09); border-color:#cbd5e1; }
+#mainApp .crm-card.k-card.k-overdue{ border-left-color:#dc2626; }
+#mainApp .crm-card.k-card.k-today{ border-left-color:#f59e0b; }
+#mainApp .crm-card.k-card.k-soon{ border-left-color:#2563eb; }
+#mainApp .crm-card.k-card.k-closed{ opacity:.72; }
+.k-top{ display:flex; align-items:flex-start; gap:12px; }
+.k-id{ flex:1; min-width:0; }
+.k-id .company-name{ font-weight:700; color:var(--k-text); font-size:15px; overflow-wrap:anywhere; }
+.k-id .hr-name-sub{ font-size:13px; color:var(--k-mute); overflow-wrap:anywhere; }
+.k-right{ display:flex; align-items:center; gap:6px; flex-shrink:0; }
+.k-pills{ display:flex; flex-wrap:wrap; gap:6px; margin:12px 0 10px; }
+.k-pill{ font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:999px; background:var(--k-soft); color:#475569; white-space:nowrap; }
+.k-due-overdue{ background:#fee2e2; color:#b91c1c; } .k-due-today{ background:#fef3c7; color:#b45309; }
+.k-due-soon{ background:#dbeafe; color:#1d4ed8; } .k-due-later, .k-due-none{ background:var(--k-soft); color:#64748b; }
+.k-due-closed{ background:#e2e8f0; color:#64748b; }
+.k-drive-run{ background:#dcfce7; color:#15803d; } .k-drive-done{ background:#e2e8f0; color:#475569; } .k-drive-other{ background:#ede9fe; color:#6d28d9; }
+.k-never{ background:#f3e8ff; color:#7e22ce; }
+.k-contact{ font-size:13px; color:#334155; line-height:1.7; overflow-wrap:anywhere; }
+.k-contact a{ color:#334155; text-decoration:none; } .k-contact a:hover{ text-decoration:underline; }
+.k-actions{ display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; padding-top:12px; border-top:1px solid var(--k-line); }
+.k-act{ display:inline-flex; align-items:center; gap:5px; font-size:12.5px; font-weight:600; color:#334155; background:#fff; border:1px solid var(--k-line); border-radius:9px; padding:6px 10px; text-decoration:none; cursor:pointer; line-height:1; }
+.k-act:hover{ background:var(--k-soft); color:#0f172a; }
+.k-act.k-wa{ color:#15803d; border-color:#bbf7d0; } .k-act.k-wa:hover{ background:#f0fdf4; }
+.k-act.k-log{ background:#4f46e5; border-color:#4f46e5; color:#fff; } .k-act.k-log:hover{ background:#4338ca; }
+.k-act.has-remark{ border-color:#c7d2fe; background:#eef2ff; color:#4338ca; }
+.k-act.k-off{ opacity:.4; pointer-events:none; }
+
+/* table */
+.k-tablewrap{ overflow-x:auto; background:var(--k-card); border:1px solid var(--k-line); border-radius:14px; }
+.k-table{ width:100%; border-collapse:collapse; font-size:13px; min-width:900px; }
+.k-table th{ text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--k-mute); font-weight:700; padding:10px 12px; background:#f8fafc; border-bottom:1px solid var(--k-line); white-space:nowrap; }
+.k-table td{ padding:10px 12px; border-bottom:1px solid #f1f5f9; vertical-align:middle; color:#334155; }
+.k-table tr.k-row{ cursor:pointer; } .k-table tr.k-row:hover td{ background:#f8fafc; }
+.k-table tr.k-row td:first-child{ border-left:4px solid #cbd5e1; }
+.k-table tr.k-overdue td:first-child{ border-left-color:#dc2626; } .k-table tr.k-today td:first-child{ border-left-color:#f59e0b; } .k-table tr.k-soon td:first-child{ border-left-color:#2563eb; }
+.k-table .k-co{ font-weight:700; color:var(--k-text); } .k-table .k-mini{ display:block; font-size:11.5px; color:var(--k-mute); }
+.k-table a{ color:#334155; text-decoration:none; } .k-table a:hover{ text-decoration:underline; }
+.k-tact{ white-space:nowrap; text-align:right; }
+.k-ico{ border:1px solid var(--k-line); background:#fff; border-radius:8px; padding:4px 8px; font-size:13px; cursor:pointer; text-decoration:none; color:#334155; display:inline-block; }
+.k-ico:hover{ background:var(--k-soft); }
+
+/* log-call modal */
+.k-logwho{ font-size:13px; color:var(--k-mute); margin-bottom:6px; } .k-logwho b{ color:var(--k-text); }
+.k-lbl{ font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--k-mute); margin:14px 0 6px; } .k-opt{ text-transform:none; font-weight:500; }
+.k-outcomes, .k-presets{ display:flex; flex-wrap:wrap; gap:8px; }
+.k-chipbtn{ border:1px solid var(--k-line); background:#fff; color:#334155; font-weight:600; font-size:13px; border-radius:10px; padding:8px 12px; cursor:pointer; }
+.k-chipbtn:hover{ background:var(--k-soft); } .k-chipbtn.on{ background:#4f46e5; border-color:#4f46e5; color:#fff; }
+.k-toast{ position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); background:#0f172a; color:#fff; font-size:13px; font-weight:600; padding:10px 16px; border-radius:12px; opacity:0; pointer-events:none; transition:.25s; z-index:3000; }
+.k-toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+@media (max-width:767px){
+  .k-head{ padding:14px 14px 4px; } #mainApp .main-container{ padding:10px 14px 30px; }
+  #mainApp .card-grid{ grid-template-columns:1fr; }
+  .k-act{ padding:9px 12px; font-size:13px; } .k-chipbtn{ padding:10px 12px; }
+  .k-stat{ flex:0 0 128px; }
+}
+
+/* dark mode: follows the dashboard (see syncTheme) */
+html.dark{ --k-line:#334155; --k-text:#f1f5f9; --k-mute:#94a3b8; --k-card:#111c30; --k-soft:#1b2a44; }
+html.dark body{ background:#0b1220; color:#e2e8f0; }
+html.dark .k-seg button.active{ background:#0b1220; color:#f1f5f9; }
+html.dark .k-stat.on{ background:#1e2a5a; }
+html.dark .k-contact, html.dark .k-contact a, html.dark .k-table td, html.dark .k-table a{ color:#cbd5e1; }
+html.dark .k-act, html.dark .k-ico, html.dark .k-chipbtn{ background:#0f172a; color:#cbd5e1; border-color:#334155; }
+html.dark .k-act:hover, html.dark .k-ico:hover, html.dark .k-chipbtn:hover{ background:#1b2a44; }
+html.dark .k-act.k-log, html.dark .k-chipbtn.on{ background:#4f46e5; color:#fff; border-color:#4f46e5; }
+html.dark .k-table th, html.dark .k-table tr.k-row:hover td{ background:#0f1a2e; }
+html.dark .k-table td{ border-bottom-color:#1b2a44; }
+html.dark .form-control, html.dark .form-select{ background-color:#0f172a; color:#e2e8f0; border-color:#334155; }
+html.dark .form-control::placeholder{ color:#64748b; }
+html.dark .modal-content{ background:#111c30; color:#e2e8f0; }
+html.dark .btn-close{ filter:invert(1); }
+html.dark .outline-btn{ background:#0f172a; color:#e2e8f0; border-color:#334155; }
+html.dark .dark-btn{ background:#4f46e5; }
+html.dark .deck-tile{ background:#111c30; border-color:#334155; } html.dark .deck-letter{ color:#e2e8f0; }
+html.dark .empty-state, html.dark .deck-hint{ color:#94a3b8; }
+html.dark .section-title, html.dark .deck-content-title{ color:#94a3b8; }
+html.dark .status-chip{ filter:brightness(.95); }
+</style>
+
 </head>
 
 <body>
@@ -1308,71 +1426,95 @@
 
 <div id="mainApp">
 
-  <!-- NAVBAR -->
+  <!-- HEADER -->
 
-  <nav class="navbar px-4 py-3 d-flex justify-content-between align-items-center">
+  <header class="k-head">
 
-    <div class="fw-bold">
-      HR CRM Dashboard
+    <div>
+      <h1 class="k-title">HR CRM</h1>
+      <p class="k-sub" id="kSub">Loading contacts…</p>
     </div>
 
-  </nav>
+    <div class="k-head-actions">
 
-  <!-- CONTENT -->
+      <div class="k-seg" role="group" aria-label="View">
+        <button type="button" id="viewCardsBtn" class="active" onclick="setViewMode('cards')">▦ Cards</button>
+        <button type="button" id="viewTableBtn" onclick="setViewMode('table')">☰ Table</button>
+      </div>
+
+      <button class="dark-btn" onclick="showAddModal()">+ Add Lead</button>
+
+    </div>
+
+  </header>
 
   <div class="main-container">
 
-    <div class="row mb-4">
+    <!-- TODAY BAR -->
 
-      <div class="col-md-9 mb-2">
+    <div class="k-stats" id="kStats"></div>
 
-        <input
-          type="text"
-          id="search"
-          class="form-control"
-          placeholder="Search HR or Company"
-          onkeyup="filterCards()"
-        >
+    <!-- FILTERS -->
 
-      </div>
+    <div class="k-filters">
 
-      <div class="col-md-3 mb-2 d-flex gap-2">
-
-        <button
-          class="dark-btn flex-fill"
-          onclick="showAddModal()"
-        >
-          + Add Lead
-        </button>
-
-      </div>
-
-    </div>
-
-    <!-- PRIORITY -->
-
-    <div class="section-title d-flex align-items-center justify-content-between flex-wrap gap-2">
-      <span>Priority / Overdue</span>
-      <button
-        class="dark-btn"
-        id="postponeAllBtn"
-        onclick="postponeAllPriority()"
-        style="display:none;"
+      <input
+        type="text"
+        id="search"
+        class="form-control k-search"
+        placeholder="Search name, company, phone or email"
+        oninput="applyFilters()"
       >
-        ⏩ Postpone All +1 Day
-      </button>
+
+      <select id="fStatus" class="form-select k-sel" onchange="applyFilters()">
+        <option value="">All statuses</option>
+      </select>
+
+      <select id="fCompany" class="form-select k-sel" onchange="applyFilters()">
+        <option value="">All companies</option>
+      </select>
+
+      <select id="fDesig" class="form-select k-sel" onchange="applyFilters()">
+        <option value="">All designations</option>
+      </select>
+
+      <select id="fSort" class="form-select k-sel" onchange="applyFilters()" title="Sort by">
+        <option value="company">Sort: Company A–Z</option>
+        <option value="due">Sort: Next follow-up</option>
+        <option value="stale">Sort: Longest since contact</option>
+      </select>
+
+      <button type="button" class="k-clear" id="kClear" onclick="clearFilters()" style="display:none;">✕ Clear filters</button>
+
     </div>
 
-    <div
-      id="priorityGrid"
-      class="card-grid mb-5"
-    ></div>
+    <!-- NEEDS ATTENTION (shown while no filter is active) -->
 
-    <!-- ALL CONTACTS -->
+    <div id="kAttention">
+
+      <div class="section-title d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <span>Needs attention</span>
+        <button
+          class="dark-btn"
+          id="postponeAllBtn"
+          onclick="postponeAllPriority()"
+          style="display:none;"
+        >
+          ⏩ Postpone All +1 Day
+        </button>
+      </div>
+
+      <div
+        id="priorityGrid"
+        class="card-grid mb-5"
+      ></div>
+
+    </div>
+
+    <!-- ALL CONTACTS / RESULTS -->
 
     <div class="section-title d-flex align-items-center justify-content-between flex-wrap gap-2">
-      <span>All Contacts</span>
-      <span class="legend-hint">Card color = visual variety &nbsp;•&nbsp; Chip color = status</span>
+      <span id="allTitle">All Contacts</span>
     </div>
 
     <div
@@ -1387,9 +1529,55 @@
       class="card-grid"
     ></div>
 
+    <div id="tableWrap" class="k-tablewrap" style="display:none;"></div>
+
   </div>
 
 </div>
+
+<datalist id="crmCompanies"></datalist>
+
+<!-- LOG CALL MODAL -->
+
+<div class="modal fade" id="logModal" tabindex="-1">
+
+  <div class="modal-dialog modal-dialog-centered">
+
+    <div class="modal-content">
+
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title">Log call</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <div id="logWho" class="k-logwho"></div>
+
+        <div class="k-lbl">What happened?</div>
+        <div class="k-outcomes" id="logOutcomes"></div>
+
+        <div class="k-lbl">Next follow-up</div>
+        <div class="k-presets" id="logPresets"></div>
+        <input type="date" id="logDate" class="form-control mt-2" style="display:none;">
+
+        <div class="k-lbl">Note <span class="k-opt">(optional)</span></div>
+        <textarea id="logNote" class="form-control" rows="3" placeholder="e.g. Asked to send the JD by Friday"></textarea>
+
+      </div>
+
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="outline-btn" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="dark-btn" id="logSaveBtn" onclick="saveLog()">Save</button>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<div id="kToast" class="k-toast"></div>
 
 <!-- DETAILS MODAL -->
 
@@ -1453,7 +1641,7 @@
 
         <div class="mb-3">
           <label class="field-label">Company</label>
-          <input type="text" id="dCompany" class="form-control" readonly>
+          <input type="text" id="dCompany" class="form-control" list="crmCompanies" autocomplete="off" readonly>
         </div>
 
         <div class="mb-3">
@@ -1551,7 +1739,9 @@
             type="text"
             name="company"
             class="form-control mb-2"
-            placeholder="Company"
+            placeholder="Company (pick from your list or type)"
+            list="crmCompanies"
+            autocomplete="off"
             required
           >
 
@@ -1702,6 +1892,10 @@ function loadData(){
 
       masterData = data;
 
+      refreshFilterOptions();
+
+      applyUrlCompany();
+
       renderCards(data);
 
     })
@@ -1722,6 +1916,8 @@ function showSkeletons(){
   document.getElementById('deckContentTitle').innerHTML = '';
 
   document.getElementById('allGrid').innerHTML = skeletons;
+
+  document.getElementById('kAttention').style.display = '';
 }
 
 /* STATUS CHIP CLASS */
@@ -1751,60 +1947,351 @@ function getInitials(name){
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
 
-/* BUILD A SINGLE CARD */
+/* ===================================================================
+   CRM v2: follow-up states, filters, cards / table, quick call log
+=================================================================== */
+
+// WhatsApp opening message - edit freely. {name} and {company} are filled in per contact.
+const WA_TEMPLATE = 'Hello {name}, this is the Training & Placement Cell. I am following up regarding campus recruitment at {company}.';
+
+let quickFilter = '';        // '' | overdue | today | week | never
+let viewMode = 'cards';      // cards | table
+let companyMap = {};         // normalised company name -> drive status from the dashboard's Companies list
+
+function esc(v){
+  return String(v === undefined || v === null ? '' : v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function pad2(n){ return n < 10 ? '0' + n : '' + n; }
+
+function isoOf(d){ return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+
+function todayISO(){ return isoOf(new Date()); }
+
+function addDaysISO(n){ const d = new Date(); d.setDate(d.getDate() + n); return isoOf(d); }
+
+function isoToDisplay(iso){ if(!iso) return ''; const p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+
+function daysBetween(aISO, bISO){
+  return Math.round((new Date(bISO + 'T00:00:00') - new Date(aISO + 'T00:00:00')) / 86400000);
+}
+
+function normName(s){ return String(s || '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+
+// dd/MM/yyyy (as sent by the server) -> yyyy-MM-dd, '' when empty
+function lastISO(item){
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(item.lastContact || '');
+  return m ? m[3] + '-' + m[2] + '-' + m[1] : '';
+}
+
+/* FOLLOW-UP STATE of one contact */
+
+function crmState(item){
+
+  if(item.status === 'Not Interested') return 'closed';
+
+  const due = item.nextFollowUpISO;
+
+  if(!due) return 'none';
+
+  const t = todayISO();
+
+  if(due < t) return 'overdue';
+
+  if(due === t) return 'today';
+
+  if(due <= addDaysISO(7)) return 'soon';
+
+  return 'later';
+}
+
+function dueLabel(item){
+
+  const s = crmState(item);
+
+  if(s === 'closed') return 'Closed';
+
+  if(s === 'none') return 'No follow-up set';
+
+  const diff = daysBetween(todayISO(), item.nextFollowUpISO);
+
+  if(s === 'overdue') return 'Overdue ' + (-diff) + (diff === -1 ? ' day' : ' days');
+
+  if(s === 'today') return 'Due today';
+
+  if(diff === 1) return 'Tomorrow';
+
+  if(s === 'soon') return 'In ' + diff + ' days';
+
+  return item.nextFollowUp;
+}
+
+function driveInfo(item){
+
+  const st = companyMap[normName(item.company)];
+
+  if(st === undefined) return null;
+
+  const cls = /run|ongoing|active|open/i.test(st) ? 'k-drive-run' : (/complet|clos|done|finish/i.test(st) ? 'k-drive-done' : 'k-drive-other');
+
+  return { cls: cls, label: 'Drive' + (st ? ': ' + st : '') };
+}
+
+/* LINKS */
+
+function waLink(item){
+
+  let d = String(item.phone || '').replace(/\D/g, '');
+
+  if(!d) return '';
+
+  if(d.length === 10) d = '91' + d;
+  else if(d.length === 11 && d.charAt(0) === '0') d = '91' + d.slice(1);
+
+  const text = WA_TEMPLATE
+    .replace('{name}', item.hrName || 'Sir/Madam')
+    .replace('{company}', item.company || 'your company');
+
+  return 'https://wa.me/' + d + '?text=' + encodeURIComponent(text);
+}
+
+/* STATS + FILTERS */
+
+function computeStats(){
+
+  const t = { overdue: 0, today: 0, week: 0, never: 0, total: masterData.length };
+
+  masterData.forEach(x => {
+
+    const s = crmState(x);
+
+    if(s === 'overdue') t.overdue++;
+    else if(s === 'today') t.today++;
+    else if(s === 'soon') t.week++;
+
+    if(!x.lastContact && s !== 'closed') t.never++;
+  });
+
+  return t;
+}
+
+function renderStats(){
+
+  const t = computeStats();
+
+  const defs = [
+    ['overdue', 'Overdue', t.overdue],
+    ['today', 'Due today', t.today],
+    ['week', 'Next 7 days', t.week],
+    ['never', 'Never contacted', t.never],
+    ['', 'All contacts', t.total]
+  ];
+
+  document.getElementById('kStats').innerHTML = defs.map(d => `
+    <button type="button" class="k-stat k-stat-${d[0] || 'all'} ${quickFilter === d[0] ? 'on' : ''}" onclick="setQuick('${d[0]}')">
+      <span class="k-stat-n">${d[2]}</span>
+      <span class="k-stat-l">${d[1]}</span>
+    </button>
+  `).join('');
+
+  const companies = {};
+
+  masterData.forEach(x => { if(x.company) companies[normName(x.company)] = 1; });
+
+  document.getElementById('kSub').textContent =
+    t.total + ' contact' + (t.total === 1 ? '' : 's') + ' · ' + Object.keys(companies).length + ' compan' + (Object.keys(companies).length === 1 ? 'y' : 'ies');
+}
+
+function setQuick(key){
+
+  quickFilter = (quickFilter === key) ? '' : key;
+
+  // date-based views read best soonest/oldest first
+  document.getElementById('fSort').value = (quickFilter === 'overdue' || quickFilter === 'today' || quickFilter === 'week') ? 'due' : 'company';
+
+  applyFilters();
+}
+
+function matchesQuick(item){
+
+  const s = crmState(item);
+
+  switch(quickFilter){
+    case 'overdue': return s === 'overdue';
+    case 'today': return s === 'today';
+    case 'week': return s === 'soon';
+    case 'never': return !item.lastContact && s !== 'closed';
+    default: return true;
+  }
+}
+
+function filtersActive(){
+
+  return !!(
+    quickFilter ||
+    document.getElementById('search').value.trim() ||
+    document.getElementById('fStatus').value ||
+    document.getElementById('fCompany').value ||
+    document.getElementById('fDesig').value
+  );
+}
+
+function currentFiltered(){
+
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  const st = document.getElementById('fStatus').value;
+  const co = document.getElementById('fCompany').value;
+  const de = document.getElementById('fDesig').value;
+
+  return masterData.filter(item => {
+
+    if(!matchesQuick(item)) return false;
+
+    if(st && item.status !== st) return false;
+
+    if(co && normName(item.company) !== co) return false;
+
+    if(de && normName(item.designation) !== de) return false;
+
+    if(q){
+      const hay = [item.hrName, item.company, item.phone, item.email, item.designation].join(' ').toLowerCase();
+      if(hay.indexOf(q) === -1) return false;
+    }
+
+    return true;
+  });
+}
+
+function sortList(list){
+
+  const mode = document.getElementById('fSort').value;
+
+  const rank = { overdue: 0, today: 1, soon: 2, later: 3, none: 4, closed: 5 };
+
+  const byCompany = (a, b) => (a.company || '').localeCompare(b.company || '') || (a.hrName || '').localeCompare(b.hrName || '');
+
+  const arr = list.slice();
+
+  if(mode === 'due'){
+
+    arr.sort((a, b) => {
+      const ra = rank[crmState(a)], rb = rank[crmState(b)];
+      if(ra !== rb) return ra - rb;
+      const da = a.nextFollowUpISO || '9999', db = b.nextFollowUpISO || '9999';
+      return da < db ? -1 : (da > db ? 1 : byCompany(a, b));
+    });
+
+  } else if(mode === 'stale'){
+
+    arr.sort((a, b) => {
+      const la = lastISO(a), lb = lastISO(b);
+      if(la === lb) return byCompany(a, b);
+      if(!la) return -1;
+      if(!lb) return 1;
+      return la < lb ? -1 : 1;
+    });
+
+  } else {
+
+    arr.sort(byCompany);
+  }
+
+  return arr;
+}
+
+function refreshFilterOptions(){
+
+  const keep = {
+    fStatus: document.getElementById('fStatus').value,
+    fCompany: document.getElementById('fCompany').value,
+    fDesig: document.getElementById('fDesig').value
+  };
+
+  const statuses = ['Pending', 'Call Back', 'Interested', 'Pr. Mailed', 'Not Interested'];
+
+  masterData.forEach(x => { if(x.status && statuses.indexOf(x.status) === -1) statuses.push(x.status); });
+
+  const companies = {}, desigs = {};
+
+  masterData.forEach(x => {
+    if(x.company && !companies[normName(x.company)]) companies[normName(x.company)] = x.company;
+    if(x.designation && !desigs[normName(x.designation)]) desigs[normName(x.designation)] = x.designation;
+  });
+
+  const opts = (placeholder, pairs) =>
+    '<option value="">' + placeholder + '</option>' + pairs.map(p => '<option value="' + esc(p[0]) + '">' + esc(p[1]) + '</option>').join('');
+
+  const byLabel = (a, b) => a[1].localeCompare(b[1]);
+
+  document.getElementById('fStatus').innerHTML = opts('All statuses', statuses.map(s => [s, s]));
+  document.getElementById('fCompany').innerHTML = opts('All companies', Object.keys(companies).map(k => [k, companies[k]]).sort(byLabel));
+  document.getElementById('fDesig').innerHTML = opts('All designations', Object.keys(desigs).map(k => [k, desigs[k]]).sort(byLabel));
+
+  Object.keys(keep).forEach(id => {
+    const el = document.getElementById(id);
+    if(keep[id] && Array.prototype.some.call(el.options, o => o.value === keep[id])) el.value = keep[id];
+  });
+}
+
+function clearFilters(){
+
+  quickFilter = '';
+
+  document.getElementById('search').value = '';
+  document.getElementById('fStatus').value = '';
+  document.getElementById('fCompany').value = '';
+  document.getElementById('fDesig').value = '';
+  document.getElementById('fSort').value = 'company';
+
+  activeLetter = null;
+
+  applyFilters();
+}
+
+/* ONE CARD */
 
 function buildCardHTML(item){
 
-  const cls =
-    item.isOverdue
-      ? 'overdue'
-      : item.isPriority
-        ? 'priority'
-        : '';
+  const state = crmState(item);
+
+  const drive = driveInfo(item);
+
+  const phone = String(item.phone || '');
+
+  const wa = waLink(item);
+
+  const id = esc(item.rowId);
 
   return `
 
     <div
-      class="crm-card ${cls}"
-      onclick="openDetails('${item.rowId}')"
+      class="crm-card k-card k-${state}"
+      onclick="openDetails('${id}')"
       tabindex="0"
       role="button"
-      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); openDetails('${item.rowId}');}"
+      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); openDetails('${id}');}"
     >
 
-      <div class="d-flex justify-content-between align-items-start">
+      <div class="k-top">
 
-        <div class="d-flex align-items-start" style="gap:12px;">
+        <div class="avatar-circle">${esc(getInitials(item.hrName))}</div>
 
-          <div class="avatar-circle">
-            ${getInitials(item.hrName)}
-          </div>
+        <div class="k-id">
 
-          <div>
+          <div class="company-name">${esc(item.company)}</div>
 
-            <div class="company-name">
-              ${item.company}
-            </div>
-
-            <div class="hr-name-sub">
-              ${item.hrName}
-            </div>
-
-            ${item.designation ? `<div class="designation-tag mt-1">${item.designation}</div>` : ''}
-
-          </div>
+          <div class="hr-name-sub">${esc(item.hrName)}${item.designation ? ' · ' + esc(item.designation) : ''}</div>
 
         </div>
 
-        <div class="d-flex align-items-center gap-2">
+        <div class="k-right">
 
-          <div class="status-chip ${statusChipClass(item.status)}">
-            ${item.status}
-          </div>
+          <div class="status-chip ${statusChipClass(item.status)}">${esc(item.status)}</div>
 
           <button
             class="delete-card-btn"
-            onclick="event.stopPropagation(); deleteContact('${item.rowId}')"
+            onclick="event.stopPropagation(); deleteContact('${id}')"
             title="Delete contact"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1820,39 +2307,42 @@ function buildCardHTML(item){
 
       </div>
 
-      <div class="contact-info mt-3">
+      <div class="k-pills">
 
-        📞 ${item.phone
-          ? `<a href="tel:${item.phone}" target="_top" class="contact-link phone-link" onclick="event.stopPropagation()">${item.phone}</a>`
-          : '-'}
+        <span class="k-pill k-due-${state}">${esc(dueLabel(item))}</span>
+
+        ${drive ? `<span class="k-pill ${drive.cls}">${esc(drive.label)}</span>` : ''}
+
+        ${item.lastContact ? `<span class="k-pill">Last: ${esc(item.lastContact)}</span>` : `<span class="k-pill k-never">Never contacted</span>`}
+
+      </div>
+
+      <div class="k-contact">
+
+        ${phone ? `📞 <a href="tel:${esc(phone)}" target="_top" onclick="event.stopPropagation()">${esc(phone)}</a>` : '📞 -'}
 
         <br>
 
-        📧 ${item.email
-          ? `<a href="mailto:${item.email}" target="_top" class="contact-link" onclick="event.stopPropagation()">${item.email}</a>`
-          : '-'}
+        ${item.email ? `✉️ <a href="mailto:${esc(item.email)}" target="_top" onclick="event.stopPropagation()">${esc(item.email)}</a>` : '✉️ -'}
 
       </div>
 
-      <div class="next-call">
+      <div class="k-actions" onclick="event.stopPropagation()">
 
-        Next Call:
-        <strong style="color:#111827;">
-          ${item.nextFollowUp || 'Not Set'}
-        </strong>
+        <button type="button" class="k-act k-log" onclick="openLog('${id}')">📝 Log call</button>
 
-      </div>
+        <a class="k-act ${phone ? '' : 'k-off'}" href="tel:${esc(phone)}" target="_top">📞 Call</a>
 
-      <div class="first-call-row" onclick="event.stopPropagation()">
+        <a class="k-act k-wa ${wa ? '' : 'k-off'}" href="${wa || '#'}" target="_blank" rel="noopener">💬 WhatsApp</a>
+
+        <a class="k-act ${item.email ? '' : 'k-off'}" href="mailto:${esc(item.email || '')}" target="_top">✉️ Email</a>
 
         <button
           type="button"
-          class="remark-toggle-btn ${item.remarks ? 'has-remark' : ''}"
-          id="remarkToggleBtn-${item.rowId}"
-          onclick="openRemarkPanel('${item.rowId}', this)"
-        >
-          💬 LAST REMARK
-        </button>
+          class="k-act ${item.remarks ? 'has-remark' : ''}"
+          id="remarkToggleBtn-${id}"
+          onclick="openRemarkPanel('${id}', this)"
+        >📄 Last remark</button>
 
       </div>
 
@@ -1860,90 +2350,150 @@ function buildCardHTML(item){
   `;
 }
 
-/* RENDER CARDS (priority grid + alphabet-deck grouped "All Contacts") */
+/* TABLE VIEW */
 
-function renderCards(data){
+function buildTableHTML(list){
 
-  currentDataset = data;
+  if(list.length === 0){
+    return '<div class="empty-state"><span class="empty-emoji">🔍</span>No contacts match.</div>';
+  }
+
+  const rows = list.map(item => {
+
+    const state = crmState(item);
+
+    const drive = driveInfo(item);
+
+    const phone = String(item.phone || '');
+
+    const wa = waLink(item);
+
+    const id = esc(item.rowId);
+
+    return `
+      <tr class="k-row k-${state}" onclick="openDetails('${id}')">
+        <td><span class="k-co">${esc(item.company)}</span>${drive ? `<span class="k-mini">${esc(drive.label)}</span>` : ''}</td>
+        <td>${esc(item.hrName)}${item.designation ? `<span class="k-mini">${esc(item.designation)}</span>` : ''}</td>
+        <td>${phone ? `<a href="tel:${esc(phone)}" target="_top" onclick="event.stopPropagation()">${esc(phone)}</a>` : '-'}${item.email ? `<span class="k-mini"><a href="mailto:${esc(item.email)}" target="_top" onclick="event.stopPropagation()">${esc(item.email)}</a></span>` : ''}</td>
+        <td><span class="status-chip ${statusChipClass(item.status)}">${esc(item.status)}</span></td>
+        <td><span class="k-pill k-due-${state}">${esc(dueLabel(item))}</span></td>
+        <td>${item.lastContact ? esc(item.lastContact) : '<span class="k-pill k-never">Never</span>'}</td>
+        <td class="k-tact" onclick="event.stopPropagation()">
+          <button type="button" class="k-ico" title="Log call" onclick="openLog('${id}')">📝</button>
+          ${phone ? `<a class="k-ico" title="Call" href="tel:${esc(phone)}" target="_top">📞</a>` : ''}
+          ${wa ? `<a class="k-ico" title="WhatsApp" href="${wa}" target="_blank" rel="noopener">💬</a>` : ''}
+          ${item.email ? `<a class="k-ico" title="Email" href="mailto:${esc(item.email)}" target="_top">✉️</a>` : ''}
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <table class="k-table">
+      <thead><tr><th>Company</th><th>HR contact</th><th>Phone / Email</th><th>Status</th><th>Next follow-up</th><th>Last contact</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function setViewMode(mode){
+
+  viewMode = (mode === 'table') ? 'table' : 'cards';
+
+  try { localStorage.setItem('crm_view', viewMode); } catch(e){}
+
+  document.getElementById('viewCardsBtn').classList.toggle('active', viewMode === 'cards');
+  document.getElementById('viewTableBtn').classList.toggle('active', viewMode === 'table');
+
+  applyFilters();
+}
+
+/* RENDER EVERYTHING (kept under the old name too: selectDeck/loadData call it) */
+
+function renderCards(){ applyFilters(); }
+
+function filterCards(){ applyFilters(); }
+
+function applyFilters(){
+
+  if(!Array.isArray(masterData)) return;
+
+  closeRemarkPanel();
+
+  currentDataset = masterData;
+
+  renderStats();
+
+  const active = filtersActive();
+
+  document.getElementById('kClear').style.display = active ? '' : 'none';
+
+  // ---- NEEDS ATTENTION: overdue first (oldest first), then due today
+
+  const attention = document.getElementById('kAttention');
+
+  attention.style.display = active ? 'none' : '';
 
   const priorityGrid = document.getElementById('priorityGrid');
 
-  const allGrid = document.getElementById('allGrid');
+  const dueToday = masterData.filter(x => crmState(x) === 'today').length;
 
-  const deckRow = document.getElementById('deckRow');
+  if(!active){
 
-  const deckContentTitle = document.getElementById('deckContentTitle');
+    const urgent = masterData
+      .filter(x => { const s = crmState(x); return s === 'overdue' || s === 'today'; })
+      .sort((a, b) => (a.nextFollowUpISO < b.nextFollowUpISO ? -1 : (a.nextFollowUpISO > b.nextFollowUpISO ? 1 : (a.company || '').localeCompare(b.company || ''))));
 
-  priorityGrid.innerHTML = '';
-
-  allGrid.innerHTML = '';
-
-  // SORT COMPANY ALPHABETICALLY
-
-  data.sort((a,b) =>
-    a.company.localeCompare(b.company)
-  );
-
-  // PRIORITY / OVERDUE — always shown as a flat grid
-
-  data.forEach(item => {
-
-    if(item.isPriority || item.isOverdue){
-
-      priorityGrid.innerHTML += buildCardHTML(item);
-    }
-  });
-
-  if(priorityGrid.innerHTML === ''){
-
-    priorityGrid.innerHTML = `
-      <div class="empty-state">
-        <span class="empty-emoji">🎉</span>
-        No urgent follow-ups right now — you're all caught up!
-      </div>
-    `;
-
-    document.getElementById('postponeAllBtn').style.display = 'none';
-
-  } else {
-
-    document.getElementById('postponeAllBtn').style.display = '';
+    priorityGrid.innerHTML = urgent.length
+      ? urgent.map(buildCardHTML).join('')
+      : `<div class="empty-state"><span class="empty-emoji">🎉</span>No follow-ups due — you're all caught up!</div>`;
   }
 
-  // While actively searching, show a flat filtered grid instead of decks
+  document.getElementById('postponeAllBtn').style.display = dueToday > 0 ? '' : 'none';
 
-  const isSearching = document.getElementById('search').value.trim() !== '';
+  // ---- ALL CONTACTS / RESULTS
 
-  if(isSearching){
+  const list = sortList(currentFiltered());
+
+  const allGrid = document.getElementById('allGrid');
+  const tableWrap = document.getElementById('tableWrap');
+  const deckRow = document.getElementById('deckRow');
+  const deckContentTitle = document.getElementById('deckContentTitle');
+
+  document.getElementById('allTitle').innerHTML = active
+    ? 'Results <span class="badge-count">' + list.length + '</span>'
+    : 'All Contacts';
+
+  if(viewMode === 'table'){
+
+    allGrid.style.display = 'none';
+    tableWrap.style.display = '';
+    deckRow.innerHTML = '';
+    deckContentTitle.innerHTML = '';
+    tableWrap.innerHTML = buildTableHTML(list);
+    return;
+  }
+
+  tableWrap.style.display = 'none';
+  allGrid.style.display = '';
+
+  if(active){
 
     deckRow.innerHTML = '';
     deckContentTitle.innerHTML = '';
 
-    if(data.length === 0){
-
-      allGrid.innerHTML = `
-        <div class="empty-state">
-          <span class="empty-emoji">🔍</span>
-          No contacts match your search.
-        </div>
-      `;
-
-      return;
-    }
-
-    data.forEach(item => {
-
-      allGrid.innerHTML += buildCardHTML(item);
-    });
+    allGrid.innerHTML = list.length
+      ? list.map(buildCardHTML).join('')
+      : `<div class="empty-state"><span class="empty-emoji">🔍</span>No contacts match these filters.</div>`;
 
     return;
   }
 
-  // GROUP BY FIRST LETTER OF COMPANY NAME
+  // default view: alphabet decks by company letter
 
   const groups = {};
 
-  data.forEach(item => {
+  list.forEach(item => {
 
     const letter = (item.company || '#').trim().charAt(0).toUpperCase() || '#';
 
@@ -1954,12 +2504,7 @@ function renderCards(data){
 
   const letters = Object.keys(groups).sort();
 
-  // If the previously active letter has no more matches, reset it
-
-  if(activeLetter && !groups[activeLetter]){
-
-    activeLetter = null;
-  }
+  if(activeLetter && !groups[activeLetter]) activeLetter = null;
 
   deckRow.innerHTML = letters.map(letter => `
 
@@ -1981,20 +2526,13 @@ function renderCards(data){
   if(activeLetter && groups[activeLetter]){
 
     deckContentTitle.innerHTML = `
-
       <div class="deck-content-title">
-
         Companies starting with "${activeLetter}"
-
         <span class="badge-count">${groups[activeLetter].length}</span>
-
       </div>
     `;
 
-    groups[activeLetter].forEach(item => {
-
-      allGrid.innerHTML += buildCardHTML(item);
-    });
+    allGrid.innerHTML = groups[activeLetter].map(buildCardHTML).join('');
 
   } else {
 
@@ -2002,11 +2540,233 @@ function renderCards(data){
 
     allGrid.innerHTML = `
       <div class="deck-hint">
-        Select a letter above to view companies starting with it.
+        Select a letter above to view companies starting with it — or use the search, filters and Today bar.
       </div>
     `;
   }
 }
+
+/* ===================== QUICK CALL LOG ===================== */
+
+const LOG_OUTCOMES = [
+  { key: 'noanswer',   label: '📵 No answer',        status: '',               days: 1, note: 'No answer' },
+  { key: 'callback',   label: '🔁 Call back later',   status: 'Call Back',      days: 2, note: 'Asked to call back' },
+  { key: 'interested', label: '✅ Interested',        status: 'Interested',     days: 7, note: 'Interested' },
+  { key: 'mailed',     label: '📧 Profile mailed',    status: 'Pr. Mailed',     days: 3, note: 'Profile mailed' },
+  { key: 'notint',     label: '🚫 Not interested',    status: 'Not Interested', days: 0, note: 'Not interested' }
+];
+
+const LOG_PRESETS = [
+  { days: 1,  label: 'Tomorrow' },
+  { days: 3,  label: 'In 3 days' },
+  { days: 7,  label: 'In 1 week' },
+  { days: 14, label: 'In 2 weeks' },
+  { days: -1, label: 'Pick a date' },
+  { days: 0,  label: 'No change' }
+];
+
+let logRowId = null, logOutcomeKey = '', logPresetDays = 0, logModal = null;
+
+function renderLogChoices(){
+
+  document.getElementById('logOutcomes').innerHTML = LOG_OUTCOMES.map(o =>
+    `<button type="button" class="k-chipbtn ${logOutcomeKey === o.key ? 'on' : ''}" onclick="selectOutcome('${o.key}')">${o.label}</button>`
+  ).join('');
+
+  document.getElementById('logPresets').innerHTML = LOG_PRESETS.map(p =>
+    `<button type="button" class="k-chipbtn ${logPresetDays === p.days ? 'on' : ''}" onclick="selectPreset(${p.days})">${p.label}</button>`
+  ).join('');
+
+  document.getElementById('logDate').style.display = (logPresetDays === -1) ? '' : 'none';
+}
+
+function openLog(rowId){
+
+  const item = masterData.find(x => x.rowId === rowId);
+
+  if(!item) return;
+
+  closeRemarkPanel();
+
+  logRowId = rowId;
+  logOutcomeKey = '';
+  logPresetDays = 0;
+
+  document.getElementById('logWho').innerHTML =
+    'Logging a call with <b>' + esc(item.hrName || 'this contact') + '</b>' + (item.company ? ' · ' + esc(item.company) : '');
+
+  document.getElementById('logNote').value = '';
+  document.getElementById('logDate').value = item.nextFollowUpISO || addDaysISO(1);
+  document.getElementById('logDate').min = todayISO();
+
+  renderLogChoices();
+
+  if(!logModal) logModal = new bootstrap.Modal(document.getElementById('logModal'));
+
+  logModal.show();
+}
+
+function selectOutcome(key){
+
+  const o = LOG_OUTCOMES.find(x => x.key === key);
+
+  if(!o) return;
+
+  logOutcomeKey = key;
+
+  logPresetDays = o.days;      // a sensible default; the preset can still be changed
+
+  renderLogChoices();
+}
+
+function selectPreset(days){
+
+  logPresetDays = days;
+
+  renderLogChoices();
+}
+
+function saveLog(){
+
+  const item = masterData.find(x => x.rowId === logRowId);
+
+  if(!item) return;
+
+  const outcome = LOG_OUTCOMES.find(x => x.key === logOutcomeKey);
+
+  if(!outcome){ showToast('Pick what happened on the call first'); return; }
+
+  let nextISO = '';
+
+  if(logPresetDays > 0) nextISO = addDaysISO(logPresetDays);
+
+  if(logPresetDays === -1){
+
+    nextISO = document.getElementById('logDate').value;
+
+    if(!nextISO){ showToast('Pick the follow-up date'); return; }
+  }
+
+  const typed = document.getElementById('logNote').value.trim();
+
+  const noteText = typed || outcome.note;
+
+  const btn = document.getElementById('logSaveBtn');
+
+  btn.disabled = true;
+
+  btn.textContent = 'Saving…';
+
+  google.script.run
+    .withSuccessHandler(function(res){
+
+      btn.disabled = false;
+      btn.textContent = 'Save';
+
+      if(res && res.success === false){ showToast('Could not find that contact — refresh and try again'); return; }
+
+      // update the page right away, no full reload
+      if(outcome.status) item.status = outcome.status;
+
+      item.remarks = noteText;
+
+      const now = new Date();
+      item.lastContact = pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear();
+
+      if(nextISO){
+        item.nextFollowUpISO = nextISO;
+        item.nextFollowUp = isoToDisplay(nextISO);
+      }
+
+      logModal.hide();
+
+      applyFilters();
+
+      showToast('Call logged' + (nextISO ? ' · next follow-up ' + isoToDisplay(nextISO) : ''));
+    })
+    .withFailureHandler(function(err){
+
+      btn.disabled = false;
+      btn.textContent = 'Save';
+
+      alert('Could not save the call: ' + ((err && err.message) || err));
+    })
+    .crm_logCall(logRowId, outcome.status, noteText, nextISO, crmToken());
+}
+
+function showToast(msg){
+
+  const t = document.getElementById('kToast');
+
+  t.textContent = msg;
+
+  t.classList.add('show');
+
+  clearTimeout(showToast._t);
+
+  showToast._t = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+/* COMPANY LIST FROM THE DASHBOARD: suggestions while typing + a "Drive" pill on cards */
+
+function loadCompanies(){
+
+  google.script.run
+    .withSuccessHandler(function(list){
+
+      companyMap = {};
+
+      (list || []).forEach(c => { companyMap[normName(c.name)] = c.status || ''; });
+
+      document.getElementById('crmCompanies').innerHTML =
+        (list || []).map(c => '<option value="' + esc(c.name) + '"></option>').join('');
+
+      applyFilters();
+    })
+    .withFailureHandler(function(){ /* optional extra - the CRM works without it */ })
+    .getCrmCompanyIndex(crmToken());
+}
+
+/* OPENED FROM COMPANY DETAILS (…&company=Acme): start filtered to that company, once */
+
+let urlCompanyApplied = false;
+
+function applyUrlCompany(){
+
+  if(urlCompanyApplied) return;
+
+  urlCompanyApplied = true;
+
+  let name = '';
+
+  try { name = new URLSearchParams(window.location.search).get('company') || ''; } catch(e){}
+
+  if(!name) return;
+
+  const sel = document.getElementById('fCompany');
+
+  const key = normName(name);
+
+  if(Array.prototype.some.call(sel.options, o => o.value === key)){
+    sel.value = key;
+  } else {
+    document.getElementById('search').value = name;   // company has no contact yet: show a plain search
+  }
+}
+
+/* DARK MODE: follow the dashboard this page is shown in */
+
+function syncTheme(){
+
+  try {
+
+    const dark = window.parent !== window && window.parent.document.documentElement.classList.contains('dark');
+
+    document.documentElement.classList.toggle('dark', !!dark);
+
+  } catch(e){ /* opened on its own: stay light */ }
+}
+
 
 /* SELECT / TOGGLE A DECK */
 
@@ -2072,14 +2832,12 @@ function openDetails(rowId){
 
 function postponeAllPriority(){
 
-  const count = currentDataset
-    ? currentDataset.filter(x => x.isPriority || x.isOverdue).length
-    : 0;
+  const count = masterData.filter(x => crmState(x) === 'today').length;
 
   if(count === 0) return;
 
   const ok = confirm(
-    `Postpone all ${count} priority/overdue follow-up${count > 1 ? 's' : ''} to tomorrow?`
+    `Postpone all ${count} follow-up${count > 1 ? 's' : ''} due today to tomorrow?`
   );
 
   if(!ok) return;
@@ -2657,25 +3415,6 @@ function saveDetails(){
     .updateHRRemark(rowId,remark,nextDate,crmToken());
 }
 
-/* FILTER */
-
-function filterCards(){
-
-  const q = document
-    .getElementById('search')
-    .value
-    .toLowerCase();
-
-  const filtered = masterData.filter(item =>
-
-    item.hrName.toLowerCase().includes(q) ||
-
-    item.company.toLowerCase().includes(q)
-  );
-
-  renderCards(filtered);
-}
-
 /* ADD LEAD */
 
 function showAddModal(){
@@ -2735,8 +3474,16 @@ document.addEventListener('DOMContentLoaded', function(){
 
   // Make sure the HR_Data / Remarks_Log tabs are ready (adds missing columns,
   // gives every contact an ID) and then load the contacts.
+  try { if(localStorage.getItem('crm_view') === 'table') setViewMode('table'); } catch(e){}
+
+  syncTheme();
+
+  try {
+    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  } catch(e){}
+
   google.script.run
-    .withSuccessHandler(function(){ loadData(); })
+    .withSuccessHandler(function(){ loadData(); loadCompanies(); })
     .withFailureHandler(function(){ loadData(); })
     .crm_setupSheets(crmToken());
 });

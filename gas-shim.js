@@ -237,6 +237,20 @@
       .then(function () {}, function () {});
   }
 
+  // If the server says the login is no longer valid, tell the page (and the dashboard around it) so it can
+  // go back to the sign-in screen cleanly instead of leaving a half-working page behind.
+  var SESSION_RE = /session has expired|not signed in/i, sessionTold = 0;
+  function sessionCheck(v) {
+    var msg = '';
+    if (v instanceof Error) msg = v.message;
+    else if (v && typeof v === 'object' && v.success === false) msg = v.message;
+    if (!msg || !SESSION_RE.test(String(msg))) return;
+    if (Date.now() - sessionTold < 5000) return;   // once per burst of failing calls
+    sessionTold = Date.now();
+    try { window.dispatchEvent(new CustomEvent('cpt-session-expired')); } catch (e) {}
+    try { if (window.parent && window.parent !== window) window.parent.dispatchEvent(new CustomEvent('cpt-session-expired')); } catch (e) {}
+  }
+
   var sharedReads = {};
 
   function call(fn, args, onData) {
@@ -281,6 +295,7 @@
       }
     }
     return net.then(function (r) {
+      sessionCheck(r.data);
       record(fn, r.ms + r.queued, r.queued, r.gw ? 'gw' : (r.reason ? 'fb' : (r.retried ? 'retry' : 'net')), r.reason);
       var wrote = !instant && !READ_ONLY.test(fn);
       if (instant) lsSet(key, JSON.stringify({ t: Date.now(), v: r.data }));
@@ -292,6 +307,7 @@
         onData(r.data);
       });
     }, function (err) {
+      sessionCheck(err);
       if (shownFromCache) return; // stored copy is already on screen; stay quiet
       throw err;
     });

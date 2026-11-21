@@ -1393,6 +1393,11 @@ body{ font-family: Inter, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; 
 .k-lrow .cg-badge{ display:inline-flex; width:26px; height:26px; border-radius:8px; font-size:13px; vertical-align:middle; margin-right:8px; }
 .k-lrow .cg-count{ margin-left:8px; }
 
+/* back-to-top arrow: appears once you have scrolled down */
+.k-top-btn{ position:fixed; right:18px; bottom:22px; z-index:1500; width:44px; height:44px; border:0; border-radius:50%; background:#4f46e5; color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 8px 20px rgba(79,70,229,.35); opacity:0; transform:translateY(12px); pointer-events:none; transition:opacity .2s, transform .2s, background .15s; }
+.k-top-btn.show{ opacity:1; transform:translateY(0); pointer-events:auto; }
+.k-top-btn:hover{ background:#4338ca; }
+
 /* log-call modal */
 .k-logwho{ font-size:13px; color:var(--k-mute); margin-bottom:6px; } .k-logwho b{ color:var(--k-text); }
 .k-lbl{ font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--k-mute); margin:14px 0 6px; } .k-opt{ text-transform:none; font-weight:500; }
@@ -1576,6 +1581,10 @@ html.dark .status-chip{ filter:brightness(.95); }
   </div>
 
 </div>
+
+<button type="button" id="kTop" class="k-top-btn" aria-label="Back to top" title="Back to top" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+</button>
 
 <div id="kToast" class="k-toast"></div>
 
@@ -2449,7 +2458,13 @@ function jumpToLetter(key){
 
   const el = document.getElementById('cg_' + key);
 
-  if(el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if(!el) return;
+
+  const bar = document.getElementById('kLetters');
+
+  const offset = (bar && bar.offsetHeight ? bar.offsetHeight : 0) + 18;
+
+  window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.pageYOffset - offset), behavior: 'smooth' });
 }
 
 function setViewMode(mode){
@@ -2748,6 +2763,17 @@ function applyUrlCompany(){
 }
 
 /* DARK MODE: follow the dashboard this page is shown in */
+
+/* BACK-TO-TOP ARROW */
+
+function updateTopBtn(){
+
+  const b = document.getElementById('kTop');
+
+  if(b) b.classList.toggle('show', (window.pageYOffset || document.documentElement.scrollTop || 0) > 400);
+}
+
+window.addEventListener('scroll', updateTopBtn, { passive: true });
 
 function syncTheme(){
 

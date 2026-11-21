@@ -1379,6 +1379,20 @@ body{ font-family: Inter, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; 
 .k-ico{ border:1px solid var(--k-line); background:#fff; border-radius:8px; padding:4px 8px; font-size:13px; cursor:pointer; text-decoration:none; color:#334155; display:inline-block; }
 .k-ico:hover{ background:var(--k-soft); }
 
+/* A-Z stacks: contacts grouped under a heading per company letter */
+.cg-bar{ position:sticky; top:0; z-index:20; display:flex; gap:2px; overflow-x:auto; scrollbar-width:none; background:var(--k-card); border:1px solid var(--k-line); border-radius:12px; padding:6px 8px; margin-bottom:16px; }
+.cg-bar::-webkit-scrollbar{ display:none; }
+.cg-l{ flex:0 0 auto; width:28px; height:28px; border:0; background:transparent; border-radius:8px; font-size:12px; font-weight:700; color:#3730a3; cursor:pointer; }
+.cg-l:hover:not(:disabled){ background:#eef2ff; } .cg-l:disabled{ color:#cbd5e1; cursor:default; }
+.cg-group{ grid-column:1 / -1; margin-bottom:22px; }
+.cg-head{ display:flex; align-items:center; gap:12px; margin-bottom:12px; scroll-margin-top:60px; }
+.cg-badge{ flex:0 0 auto; width:34px; height:34px; border-radius:10px; background:#4f46e5; color:#fff; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.cg-line{ flex:1; height:1px; background:var(--k-line); }
+.cg-count{ font-size:12px; color:var(--k-mute); }
+.k-lrow td{ background:#f8fafc; padding:8px 12px !important; scroll-margin-top:60px; }
+.k-lrow .cg-badge{ display:inline-flex; width:26px; height:26px; border-radius:8px; font-size:13px; vertical-align:middle; margin-right:8px; }
+.k-lrow .cg-count{ margin-left:8px; }
+
 /* log-call modal */
 .k-logwho{ font-size:13px; color:var(--k-mute); margin-bottom:6px; } .k-logwho b{ color:var(--k-text); }
 .k-lbl{ font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--k-mute); margin:14px 0 6px; } .k-opt{ text-transform:none; font-weight:500; }
@@ -1410,6 +1424,8 @@ html.dark .form-control, html.dark .form-select{ background-color:#0f172a; color
 html.dark .form-control::placeholder{ color:#64748b; }
 html.dark .modal-content{ background:#111c30; color:#e2e8f0; }
 html.dark .btn-close{ filter:invert(1); }
+html.dark .cg-l{ color:#a5b4fc; } html.dark .cg-l:hover:not(:disabled){ background:#1b2a44; } html.dark .cg-l:disabled{ color:#475569; }
+html.dark .k-lrow td{ background:#0f1a2e; }
 html.dark .outline-btn{ background:#0f172a; color:#e2e8f0; border-color:#334155; }
 html.dark .dark-btn{ background:#4f46e5; }
 html.dark .deck-tile{ background:#111c30; border-color:#334155; } html.dark .deck-letter{ color:#e2e8f0; }
@@ -1517,12 +1533,11 @@ html.dark .status-chip{ filter:brightness(.95); }
       <span id="allTitle">All Contacts</span>
     </div>
 
-    <div
-      id="deckRow"
-      class="deck-row mb-2"
-    ></div>
+    <div class="cg-bar" id="kLetters" style="display:none;"></div>
 
-    <div id="deckContentTitle"></div>
+    <div id="deckRow" style="display:none;"></div>
+
+    <div id="deckContentTitle" style="display:none;"></div>
 
     <div
       id="allGrid"
@@ -2352,25 +2367,19 @@ function buildCardHTML(item){
 
 /* TABLE VIEW */
 
-function buildTableHTML(list){
+function buildRowHTML(item){
 
-  if(list.length === 0){
-    return '<div class="empty-state"><span class="empty-emoji">🔍</span>No contacts match.</div>';
-  }
+  const state = crmState(item);
 
-  const rows = list.map(item => {
+  const drive = driveInfo(item);
 
-    const state = crmState(item);
+  const phone = String(item.phone || '');
 
-    const drive = driveInfo(item);
+  const wa = waLink(item);
 
-    const phone = String(item.phone || '');
+  const id = esc(item.rowId);
 
-    const wa = waLink(item);
-
-    const id = esc(item.rowId);
-
-    return `
+  return `
       <tr class="k-row k-${state}" onclick="openDetails('${id}')">
         <td><span class="k-co">${esc(item.company)}</span>${drive ? `<span class="k-mini">${esc(drive.label)}</span>` : ''}</td>
         <td>${esc(item.hrName)}${item.designation ? `<span class="k-mini">${esc(item.designation)}</span>` : ''}</td>
@@ -2386,7 +2395,22 @@ function buildTableHTML(list){
         </td>
       </tr>
     `;
-  }).join('');
+}
+
+function buildTableHTML(groups, stacked){
+
+  const total = groups.reduce((n, g) => n + g.items.length, 0);
+
+  if(total === 0){
+    return '<div class="empty-state"><span class="empty-emoji">🔍</span>No contacts match.</div>';
+  }
+
+  const rows = groups.map(g =>
+    (stacked
+      ? `<tr class="k-lrow"><td colspan="7" id="cg_${g.key}"><span class="cg-badge">${esc(g.letter)}</span><span class="cg-count">${g.items.length} contact${g.items.length === 1 ? '' : 's'}</span></td></tr>`
+      : '') +
+    g.items.map(buildRowHTML).join('')
+  ).join('');
 
   return `
     <table class="k-table">
@@ -2394,6 +2418,56 @@ function buildTableHTML(list){
       <tbody>${rows}</tbody>
     </table>
   `;
+}
+
+/* A-Z STACKS */
+
+function letterOf(item){
+
+  const c = String(item.company || '').trim().charAt(0).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+
+  return /^[A-Z]$/.test(c) ? c : '#';
+}
+
+function groupByLetter(list){
+
+  const map = {}, order = [];
+
+  list.forEach(item => {
+
+    const l = letterOf(item);
+
+    if(!map[l]){ map[l] = { key: l === '#' ? 'hash' : l, letter: l, items: [] }; order.push(map[l]); }
+
+    map[l].items.push(item);
+  });
+
+  return order.sort((a, b) => a.letter === '#' ? 1 : (b.letter === '#' ? -1 : a.letter.localeCompare(b.letter)));
+}
+
+function renderLetterBar(groups){
+
+  const bar = document.getElementById('kLetters');
+
+  if(!groups.length){ bar.style.display = 'none'; bar.innerHTML = ''; return; }
+
+  const have = {};
+
+  groups.forEach(g => { have[g.key] = true; });
+
+  bar.style.display = '';
+
+  bar.innerHTML = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ#'.split('').map(l => {
+    const k = l === '#' ? 'hash' : l;
+    return `<button type="button" class="cg-l" ${have[k] ? '' : 'disabled'} onclick="jumpToLetter('${k}')">${l}</button>`;
+  }).join('');
+}
+
+function jumpToLetter(key){
+
+  const el = document.getElementById('cg_' + key);
+
+  if(el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function setViewMode(mode){
@@ -2452,98 +2526,53 @@ function applyFilters(){
   document.getElementById('postponeAllBtn').style.display = dueToday > 0 ? '' : 'none';
 
   // ---- ALL CONTACTS / RESULTS
+  // Sorted by company (the default) the list is stacked under A, B, C... headings with a jump bar;
+  // sorted by follow-up or last contact it is one flat list.
 
   const list = sortList(currentFiltered());
 
+  const stacked = document.getElementById('fSort').value === 'company';
+
+  const groups = stacked ? groupByLetter(list) : [{ key: 'all', letter: '', items: list }];
+
   const allGrid = document.getElementById('allGrid');
   const tableWrap = document.getElementById('tableWrap');
-  const deckRow = document.getElementById('deckRow');
-  const deckContentTitle = document.getElementById('deckContentTitle');
 
   document.getElementById('allTitle').innerHTML = active
     ? 'Results <span class="badge-count">' + list.length + '</span>'
-    : 'All Contacts';
+    : 'All Contacts <span class="badge-count">' + list.length + '</span>';
+
+  renderLetterBar(stacked ? groups : []);
 
   if(viewMode === 'table'){
 
     allGrid.style.display = 'none';
     tableWrap.style.display = '';
-    deckRow.innerHTML = '';
-    deckContentTitle.innerHTML = '';
-    tableWrap.innerHTML = buildTableHTML(list);
+    tableWrap.innerHTML = buildTableHTML(groups, stacked);
     return;
   }
 
   tableWrap.style.display = 'none';
   allGrid.style.display = '';
 
-  if(active){
+  if(!list.length){
 
-    deckRow.innerHTML = '';
-    deckContentTitle.innerHTML = '';
-
-    allGrid.innerHTML = list.length
-      ? list.map(buildCardHTML).join('')
-      : `<div class="empty-state"><span class="empty-emoji">🔍</span>No contacts match these filters.</div>`;
+    allGrid.innerHTML = `<div class="empty-state"><span class="empty-emoji">${active ? '🔍' : '📇'}</span>${active ? 'No contacts match these filters.' : 'No contacts yet — press “+ Add Lead” to add the first one.'}</div>`;
 
     return;
   }
 
-  // default view: alphabet decks by company letter
-
-  const groups = {};
-
-  list.forEach(item => {
-
-    const letter = (item.company || '#').trim().charAt(0).toUpperCase() || '#';
-
-    if(!groups[letter]) groups[letter] = [];
-
-    groups[letter].push(item);
-  });
-
-  const letters = Object.keys(groups).sort();
-
-  if(activeLetter && !groups[activeLetter]) activeLetter = null;
-
-  deckRow.innerHTML = letters.map(letter => `
-
-    <div
-      class="deck-tile ${activeLetter === letter ? 'active' : ''}"
-      onclick="selectDeck('${letter}')"
-      tabindex="0"
-      role="button"
-      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); selectDeck('${letter}');}"
-    >
-
-      <div class="deck-letter">${letter}</div>
-
-      <div class="deck-count">${groups[letter].length}</div>
-
-    </div>
-  `).join('');
-
-  if(activeLetter && groups[activeLetter]){
-
-    deckContentTitle.innerHTML = `
-      <div class="deck-content-title">
-        Companies starting with "${activeLetter}"
-        <span class="badge-count">${groups[activeLetter].length}</span>
-      </div>
-    `;
-
-    allGrid.innerHTML = groups[activeLetter].map(buildCardHTML).join('');
-
-  } else {
-
-    deckContentTitle.innerHTML = '';
-
-    allGrid.innerHTML = `
-      <div class="deck-hint">
-        Select a letter above to view companies starting with it — or use the search, filters and Today bar.
-      </div>
-    `;
-  }
+  allGrid.innerHTML = groups.map(g => stacked
+    ? `<div class="cg-group">
+         <div class="cg-head" id="cg_${g.key}">
+           <span class="cg-badge">${esc(g.letter)}</span>
+           <span class="cg-line"></span>
+           <span class="cg-count">${g.items.length} contact${g.items.length === 1 ? '' : 's'}</span>
+         </div>
+         <div class="card-grid">${g.items.map(buildCardHTML).join('')}</div>
+       </div>`
+    : g.items.map(buildCardHTML).join('')
+  ).join('');
 }
 
 /* ===================== QUICK CALL LOG ===================== */

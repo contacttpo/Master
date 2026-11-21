@@ -6556,6 +6556,14 @@ function app() {
         this.loadAllInitialData();
         this.restoreView_();
       }
+      // The server said the saved login no longer works (expired, or the admin was switched off):
+      // say so and go back to the sign-in screen, instead of leaving a page where every action fails.
+      window.addEventListener('cpt-session-expired', () => {
+        if (!this.loggedIn || this._sessionEnding) return;
+        this._sessionEnding = true;
+        this.showToast('Your session has expired — please sign in again.', 'error');
+        setTimeout(() => this.logout(), 1800);
+      });
       // Remember which page (and company) the admin is on, so a refresh
       // lands back there instead of on Home.
       const saveView = () => {
@@ -6711,13 +6719,13 @@ function app() {
               sessionStorage.setItem('cpt_admin_name', this.currentAdmin.name);
               sessionStorage.setItem('cpt_admin_email', this.currentAdmin.email);
               sessionStorage.setItem('cpt_must_reset', this.mustResetPassword ? '1' : '0');
-              if (this.isMobileDevice_()) {
-                localStorage.setItem('cpt_logged_in', '1');
-                localStorage.setItem('cpt_session_token', res.token);
-                localStorage.setItem('cpt_admin_name', this.currentAdmin.name);
-                localStorage.setItem('cpt_admin_email', this.currentAdmin.email);
-                localStorage.setItem('cpt_must_reset', this.mustResetPassword ? '1' : '0');
-              }
+              // Remember the login on every device (PCs too, not only phones): it is kept until you press
+              // Logout or it runs out on the server (30 days). Closing the tab no longer signs you out.
+              localStorage.setItem('cpt_logged_in', '1');
+              localStorage.setItem('cpt_session_token', res.token);
+              localStorage.setItem('cpt_admin_name', this.currentAdmin.name);
+              localStorage.setItem('cpt_admin_email', this.currentAdmin.email);
+              localStorage.setItem('cpt_must_reset', this.mustResetPassword ? '1' : '0');
             } catch (e) { /* storage blocked on this device/browser — proceed anyway */ }
             this.mobileNavOpen = false;
             this.loadAllInitialData();

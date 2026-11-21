@@ -1504,33 +1504,18 @@ html.dark .status-chip{ filter:brightness(.95); }
 
     </div>
 
-    <!-- NEEDS ATTENTION (shown while no filter is active) -->
-
-    <div id="kAttention">
-
-      <div class="section-title d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <span>Needs attention</span>
-        <button
-          class="dark-btn"
-          id="postponeAllBtn"
-          onclick="postponeAllPriority()"
-          style="display:none;"
-        >
-          ⏩ Postpone All +1 Day
-        </button>
-      </div>
-
-      <div
-        id="priorityGrid"
-        class="card-grid mb-5"
-      ></div>
-
-    </div>
-
     <!-- ALL CONTACTS / RESULTS -->
 
     <div class="section-title d-flex align-items-center justify-content-between flex-wrap gap-2">
       <span id="allTitle">All Contacts</span>
+      <button
+        class="dark-btn"
+        id="postponeAllBtn"
+        onclick="postponeAllPriority()"
+        style="display:none;"
+      >
+        ⏩ Postpone due today +1 day
+      </button>
     </div>
 
     <div class="cg-bar" id="kLetters" style="display:none;"></div>
@@ -1872,13 +1857,14 @@ function crmToken(){
 // Shown instead of the contacts when the server refuses (e.g. the dashboard session has expired)
 function showCrmError(err){
   const msg = (err && err.message) ? err.message : 'Could not load the CRM.';
-  const box = document.getElementById('priorityGrid');
-  if(box){
-    box.innerHTML = '<div style="grid-column:1/-1; padding:28px; text-align:center; color:#b91c1c; font-weight:600;">' +
+  const all = document.getElementById('allGrid');
+  if(all){
+    all.style.display = '';
+    all.innerHTML = '<div style="grid-column:1/-1; padding:28px; text-align:center; color:#b91c1c; font-weight:600;">' +
       escapeHtml(msg) + '</div>';
   }
-  const all = document.getElementById('allGrid');
-  if(all) all.innerHTML = '';
+  const tw = document.getElementById('tableWrap');
+  if(tw) tw.style.display = 'none';
 }
 
 let detailsModal;
@@ -1924,15 +1910,11 @@ function showSkeletons(){
 
   const skeletons = Array(6).fill('<div class="skeleton-card"></div>').join('');
 
-  document.getElementById('priorityGrid').innerHTML = skeletons;
-
   document.getElementById('deckRow').innerHTML = '';
 
   document.getElementById('deckContentTitle').innerHTML = '';
 
   document.getElementById('allGrid').innerHTML = skeletons;
-
-  document.getElementById('kAttention').style.display = '';
 }
 
 /* STATUS CHIP CLASS */
@@ -2502,26 +2484,8 @@ function applyFilters(){
 
   document.getElementById('kClear').style.display = active ? '' : 'none';
 
-  // ---- NEEDS ATTENTION: overdue first (oldest first), then due today
-
-  const attention = document.getElementById('kAttention');
-
-  attention.style.display = active ? 'none' : '';
-
-  const priorityGrid = document.getElementById('priorityGrid');
-
+  // the follow-up buttons only matter when something is due today
   const dueToday = masterData.filter(x => crmState(x) === 'today').length;
-
-  if(!active){
-
-    const urgent = masterData
-      .filter(x => { const s = crmState(x); return s === 'overdue' || s === 'today'; })
-      .sort((a, b) => (a.nextFollowUpISO < b.nextFollowUpISO ? -1 : (a.nextFollowUpISO > b.nextFollowUpISO ? 1 : (a.company || '').localeCompare(b.company || ''))));
-
-    priorityGrid.innerHTML = urgent.length
-      ? urgent.map(buildCardHTML).join('')
-      : `<div class="empty-state"><span class="empty-emoji">🎉</span>No follow-ups due — you're all caught up!</div>`;
-  }
 
   document.getElementById('postponeAllBtn').style.display = dueToday > 0 ? '' : 'none';
 
@@ -2884,7 +2848,7 @@ function postponeAllPriority(){
 
       btn.disabled = false;
 
-      btn.textContent = '⏩ Postpone All +1 Day';
+      btn.textContent = '⏩ Postpone due today +1 day';
 
     })
     .withFailureHandler(function(err){
@@ -2893,7 +2857,7 @@ function postponeAllPriority(){
 
       btn.disabled = false;
 
-      btn.textContent = '⏩ Postpone All +1 Day';
+      btn.textContent = '⏩ Postpone due today +1 day';
 
     })
     .postponeAllOverdue(crmToken());

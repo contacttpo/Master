@@ -3268,9 +3268,15 @@ function confirmDeleteContact(){
   deleteModal.hide();
 
   google.script.run
-    .withSuccessHandler(function(){
+    .withSuccessHandler(function(res){
 
-      loadData();
+      if(res && res.success){
+        masterData = masterData.filter(x => x.rowId !== rowId);
+        refreshFilterOptions();
+        applyFilters();
+      } else {
+        loadData();
+      }
 
     })
     .deleteHR(rowId, crmToken());
@@ -3438,17 +3444,25 @@ function saveDetails(){
 
   const nextDate = document.getElementById('nextDate').value;
 
-  google.script.run.updateHRDetails(rowId, detailsObj, crmToken());
-
   google.script.run
-    .withSuccessHandler(function(){
+    .withSuccessHandler(function(res){
 
       detailsModal.hide();
 
-      loadData();
+      if(res && res.contact){
+        const i = masterData.findIndex(x => x.rowId === rowId);
+        if(i !== -1) masterData[i] = res.contact; else masterData.push(res.contact);
+        refreshFilterOptions();
+        applyFilters();
+      } else {
+        loadData();
+      }
 
     })
-    .updateHRRemark(rowId,remark,nextDate,crmToken());
+    .withFailureHandler(function(err){
+      alert('Could not save: ' + (err && err.message ? err.message : err));
+    })
+    .saveHRContact(rowId, detailsObj, remark, nextDate, crmToken());
 }
 
 /* ADD LEAD */
@@ -3474,15 +3488,22 @@ document.getElementById('addForm').onsubmit = function(e){
   };
 
   google.script.run
-    .withSuccessHandler(() => {
+    .withSuccessHandler((res) => {
 
       addModal.hide();
 
       this.reset();
 
-      loadData();
+      if(res && res.contact){
+        masterData.push(res.contact);
+        refreshFilterOptions();
+        applyFilters();
+      } else {
+        loadData();
+      }
 
     })
+    .withFailureHandler(showCrmError)
     .addHR(data, crmToken());
 };
 
@@ -3518,10 +3539,9 @@ document.addEventListener('DOMContentLoaded', function(){
     new MutationObserver(syncTheme).observe(window.parent.document.documentElement, { attributes: true, attributeFilter: ['class'] });
   } catch(e){}
 
-  google.script.run
-    .withSuccessHandler(function(){ loadData(); loadCompanies(); })
-    .withFailureHandler(function(){ loadData(); })
-    .crm_setupSheets(crmToken());
+  // getHRData now runs the (cached) setup itself, so no extra round-trip first
+  loadData();
+  loadCompanies();
 });
 
 </script>

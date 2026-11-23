@@ -778,6 +778,8 @@
       background: linear-gradient(145deg, #1e5581 0%, #237c9f 100%);   /* same blues as the sidebar */
       box-shadow: 0 8px 20px -4px rgba(30,85,129,.55), 0 2px 6px rgba(0,0,0,.2);
       bottom: calc(env(safe-area-inset-bottom) + 5.5rem); transition: transform .15s ease, box-shadow .15s ease; }
+    .live-fab { touch-action: none; user-select: none; -webkit-user-select: none; }
+    .live-fab.dragging { transition: none; transform: scale(1.1); cursor: grabbing; }
     .live-fab:hover { transform: scale(1.07); }
     .live-fab:active { transform: scale(.96); }
     .live-fab .live-ping { position: absolute; inset: -2px; border-radius: 9999px; background: var(--v-pink, #de6413); opacity: .45;
@@ -880,6 +882,86 @@
       </div>
     </div>
   </div>
+
+  <!-- Live button: drag it anywhere on screen (so it never covers Save / go-to-top); the spot is remembered on this device.
+       A short tap still opens the panel. Double-tap-and-hold is not needed: just press, move, release. -->
+  <script>
+  (function () {
+    var KEY = 'live_fab_pos_v1', M = 8, MOVE_PX = 6;
+    var fab = null, startX = 0, startY = 0, offX = 0, offY = 0, moved = false, active = false;
+
+    function el() { return document.querySelector('.live-fab'); }
+
+    function clamp(x, y, w, h) {
+      var maxX = window.innerWidth - w - M, maxY = window.innerHeight - h - M;
+      return { x: Math.min(Math.max(M, x), Math.max(M, maxX)), y: Math.min(Math.max(M, y), Math.max(M, maxY)) };
+    }
+
+    function place(x, y) {
+      var w = fab.offsetWidth || 52, h = fab.offsetHeight || 52, c = clamp(x, y, w, h);
+      fab.style.left = c.x + 'px'; fab.style.top = c.y + 'px';
+      fab.style.right = 'auto'; fab.style.bottom = 'auto';
+      return c;
+    }
+
+    function save(c) {
+      try {
+        var w = fab.offsetWidth || 52, h = fab.offsetHeight || 52;
+        localStorage.setItem(KEY, JSON.stringify({
+          fx: c.x / Math.max(1, window.innerWidth - w), fy: c.y / Math.max(1, window.innerHeight - h)
+        }));
+      } catch (e) {}
+    }
+
+    function restore() {
+      fab = el(); if (!fab) return;
+      try {
+        var p = JSON.parse(localStorage.getItem(KEY) || 'null');
+        if (!p) return;
+        var w = fab.offsetWidth || 52, h = fab.offsetHeight || 52;
+        place(p.fx * (window.innerWidth - w), p.fy * (window.innerHeight - h));
+      } catch (e) {}
+    }
+
+    document.addEventListener('pointerdown', function (e) {
+      var t = e.target.closest && e.target.closest('.live-fab');
+      if (!t || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      fab = t; active = true; moved = false;
+      var r = fab.getBoundingClientRect();
+      startX = e.clientX; startY = e.clientY; offX = e.clientX - r.left; offY = e.clientY - r.top;
+      try { fab.setPointerCapture(e.pointerId); } catch (err) {}
+    });
+
+    document.addEventListener('pointermove', function (e) {
+      if (!active || !fab) return;
+      if (!moved && Math.abs(e.clientX - startX) + Math.abs(e.clientY - startY) < MOVE_PX) return;
+      moved = true; fab.classList.add('dragging');
+      place(e.clientX - offX, e.clientY - offY);
+      e.preventDefault();
+    }, { passive: false });
+
+    function end() {
+      if (!active || !fab) return;
+      active = false; fab.classList.remove('dragging');
+      if (moved) {
+        var r = fab.getBoundingClientRect(); save({ x: r.left, y: r.top });
+        // a drag must not also count as a tap that opens the panel
+        var block = function (ev) { ev.stopPropagation(); ev.preventDefault(); };
+        document.addEventListener('click', block, { capture: true, once: true });
+        setTimeout(function () { document.removeEventListener('click', block, true); }, 50);
+      }
+    }
+    document.addEventListener('pointerup', end);
+    document.addEventListener('pointercancel', end);
+
+    window.addEventListener('resize', function () {
+      fab = el(); if (!fab || !fab.style.left) return;
+      var r = fab.getBoundingClientRect(); if (r.width) place(r.left, r.top);
+    });
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', restore); else restore();
+  })();
+  </script>
 
   <!-- ===================== MAIN CONTENT COLUMN ===================== -->
   <div x-show="loggedIn" class="flex-1 min-w-0">

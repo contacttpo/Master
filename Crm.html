@@ -1383,6 +1383,11 @@ body{ font-family: Inter, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; 
 .cg-bar{ position:sticky; top:0; z-index:20; display:flex; gap:2px; overflow-x:auto; scrollbar-width:none; background:var(--k-card); border:1px solid var(--k-line); border-radius:12px; padding:6px 8px; margin-bottom:16px; }
 .cg-bar::-webkit-scrollbar{ display:none; }
 .cg-l{ flex:0 0 auto; width:28px; height:28px; border:0; background:transparent; border-radius:8px; font-size:12px; font-weight:700; color:#3730a3; cursor:pointer; }
+/* Phones: show A-Z and # in two rows (14 + 13) so no sideways scrolling is needed */
+@media (max-width: 767px){
+  .cg-bar{ display:grid; grid-template-columns:repeat(14, minmax(0, 1fr)); gap:4px 0; overflow-x:visible; padding:6px 4px; }
+  .cg-l{ width:100%; height:32px; padding:0; font-size:13px; }
+}
 .cg-l:hover:not(:disabled){ background:#eef2ff; } .cg-l:disabled{ color:#cbd5e1; cursor:default; }
 .cg-group{ grid-column:1 / -1; margin-bottom:22px; }
 .cg-head{ display:flex; align-items:center; gap:12px; margin-bottom:12px; scroll-margin-top:60px; }

@@ -1323,6 +1323,13 @@ body{ font-family: Inter, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; 
 .k-stat.on{ outline:2px solid #4f46e5; outline-offset:1px; background:#eef2ff; }
 .k-stat-n{ display:block; font-size:26px; font-weight:800; line-height:1.1; color:var(--k-text); }
 .k-stat-l{ display:block; margin-top:3px; font-size:12px; font-weight:600; color:var(--k-mute); }
+.k-stat-tocall{ border-left-color:#4f46e5; background:#f5f3ff; } .k-stat-tocall .k-stat-n{ color:#4f46e5; }
+/* Phones: the summary chips sit in a 2-column grid instead of scrolling sideways */
+@media (max-width: 767px){
+  .k-stats{ display:grid; grid-template-columns:1fr 1fr; overflow-x:visible; }
+  .k-stat{ flex:none; min-width:0; }
+  .k-stat-tocall{ grid-column:1 / -1; }
+}
 .k-stat-overdue{ border-left-color:#dc2626; } .k-stat-overdue .k-stat-n{ color:#dc2626; }
 .k-stat-today{ border-left-color:#f59e0b; } .k-stat-today .k-stat-n{ color:#d97706; }
 .k-stat-week{ border-left-color:#2563eb; }
@@ -1978,7 +1985,7 @@ const WA_TEMPLATE = [
   '\uD83D\uDCDE 9009991789 | \uD83D\uDCE7 tpo@ggits.org'
 ].join('\n');
 
-let quickFilter = '';        // '' | overdue | today | week | never
+let quickFilter = '';        // '' | tocall | overdue | today | week | never
 let viewMode = 'cards';      // cards | table
 let companyMap = {};         // normalised company name -> drive status from the dashboard's Companies list
 
@@ -2084,14 +2091,14 @@ function waLink(item){
 
 function computeStats(){
 
-  const t = { overdue: 0, today: 0, week: 0, never: 0, total: masterData.length };
+  const t = { overdue: 0, today: 0, week: 0, never: 0, tocall: 0, total: masterData.length };
 
   masterData.forEach(x => {
 
     const s = crmState(x);
 
-    if(s === 'overdue') t.overdue++;
-    else if(s === 'today') t.today++;
+    if(s === 'overdue') { t.overdue++; t.tocall++; }
+    else if(s === 'today') { t.today++; t.tocall++; }
     else if(s === 'soon') t.week++;
 
     if(!x.lastContact && s !== 'closed') t.never++;
@@ -2105,6 +2112,7 @@ function renderStats(){
   const t = computeStats();
 
   const defs = [
+    ['tocall', '📞 To call now (overdue + today)', t.tocall],
     ['overdue', 'Overdue', t.overdue],
     ['today', 'Due today', t.today],
     ['week', 'Next 7 days', t.week],
@@ -2132,7 +2140,7 @@ function setQuick(key){
   quickFilter = (quickFilter === key) ? '' : key;
 
   // date-based views read best soonest/oldest first
-  document.getElementById('fSort').value = (quickFilter === 'overdue' || quickFilter === 'today' || quickFilter === 'week') ? 'due' : 'company';
+  document.getElementById('fSort').value = (quickFilter === 'tocall' || quickFilter === 'overdue' || quickFilter === 'today' || quickFilter === 'week') ? 'due' : 'company';
 
   applyFilters();
 }
@@ -2142,6 +2150,7 @@ function matchesQuick(item){
   const s = crmState(item);
 
   switch(quickFilter){
+    case 'tocall': return s === 'overdue' || s === 'today';
     case 'overdue': return s === 'overdue';
     case 'today': return s === 'today';
     case 'week': return s === 'soon';

@@ -31,7 +31,8 @@
     getAttendanceSessionStatus: 1, verifyVolunteerMobile: 1, getPhotoRequestForStudent: 1, getFeedbackFormForStudent: 1,
     getCurrentAttendanceToken: 1, getVolunteerLiveOverview: 1,
     getCompanyQuickSummary: 1, globalSearch: 1, getRoundVolunteerAssignments: 1,
-    getBranchSelections: 1, getBranchNoOffers: 1, getBranchRoster: 1 };
+    getBranchSelections: 1, getBranchNoOffers: 1, getBranchRoster: 1,
+    getHRData: 1, getCrmCompanyIndex: 1, getCrmContactsForCompany: 1, getRemarksForRow: 1 };
   // Excel exports use the fast path; PDF exports go straight to Apps Script (no wasted round trip).
   var GATEWAY_IF = { exportFormattedFile: function (args) { return args[3] !== 'pdf'; } };
 
@@ -83,6 +84,7 @@
     getDashboardData: 1, getCompanyList: 1, getAllStudentsMaster: 1, getBranchAndCollegeLists: 1,
     getBranchViewFilters: 1, getGlobalSelectionSummary: 1, getPlacementRate: 1,
     getPackageAnalytics: 1, getTopPackageStudents: 1,
+    getHRData: 1, getCrmCompanyIndex: 1,   // CRM opens instantly from the device copy, then refreshes quietly
     getRegisteredStudentEditFields: 1   // read on every Students window (3-6 s each); the form fields rarely change
   };
   var INSTANT_MAX_AGE = 24 * 3600 * 1000;

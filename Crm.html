@@ -1958,7 +1958,20 @@ function getInitials(name){
 =================================================================== */
 
 // WhatsApp opening message - edit freely. {name} and {company} are filled in per contact.
-const WA_TEMPLATE = 'Hello {name}, this is the Training & Placement Cell. I am following up regarding campus recruitment at {company}.';
+const WA_TEMPLATE = [
+  'Dear {name},',
+  'Greetings from Gyan Ganga Group of Institutions, Jabalpur!',
+  '',
+  'I am reaching out to invite {company} to partner with us for our upcoming Campus Recruitment Drive. As Central India\u2019s premier technical & management hub, our graduating batch is rigorously trained in industry-aligned tech stacks, problem-solving, and corporate readiness, (click to check the Link for our students portfolio https://tpo.ggits.org/portal?token=03aed240-27d5-434f-9e95-758dac6f6dd5) \u2014having consistently delivered top performers to leading MNCs.',
+  '',
+  'We would love to arrange a seamless, tailored hiring process (virtual or on-campus) at your convenience. Could we connect for a quick 5-minute call this week to explore how our talent pool can add value to your team?',
+  '',
+  'Warm regards,',
+  'Raajeev Sethi',
+  'Dean \u2013 Placements',
+  'Gyan Ganga Group of Institutions',
+  '\uD83D\uDCDE 9009991789 | \uD83D\uDCE7 tpo@ggits.org'
+].join('\n');
 
 let quickFilter = '';        // '' | overdue | today | week | never
 let viewMode = 'cards';      // cards | table

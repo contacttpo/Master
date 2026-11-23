@@ -2697,9 +2697,13 @@ function saveLog(){
       btn.disabled = false;
       btn.textContent = 'Save';
 
-      alert('Could not save the call: ' + ((err && err.message) || err));
+      const m = String((err && err.message) || err || '');
+
+      alert(/invalid function name/i.test(m)
+        ? 'Could not save the call: the server did not accept this action. Please refresh the page (Ctrl+F5) and try again.'
+        : 'Could not save the call: ' + m);
     })
-    .crm_logCall(logRowId, outcome.status, noteText, nextISO, crmToken());
+    .updateHRRemark(logRowId, noteText, nextISO, crmToken(), outcome.status);
 }
 
 function showToast(msg){

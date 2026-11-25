@@ -1525,6 +1525,7 @@ html.dark .status-chip{ filter:brightness(.95); }
 
     <div class="section-title d-flex align-items-center justify-content-between flex-wrap gap-2">
       <span id="allTitle">All Contacts</span>
+      <button class="outline-btn" id="backlogBtn" onclick="openBacklog()" style="display:none;">🧹 Clear overdue backlog</button>
       <button
         class="dark-btn"
         id="postponeAllBtn"
@@ -1553,6 +1554,49 @@ html.dark .status-chip{ filter:brightness(.95); }
 </div>
 
 <datalist id="crmCompanies"></datalist>
+
+<!-- OVERDUE BACKLOG MODAL -->
+
+<div class="modal fade" id="backlogModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title">Clear overdue backlog</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p id="backlogInfo" class="mb-3"></p>
+
+        <label class="d-flex gap-2 align-items-start mb-2" style="cursor:pointer;">
+          <input type="radio" name="backlogMode" value="spread" checked onchange="backlogPreview()" style="margin-top:4px;">
+          <span><b>Spread them over the coming days</b><br><span class="k-opt">Oldest first, a few each day, starting tomorrow.</span></span>
+        </label>
+
+        <div id="backlogSpread" class="ms-4 mb-3">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span>Calls per day</span>
+            <input type="number" id="backlogPerDay" class="form-control" style="width:90px;" min="1" max="200" value="15" oninput="backlogPreview()">
+          </div>
+          <label class="d-flex gap-2 align-items-center" style="cursor:pointer;">
+            <input type="checkbox" id="backlogSkipSun" checked onchange="backlogPreview()"> Skip Sundays
+          </label>
+        </div>
+
+        <label class="d-flex gap-2 align-items-start mb-2" style="cursor:pointer;">
+          <input type="radio" name="backlogMode" value="clear" onchange="backlogPreview()" style="margin-top:4px;">
+          <span><b>Just remove their follow-up dates</b><br><span class="k-opt">They stop showing as overdue; status and remarks are kept.</span></span>
+        </label>
+
+        <div id="backlogPreview" class="k-logwho mt-3"></div>
+        <div class="k-opt mt-2">Contacts marked “Not Interested” and anything due today or later are not touched.</div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="outline-btn" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="dark-btn" id="backlogApplyBtn" onclick="applyBacklog()">Apply</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- LOG CALL MODAL -->
 
@@ -2531,6 +2575,14 @@ function applyFilters(){
 
   document.getElementById('postponeAllBtn').style.display = dueToday > 0 ? '' : 'none';
 
+  const overdueN = masterData.filter(x => crmState(x) === 'overdue').length;
+
+  const bb = document.getElementById('backlogBtn');
+
+  bb.style.display = overdueN > 0 ? '' : 'none';
+
+  bb.textContent = '🧹 Clear overdue backlog (' + overdueN + ')';
+
   // ---- ALL CONTACTS / RESULTS
   // Sorted by company (the default) the list is stacked under A, B, C... headings with a jump bar;
   // sorted by follow-up or last contact it is one flat list.
@@ -2888,6 +2940,104 @@ function openDetails(rowId){
 }
 
 /* POSTPONE ALL PRIORITY / OVERDUE BY 1 DAY */
+
+/* OVERDUE BACKLOG: spread over coming days, or just drop the dates */
+
+let backlogModal = null;
+
+function backlogOverdueCount(){ return masterData.filter(x => crmState(x) === 'overdue').length; }
+
+function backlogMode(){ const r = document.querySelector('input[name=backlogMode]:checked'); return r ? r.value : 'spread'; }
+
+function openBacklog(){
+
+  const n = backlogOverdueCount();
+
+  if(n === 0) return;
+
+  if(!backlogModal) backlogModal = new bootstrap.Modal(document.getElementById('backlogModal'));
+
+  document.getElementById('backlogInfo').innerHTML = 'You have <b>' + n + '</b> overdue follow-up' + (n === 1 ? '' : 's') + '. Choose how to clear them:';
+
+  backlogPreview();
+
+  backlogModal.show();
+}
+
+function backlogPerDay(){ return Math.max(1, Math.min(200, parseInt(document.getElementById('backlogPerDay').value, 10) || 15)); }
+
+function backlogPreview(){
+
+  const n = backlogOverdueCount();
+
+  const spread = backlogMode() === 'spread';
+
+  document.getElementById('backlogSpread').style.opacity = spread ? '1' : '0.45';
+
+  let html;
+
+  if(!spread){
+
+    html = n + ' contact' + (n === 1 ? '' : 's') + ' will lose their follow-up date.';
+
+  } else {
+
+    const per = backlogPerDay();
+
+    const skip = document.getElementById('backlogSkipSun').checked;
+
+    const days = Math.ceil(n / per);
+
+    const d = new Date(); d.setHours(0,0,0,0);
+
+    for(let k = 0; k < days; k++){
+
+      do { d.setDate(d.getDate() + 1); } while(skip && d.getDay() === 0);
+    }
+
+    html = n + ' contacts &rarr; about <b>' + per + ' a day</b> over <b>' + days + ' day' + (days === 1 ? '' : 's') + '</b>, finishing ' + isoToDisplay(isoOf(d)) + '.';
+  }
+
+  document.getElementById('backlogPreview').innerHTML = html;
+}
+
+function applyBacklog(){
+
+  const btn = document.getElementById('backlogApplyBtn');
+
+  const opts = { mode: backlogMode(), perDay: backlogPerDay(), skipSunday: document.getElementById('backlogSkipSun').checked };
+
+  btn.disabled = true;
+
+  btn.textContent = 'Working...';
+
+  google.script.run
+    .withSuccessHandler(function(res){
+
+      btn.disabled = false;
+
+      btn.textContent = 'Apply';
+
+      backlogModal.hide();
+
+      loadData();
+
+      const n = (res && res.count) || 0;
+
+      showToast(opts.mode === 'clear'
+        ? n + ' overdue follow-up' + (n === 1 ? '' : 's') + ' cleared'
+        : n + ' overdue follow-up' + (n === 1 ? '' : 's') + ' spread over ' + ((res && res.days) || 0) + ' days (' + ((res && res.first) || '') + ' to ' + ((res && res.last) || '') + ')');
+    })
+    .withFailureHandler(function(err){
+
+      btn.disabled = false;
+
+      btn.textContent = 'Apply';
+
+      alert('Could not clear the backlog: ' + (err && err.message ? err.message : err));
+    })
+    .rescheduleOverdue(opts, crmToken());
+}
 
 function postponeAllPriority(){
 

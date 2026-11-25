@@ -1037,6 +1037,19 @@
         <p class="hero-date" x-text="new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })"></p>
       </div>
 
+      <!-- CRM heads-up: follow-ups due today / overdue (shown each day until dismissed) -->
+      <div x-show="crmDue.loaded && !crmDue.hidden && (crmDue.today > 0 || crmDue.overdue > 0)" x-cloak
+           class="mb-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 flex flex-wrap items-center gap-3">
+        <span class="text-2xl leading-none">📞</span>
+        <div class="flex-1" style="min-width:180px">
+          <p class="text-sm font-semibold text-indigo-900" x-text="crmDueText()"></p>
+          <p class="text-xs text-indigo-700">Follow-ups from your CRM that need a call.</p>
+        </div>
+        <button @click="openCrmDue()" class="text-sm font-semibold rounded-lg bg-indigo-600 text-white px-3 py-2">Open call list</button>
+        <button x-show="crmAlertState === 'default'" @click="enableCrmAlerts()" class="text-sm font-medium rounded-lg border border-indigo-300 text-indigo-700 px-3 py-2">Turn on alerts</button>
+        <button @click="dismissCrmDue()" class="text-indigo-400 hover:text-indigo-700 text-lg leading-none px-1" aria-label="Dismiss">✕</button>
+      </div>
+
       <!-- At-a-glance stat tiles -->
       <div x-show="!loading" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <div  class="stat-tile bg-white border border-slate-200 rounded-2xl shadow-sm p-4 flex items-start gap-3 text-left">
@@ -6202,6 +6215,8 @@ function app() {
     showTop: false,                // back-to-top arrow: shown once the page is scrolled down
     crmSrc: '/?page=crm',          // the CRM page; gets &company=... when opened from Company Details
     hrContacts: [], hrContactsLoading: false, hrContactsError: '',
+    crmDue: { loaded: false, today: 0, overdue: 0, hidden: false },
+    crmAlertState: (typeof Notification !== 'undefined') ? Notification.permission : 'unsupported',
     mustResetPassword: false,
     showPasswordReset: false,
     passwordResetForm: { current: '', next: '', confirm: '' },
@@ -6703,6 +6718,7 @@ function app() {
 
     loadAllInitialData() {
       this.loadDashboard();
+      this.loadCrmDue();
       this.loadGlobalSummary();
       this.loadTopPackages();
       this.loadPackageAnalytics();
@@ -7072,6 +7088,77 @@ function app() {
       if (this.crmSrc !== '/?page=crm') this.crmSrc = '/?page=crm';
       this.view = 'crm';
       this.mobileNavOpen = false;
+    },
+
+    // ---- CRM heads-up: runs every time the app is opened / signed in ----
+    crmTodayIso_() {
+      const d = new Date(), p = n => (n < 10 ? '0' : '') + n;
+      return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+    },
+
+    loadCrmDue() {
+      if (!this.adminToken) return;
+      google.script.run
+        .withSuccessHandler(list => {
+          const iso = this.crmTodayIso_();
+          let today = 0, overdue = 0;
+          (list || []).forEach(c => {
+            if (!c || c.status === 'Not Interested' || !c.nextFollowUpISO) return;
+            if (c.nextFollowUpISO === iso) today++;
+            else if (c.nextFollowUpISO < iso) overdue++;
+          });
+          let hidden = false;
+          try { hidden = localStorage.getItem('cpt_crm_due_hidden') === iso; } catch (e) {}
+          this.crmDue = { loaded: true, today: today, overdue: overdue, hidden: hidden };
+          this.notifyCrmDue_(iso);
+        })
+        .withFailureHandler(() => {})          // the CRM heads-up is optional: stay quiet if it can't load
+        .getHRData(this.adminToken);
+    },
+
+    crmDueText() {
+      const t = this.crmDue.today, o = this.crmDue.overdue;
+      if (t > 0) return t + ' CRM follow-up' + (t === 1 ? '' : 's') + ' due today' + (o > 0 ? ' · ' + o + ' overdue' : '');
+      return o + ' overdue CRM follow-up' + (o === 1 ? '' : 's');
+    },
+
+    dismissCrmDue() {
+      this.crmDue.hidden = true;
+      try { localStorage.setItem('cpt_crm_due_hidden', this.crmTodayIso_()); } catch (e) {}
+    },
+
+    openCrmDue() {
+      this.crmSrc = '/?page=crm&quick=tocall';
+      this.view = 'crm';
+      this.mobileNavOpen = false;
+    },
+
+    // Browser / phone notification: once a day, only after the person has allowed it
+    notifyCrmDue_(iso) {
+      try {
+        if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+        if (!this.crmDue.today && !this.crmDue.overdue) return;
+        if (localStorage.getItem('cpt_crm_due_notified') === iso) return;
+        localStorage.setItem('cpt_crm_due_notified', iso);
+        const title = '📞 CRM follow-ups', opts = { body: this.crmDueText(), tag: 'crm-due' };
+        if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+          navigator.serviceWorker.getRegistration().then(reg => {
+            if (reg && reg.showNotification) reg.showNotification(title, opts); else new Notification(title, opts);
+          }).catch(() => { try { new Notification(title, opts); } catch (e) {} });
+        } else { new Notification(title, opts); }
+      } catch (e) {}
+    },
+
+    enableCrmAlerts() {
+      if (typeof Notification === 'undefined') return;
+      Notification.requestPermission().then(perm => {
+        this.crmAlertState = perm;
+        if (perm === 'granted') {
+          try { localStorage.removeItem('cpt_crm_due_notified'); } catch (e) {}
+          this.notifyCrmDue_(this.crmTodayIso_());
+          this.showToast('Alerts on — you will be told when the app opens with follow-ups due.');
+        }
+      }).catch(() => {});
     },
 
     // "Open in CRM" on Company Details: the CRM opens already filtered to that company

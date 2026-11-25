@@ -2776,6 +2776,15 @@ function applyUrlCompany(){
 
   urlCompanyApplied = true;
 
+  // ?quick=tocall (from the dashboard heads-up) opens the call list: due today + overdue, oldest first
+  try {
+    const q = new URLSearchParams(window.location.search).get('quick') || '';
+    if(q === 'tocall' || q === 'today' || q === 'overdue'){
+      quickFilter = q;
+      document.getElementById('fSort').value = 'due';
+    }
+  } catch(e){}
+
   let name = '';
 
   try { name = new URLSearchParams(window.location.search).get('company') || ''; } catch(e){}

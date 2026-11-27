@@ -2056,11 +2056,18 @@ function normName(s){ return String(s || '').toLowerCase().replace(/\s+/g, ' ').
 
 // dd/MM/yyyy (as sent by the server) -> yyyy-MM-dd, '' when empty
 function lastISO(item){
+  if(item.lastContactISO) return item.lastContactISO;
   const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(item.lastContact || '');
   return m ? m[3] + '-' + m[2] + '-' + m[1] : '';
 }
 
 /* FOLLOW-UP STATE of one contact */
+
+// A follow-up is handled once the contact was reached on or after its due date
+function isHandled(item){
+  const due = item.nextFollowUpISO, last = lastISO(item);
+  return !!(due && last && last >= due && item.status !== 'Not Interested');
+}
 
 function crmState(item){
 
@@ -2069,6 +2076,8 @@ function crmState(item){
   const due = item.nextFollowUpISO;
 
   if(!due) return 'none';
+
+  if(isHandled(item)) return 'none';       // worked on already: never shows as due or overdue
 
   const t = todayISO();
 
@@ -2087,7 +2096,7 @@ function dueLabel(item){
 
   if(s === 'closed') return 'Closed';
 
-  if(s === 'none') return 'No follow-up set';
+  if(s === 'none') return isHandled(item) ? ('Done · called ' + item.lastContact) : 'No follow-up set';
 
   const diff = daysBetween(todayISO(), item.nextFollowUpISO);
 
@@ -2759,6 +2768,7 @@ function saveLog(){
 
       const now = new Date();
       item.lastContact = pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear();
+      item.lastContactISO = todayISO();
 
       if(nextISO){
         item.nextFollowUpISO = nextISO;

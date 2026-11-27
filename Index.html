@@ -6678,6 +6678,7 @@ function app() {
         } catch (e) {}
       };
       this.$watch('view', saveView);
+      this.$watch('view', v => { if (v === 'home') this.loadCrmDue(); });   // refresh the CRM heads-up when you come back Home
       this.$watch('manageDriveCompany', saveView);
       this.$watch('selectedCompanyName', saveView);
 
@@ -7104,6 +7105,8 @@ function app() {
           let today = 0, overdue = 0;
           (list || []).forEach(c => {
             if (!c || c.status === 'Not Interested' || !c.nextFollowUpISO) return;
+            const last = c.lastContactISO || '';
+            if (last && last >= c.nextFollowUpISO) return;      // already called on/after the due date
             if (c.nextFollowUpISO === iso) today++;
             else if (c.nextFollowUpISO < iso) overdue++;
           });
